@@ -55,4 +55,6 @@ class NotificationPolicies:
 
     def test(self, id: int | str) -> None:
         """Send a test dispatch to verify policy routing."""
-        api_post(self._client, f"/api/v1/notification-policies/{path_param(id)}/test", {})
+        api_post(
+            self._client, f"/api/v1/notification-policies/{path_param(id)}/test", {}
+        )
