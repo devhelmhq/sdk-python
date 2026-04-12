@@ -4,7 +4,6 @@ from __future__ import annotations
 
 import pytest
 
-from devhelm._errors import DevhelmError
 from devhelm._http import DevhelmConfig, build_client, path_param, unwrap_single
 
 
@@ -41,18 +40,14 @@ class TestPathParam:
 
 
 class TestBuildClient:
-    def test_requires_org_id(self, monkeypatch: pytest.MonkeyPatch) -> None:
+    def test_defaults_org_and_workspace(self, monkeypatch: pytest.MonkeyPatch) -> None:
         monkeypatch.delenv("DEVHELM_ORG_ID", raising=False)
         monkeypatch.delenv("DEVHELM_WORKSPACE_ID", raising=False)
         config = DevhelmConfig(token="test-token")
-        with pytest.raises(DevhelmError, match="org_id is required"):
-            build_client(config)
-
-    def test_requires_workspace_id(self, monkeypatch: pytest.MonkeyPatch) -> None:
-        monkeypatch.delenv("DEVHELM_WORKSPACE_ID", raising=False)
-        config = DevhelmConfig(token="test-token", org_id="1")
-        with pytest.raises(DevhelmError, match="workspace_id is required"):
-            build_client(config)
+        client = build_client(config)
+        assert client.headers["x-phelm-org-id"] == "1"
+        assert client.headers["x-phelm-workspace-id"] == "1"
+        client.close()
 
     def test_reads_from_env(self, monkeypatch: pytest.MonkeyPatch) -> None:
         monkeypatch.setenv("DEVHELM_ORG_ID", "42")
@@ -72,9 +67,7 @@ class TestBuildClient:
         assert client.headers["x-phelm-workspace-id"] == "cfg-ws"
         client.close()
 
-    def test_strips_trailing_slash(self, monkeypatch: pytest.MonkeyPatch) -> None:
-        monkeypatch.setenv("DEVHELM_ORG_ID", "1")
-        monkeypatch.setenv("DEVHELM_WORKSPACE_ID", "1")
+    def test_strips_trailing_slash(self) -> None:
         config = DevhelmConfig(token="t", base_url="https://api.example.com///")
         client = build_client(config)
         assert str(client.base_url) == "https://api.example.com"

@@ -25,7 +25,7 @@ class Devhelm:
 
         from devhelm import Devhelm
 
-        client = Devhelm(token="your-api-token", org_id="1", workspace_id="1")
+        client = Devhelm(token="your-api-token")
 
         monitors = client.monitors.list()
         monitor = client.monitors.create({

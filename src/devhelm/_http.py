@@ -35,12 +35,16 @@ def _resolve(value: str | None, env_key: str, label: str) -> str:
     return result
 
 
+def _resolve_optional(value: str | None, env_key: str, default: str) -> str:
+    return value or os.environ.get(env_key) or default
+
+
 def build_client(config: DevhelmConfig) -> httpx.Client:
     """Create a configured httpx.Client with auth and tenant headers."""
     base_url = config.base_url.rstrip("/")
     token = _resolve(config.token, "DEVHELM_API_TOKEN", "token")
-    org_id = _resolve(config.org_id, "DEVHELM_ORG_ID", "org_id")
-    workspace_id = _resolve(config.workspace_id, "DEVHELM_WORKSPACE_ID", "workspace_id")
+    org_id = _resolve_optional(config.org_id, "DEVHELM_ORG_ID", "1")
+    workspace_id = _resolve_optional(config.workspace_id, "DEVHELM_WORKSPACE_ID", "1")
 
     return httpx.Client(
         base_url=base_url,

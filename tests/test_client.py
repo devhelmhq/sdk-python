@@ -21,9 +21,7 @@ from devhelm.resources.webhooks import Webhooks
 
 
 @pytest.fixture
-def client(monkeypatch: pytest.MonkeyPatch) -> Devhelm:
-    monkeypatch.setenv("DEVHELM_ORG_ID", "1")
-    monkeypatch.setenv("DEVHELM_WORKSPACE_ID", "1")
+def client() -> Devhelm:
     return Devhelm(token="test-token", base_url="http://localhost:8080")
 
 
