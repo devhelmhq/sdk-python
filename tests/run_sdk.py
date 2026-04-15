@@ -225,6 +225,85 @@ def run(client: Devhelm, resource: str, action: str, rest: list[str]) -> Any:  #
     if op == "status.overview":
         return client.status.overview()
 
+    # -- Status Pages --
+    if op == "status-pages.list":
+        return client.status_pages.list()
+    if op == "status-pages.get":
+        return client.status_pages.get(rest[0])
+    if op == "status-pages.create":
+        return client.status_pages.create(json.loads(rest[0]))
+    if op == "status-pages.update":
+        return client.status_pages.update(rest[0], json.loads(rest[1]))
+    if op == "status-pages.delete":
+        client.status_pages.delete(rest[0])
+        return None
+
+    # -- Status Page Components --
+    if op == "status-pages.components.list":
+        return client.status_pages.components.list(rest[0])
+    if op == "status-pages.components.create":
+        return client.status_pages.components.create(rest[0], json.loads(rest[1]))
+    if op == "status-pages.components.update":
+        return client.status_pages.components.update(rest[0], rest[1], json.loads(rest[2]))
+    if op == "status-pages.components.delete":
+        client.status_pages.components.delete(rest[0], rest[1])
+        return None
+    if op == "status-pages.components.reorder":
+        client.status_pages.components.reorder(rest[0], json.loads(rest[1]))
+        return None
+
+    # -- Status Page Groups --
+    if op == "status-pages.groups.list":
+        return client.status_pages.groups.list(rest[0])
+    if op == "status-pages.groups.create":
+        return client.status_pages.groups.create(rest[0], json.loads(rest[1]))
+    if op == "status-pages.groups.update":
+        return client.status_pages.groups.update(rest[0], rest[1], json.loads(rest[2]))
+    if op == "status-pages.groups.delete":
+        client.status_pages.groups.delete(rest[0], rest[1])
+        return None
+
+    # -- Status Page Incidents --
+    if op == "status-pages.incidents.list":
+        return client.status_pages.incidents.list(rest[0])
+    if op == "status-pages.incidents.get":
+        return client.status_pages.incidents.get(rest[0], rest[1])
+    if op == "status-pages.incidents.create":
+        return client.status_pages.incidents.create(rest[0], json.loads(rest[1]))
+    if op == "status-pages.incidents.update":
+        return client.status_pages.incidents.update(rest[0], rest[1], json.loads(rest[2]))
+    if op == "status-pages.incidents.post-update":
+        return client.status_pages.incidents.post_update(rest[0], rest[1], json.loads(rest[2]))
+    if op == "status-pages.incidents.publish":
+        body = json.loads(rest[2]) if len(rest) > 2 and rest[2] else None
+        return client.status_pages.incidents.publish(rest[0], rest[1], body)
+    if op == "status-pages.incidents.dismiss":
+        client.status_pages.incidents.dismiss(rest[0], rest[1])
+        return None
+    if op == "status-pages.incidents.delete":
+        client.status_pages.incidents.delete(rest[0], rest[1])
+        return None
+
+    # -- Status Page Subscribers --
+    if op == "status-pages.subscribers.list":
+        return client.status_pages.subscribers.list(rest[0])
+    if op == "status-pages.subscribers.add":
+        return client.status_pages.subscribers.add(rest[0], json.loads(rest[1]))
+    if op == "status-pages.subscribers.remove":
+        client.status_pages.subscribers.remove(rest[0], rest[1])
+        return None
+
+    # -- Status Page Domains --
+    if op == "status-pages.domains.list":
+        return client.status_pages.domains.list(rest[0])
+    if op == "status-pages.domains.add":
+        return client.status_pages.domains.add(rest[0], json.loads(rest[1]))
+    if op == "status-pages.domains.verify":
+        return client.status_pages.domains.verify(rest[0], rest[1])
+    if op == "status-pages.domains.remove":
+        client.status_pages.domains.remove(rest[0], rest[1])
+        return None
+
     sys.stderr.write(json.dumps({"error": f"Unknown operation: {op}"}))
     sys.exit(2)
 
