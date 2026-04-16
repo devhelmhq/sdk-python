@@ -52,8 +52,7 @@ class _Components:
     def delete(self, page_id: int | str, component_id: int | str) -> None:
         """Remove a component from a status page."""
         api_delete(
-            self._client,
-            f"{_page_path(page_id)}/components/{path_param(component_id)}",
+            self._client, f"{_page_path(page_id)}/components/{path_param(component_id)}"
         )
 
     def reorder(self, page_id: int | str, body: dict[str, Any]) -> None:
@@ -91,10 +90,7 @@ class _Groups:
 
     def delete(self, page_id: int | str, group_id: int | str) -> None:
         """Delete a component group."""
-        api_delete(
-            self._client,
-            f"{_page_path(page_id)}/groups/{path_param(group_id)}",
-        )
+        api_delete(self._client, f"{_page_path(page_id)}/groups/{path_param(group_id)}")
 
 
 class _Incidents:
@@ -103,13 +99,9 @@ class _Incidents:
     def __init__(self, client: httpx.Client) -> None:
         self._client = client
 
-    def list(
-        self, page_id: int | str, *, page: int = 0, size: int = 20
-    ) -> Page[Any]:
+    def list(self, page_id: int | str, *, page: int = 0, size: int = 20) -> Page[Any]:
         """List incidents on a status page (paginated)."""
-        return fetch_page(
-            self._client, f"{_page_path(page_id)}/incidents", page, size
-        )
+        return fetch_page(self._client, f"{_page_path(page_id)}/incidents", page, size)
 
     def get(self, page_id: int | str, incident_id: int | str) -> Any:
         """Get a single incident with timeline."""
@@ -175,8 +167,7 @@ class _Incidents:
     def delete(self, page_id: int | str, incident_id: int | str) -> None:
         """Delete an incident."""
         api_delete(
-            self._client,
-            f"{_page_path(page_id)}/incidents/{path_param(incident_id)}",
+            self._client, f"{_page_path(page_id)}/incidents/{path_param(incident_id)}"
         )
 
 
@@ -186,9 +177,7 @@ class _Subscribers:
     def __init__(self, client: httpx.Client) -> None:
         self._client = client
 
-    def list(
-        self, page_id: int | str, *, page: int = 0, size: int = 20
-    ) -> Page[Any]:
+    def list(self, page_id: int | str, *, page: int = 0, size: int = 20) -> Page[Any]:
         """List confirmed subscribers (paginated)."""
         return fetch_page(
             self._client, f"{_page_path(page_id)}/subscribers", page, size
@@ -236,8 +225,7 @@ class _Domains:
     def remove(self, page_id: int | str, domain_id: int | str) -> None:
         """Remove a custom domain."""
         api_delete(
-            self._client,
-            f"{_page_path(page_id)}/domains/{path_param(domain_id)}",
+            self._client, f"{_page_path(page_id)}/domains/{path_param(domain_id)}"
         )
 
 

@@ -244,7 +244,9 @@ def run(client: Devhelm, resource: str, action: str, rest: list[str]) -> Any:  #
     if op == "status-pages.components.create":
         return client.status_pages.components.create(rest[0], json.loads(rest[1]))
     if op == "status-pages.components.update":
-        return client.status_pages.components.update(rest[0], rest[1], json.loads(rest[2]))
+        return client.status_pages.components.update(
+            rest[0], rest[1], json.loads(rest[2])
+        )
     if op == "status-pages.components.delete":
         client.status_pages.components.delete(rest[0], rest[1])
         return None
@@ -271,9 +273,13 @@ def run(client: Devhelm, resource: str, action: str, rest: list[str]) -> Any:  #
     if op == "status-pages.incidents.create":
         return client.status_pages.incidents.create(rest[0], json.loads(rest[1]))
     if op == "status-pages.incidents.update":
-        return client.status_pages.incidents.update(rest[0], rest[1], json.loads(rest[2]))
+        return client.status_pages.incidents.update(
+            rest[0], rest[1], json.loads(rest[2])
+        )
     if op == "status-pages.incidents.post-update":
-        return client.status_pages.incidents.post_update(rest[0], rest[1], json.loads(rest[2]))
+        return client.status_pages.incidents.post_update(
+            rest[0], rest[1], json.loads(rest[2])
+        )
     if op == "status-pages.incidents.publish":
         body = json.loads(rest[2]) if len(rest) > 2 and rest[2] else None
         return client.status_pages.incidents.publish(rest[0], rest[1], body)
