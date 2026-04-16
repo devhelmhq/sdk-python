@@ -14,6 +14,7 @@ from devhelm.resources.notification_policies import NotificationPolicies
 from devhelm.resources.resource_groups import ResourceGroups
 from devhelm.resources.secrets import Secrets
 from devhelm.resources.status import Status
+from devhelm.resources.status_pages import StatusPages
 from devhelm.resources.tags import Tags
 from devhelm.resources.webhooks import Webhooks
 
@@ -49,6 +50,7 @@ class Devhelm:
     dependencies: Dependencies
     deploy_lock: DeployLock
     status: Status
+    status_pages: StatusPages
 
     def __init__(
         self,
@@ -81,3 +83,4 @@ class Devhelm:
         self.dependencies = Dependencies(client)
         self.deploy_lock = DeployLock(client)
         self.status = Status(client)
+        self.status_pages = StatusPages(client)
