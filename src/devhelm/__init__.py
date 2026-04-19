@@ -20,6 +20,7 @@ from devhelm.resources.webhooks import Webhooks
 from devhelm.types import (
     AcquireDeployLockRequest,
     AddCustomDomainRequest,
+    AddResourceGroupMemberRequest,
     AdminAddSubscriberRequest,
     AlertChannelDto,
     ApiKeyCreateResponse,
@@ -49,6 +50,8 @@ from devhelm.types import (
     MonitorDto,
     MonitorVersionDto,
     NotificationPolicyDto,
+    ReorderComponentsRequest,
+    ResolveIncidentRequest,
     ResourceGroupDto,
     ResourceGroupMemberDto,
     SecretDto,
@@ -63,6 +66,7 @@ from devhelm.types import (
     StatusPageIncidentUpdateDto,
     StatusPageSubscriberDto,
     TagDto,
+    TestChannelResult,
     UpdateAlertChannelRequest,
     UpdateEnvironmentRequest,
     UpdateMonitorRequest,
@@ -76,6 +80,7 @@ from devhelm.types import (
     UpdateTagRequest,
     UpdateWebhookEndpointRequest,
     WebhookEndpointDto,
+    WebhookTestResult,
 )
 
 __all__ = [
@@ -131,6 +136,8 @@ __all__ = [
     "DashboardOverviewDto",
     "DeployLockDto",
     "AssertionTestResultDto",
+    "TestChannelResult",
+    "WebhookTestResult",
     # Request types
     "CreateStatusPageRequest",
     "UpdateStatusPageRequest",
@@ -143,9 +150,11 @@ __all__ = [
     "CreateStatusPageIncidentUpdateRequest",
     "AddCustomDomainRequest",
     "AdminAddSubscriberRequest",
+    "ReorderComponentsRequest",
     "CreateMonitorRequest",
     "UpdateMonitorRequest",
     "CreateManualIncidentRequest",
+    "ResolveIncidentRequest",
     "CreateAlertChannelRequest",
     "UpdateAlertChannelRequest",
     "CreateNotificationPolicyRequest",
@@ -158,6 +167,7 @@ __all__ = [
     "UpdateTagRequest",
     "CreateResourceGroupRequest",
     "UpdateResourceGroupRequest",
+    "AddResourceGroupMemberRequest",
     "CreateWebhookEndpointRequest",
     "UpdateWebhookEndpointRequest",
     "CreateApiKeyRequest",

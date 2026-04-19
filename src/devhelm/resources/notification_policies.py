@@ -1,18 +1,15 @@
 from __future__ import annotations
 
-from typing import Any
-
 import httpx
 
-from devhelm._http import (
-    api_delete,
-    api_get,
-    api_post,
-    api_put,
-    path_param,
-    unwrap_single,
+from devhelm._generated import (
+    CreateNotificationPolicyRequest,
+    NotificationPolicyDto,
+    UpdateNotificationPolicyRequest,
 )
+from devhelm._http import api_delete, api_get, api_post, api_put, path_param
 from devhelm._pagination import Page, fetch_all_pages, fetch_page
+from devhelm._validation import parse_single
 
 
 class NotificationPolicies:
@@ -21,32 +18,48 @@ class NotificationPolicies:
     def __init__(self, client: httpx.Client) -> None:
         self._client = client
 
-    def list(self) -> list[Any]:
+    def list(self) -> list[NotificationPolicyDto]:
         """List all notification policies (auto-paginates)."""
-        return fetch_all_pages(self._client, "/api/v1/notification-policies")
+        return fetch_all_pages(
+            self._client, "/api/v1/notification-policies", NotificationPolicyDto
+        )
 
-    def list_page(self, page: int, size: int) -> Page[Any]:
+    def list_page(self, page: int, size: int) -> Page[NotificationPolicyDto]:
         """List notification policies with manual page control."""
-        return fetch_page(self._client, "/api/v1/notification-policies", page, size)
+        return fetch_page(
+            self._client,
+            "/api/v1/notification-policies",
+            NotificationPolicyDto,
+            page,
+            size,
+        )
 
-    def get(self, id: int | str) -> Any:
+    def get(self, id: int | str) -> NotificationPolicyDto:
         """Get a notification policy by ID."""
-        return unwrap_single(
-            api_get(self._client, f"/api/v1/notification-policies/{path_param(id)}")
+        return parse_single(
+            NotificationPolicyDto,
+            api_get(self._client, f"/api/v1/notification-policies/{path_param(id)}"),
+            f"GET /api/v1/notification-policies/{id}",
         )
 
-    def create(self, body: dict[str, Any]) -> Any:
+    def create(self, body: CreateNotificationPolicyRequest) -> NotificationPolicyDto:
         """Create a notification policy."""
-        return unwrap_single(
-            api_post(self._client, "/api/v1/notification-policies", body)
+        return parse_single(
+            NotificationPolicyDto,
+            api_post(self._client, "/api/v1/notification-policies", body),
+            "POST /api/v1/notification-policies",
         )
 
-    def update(self, id: int | str, body: dict[str, Any]) -> Any:
+    def update(
+        self, id: int | str, body: UpdateNotificationPolicyRequest
+    ) -> NotificationPolicyDto:
         """Update a notification policy."""
-        return unwrap_single(
+        return parse_single(
+            NotificationPolicyDto,
             api_put(
                 self._client, f"/api/v1/notification-policies/{path_param(id)}", body
-            )
+            ),
+            f"PUT /api/v1/notification-policies/{id}",
         )
 
     def delete(self, id: int | str) -> None:

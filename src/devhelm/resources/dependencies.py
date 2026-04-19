@@ -1,11 +1,11 @@
 from __future__ import annotations
 
-from typing import Any
-
 import httpx
 
-from devhelm._http import api_delete, api_get, api_post, path_param, unwrap_single
+from devhelm._generated import ServiceSubscriptionDto
+from devhelm._http import api_delete, api_get, api_post, path_param
 from devhelm._pagination import Page, fetch_all_pages, fetch_page
+from devhelm._validation import parse_single
 
 
 class Dependencies:
@@ -14,24 +14,36 @@ class Dependencies:
     def __init__(self, client: httpx.Client) -> None:
         self._client = client
 
-    def list(self) -> list[Any]:
+    def list(self) -> list[ServiceSubscriptionDto]:
         """List all tracked service dependencies."""
-        return fetch_all_pages(self._client, "/api/v1/service-subscriptions")
-
-    def list_page(self, page: int, size: int) -> Page[Any]:
-        """List tracked dependencies with manual page control."""
-        return fetch_page(self._client, "/api/v1/service-subscriptions", page, size)
-
-    def get(self, id: int | str) -> Any:
-        """Get a tracked dependency by ID."""
-        return unwrap_single(
-            api_get(self._client, f"/api/v1/service-subscriptions/{path_param(id)}")
+        return fetch_all_pages(
+            self._client, "/api/v1/service-subscriptions", ServiceSubscriptionDto
         )
 
-    def track(self, slug: str) -> Any:
+    def list_page(self, page: int, size: int) -> Page[ServiceSubscriptionDto]:
+        """List tracked dependencies with manual page control."""
+        return fetch_page(
+            self._client,
+            "/api/v1/service-subscriptions",
+            ServiceSubscriptionDto,
+            page,
+            size,
+        )
+
+    def get(self, id: int | str) -> ServiceSubscriptionDto:
+        """Get a tracked dependency by ID."""
+        return parse_single(
+            ServiceSubscriptionDto,
+            api_get(self._client, f"/api/v1/service-subscriptions/{path_param(id)}"),
+            f"GET /api/v1/service-subscriptions/{id}",
+        )
+
+    def track(self, slug: str) -> ServiceSubscriptionDto:
         """Track a new service dependency by slug."""
-        return unwrap_single(
-            api_post(self._client, f"/api/v1/service-subscriptions/{path_param(slug)}")
+        return parse_single(
+            ServiceSubscriptionDto,
+            api_post(self._client, f"/api/v1/service-subscriptions/{path_param(slug)}"),
+            f"POST /api/v1/service-subscriptions/{slug}",
         )
 
     def delete(self, id: int | str) -> None:

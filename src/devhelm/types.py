@@ -10,6 +10,7 @@ from __future__ import annotations
 from devhelm._generated import (
     AcquireDeployLockRequest,
     AddCustomDomainRequest,
+    AddResourceGroupMemberRequest,
     AdminAddSubscriberRequest,
     AlertChannelDto,
     ApiKeyCreateResponse,
@@ -39,6 +40,8 @@ from devhelm._generated import (
     MonitorDto,
     MonitorVersionDto,
     NotificationPolicyDto,
+    ReorderComponentsRequest,
+    ResolveIncidentRequest,
     ResourceGroupDto,
     ResourceGroupMemberDto,  # noqa: F401
     SecretDto,
@@ -53,6 +56,7 @@ from devhelm._generated import (
     StatusPageIncidentUpdateDto,
     StatusPageSubscriberDto,
     TagDto,
+    TestChannelResult,
     UpdateAlertChannelRequest,
     UpdateEnvironmentRequest,
     UpdateMonitorRequest,
@@ -66,11 +70,13 @@ from devhelm._generated import (
     UpdateTagRequest,
     UpdateWebhookEndpointRequest,
     WebhookEndpointDto,
+    WebhookTestResult,
 )
 
 __all__ = [
     "AcquireDeployLockRequest",
     "AddCustomDomainRequest",
+    "AddResourceGroupMemberRequest",
     "AdminAddSubscriberRequest",
     "AlertChannelDto",
     "ApiKeyCreateResponse",
@@ -100,6 +106,8 @@ __all__ = [
     "MonitorDto",
     "MonitorVersionDto",
     "NotificationPolicyDto",
+    "ReorderComponentsRequest",
+    "ResolveIncidentRequest",
     "ResourceGroupDto",
     "ResourceGroupMemberDto",
     "SecretDto",
@@ -114,6 +122,7 @@ __all__ = [
     "StatusPageIncidentUpdateDto",
     "StatusPageSubscriberDto",
     "TagDto",
+    "TestChannelResult",
     "UpdateAlertChannelRequest",
     "UpdateEnvironmentRequest",
     "UpdateMonitorRequest",
@@ -127,4 +136,5 @@ __all__ = [
     "UpdateTagRequest",
     "UpdateWebhookEndpointRequest",
     "WebhookEndpointDto",
+    "WebhookTestResult",
 ]

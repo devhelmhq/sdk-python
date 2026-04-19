@@ -1,10 +1,10 @@
 from __future__ import annotations
 
-from typing import Any
-
 import httpx
 
-from devhelm._http import api_get, unwrap_single
+from devhelm._generated import DashboardOverviewDto
+from devhelm._http import api_get
+from devhelm._validation import parse_single
 
 
 class Status:
@@ -13,6 +13,10 @@ class Status:
     def __init__(self, client: httpx.Client) -> None:
         self._client = client
 
-    def overview(self) -> Any:
+    def overview(self) -> DashboardOverviewDto:
         """Get the dashboard overview."""
-        return unwrap_single(api_get(self._client, "/api/v1/dashboard/overview"))
+        return parse_single(
+            DashboardOverviewDto,
+            api_get(self._client, "/api/v1/dashboard/overview"),
+            "GET /api/v1/dashboard/overview",
+        )

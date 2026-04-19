@@ -1,10 +1,10 @@
 from __future__ import annotations
 
-from typing import Any
-
 import httpx
 
-from devhelm._http import api_delete, api_get, api_post, path_param, unwrap_single
+from devhelm._generated import AcquireDeployLockRequest, DeployLockDto
+from devhelm._http import api_delete, api_get, api_post, path_param
+from devhelm._validation import parse_model, parse_single
 
 
 class DeployLock:
@@ -13,15 +13,19 @@ class DeployLock:
     def __init__(self, client: httpx.Client) -> None:
         self._client = client
 
-    def acquire(self, body: dict[str, Any]) -> Any:
+    def acquire(self, body: AcquireDeployLockRequest) -> DeployLockDto:
         """Acquire a deploy lock."""
-        return unwrap_single(api_post(self._client, "/api/v1/deploy/lock", body))
+        return parse_single(
+            DeployLockDto,
+            api_post(self._client, "/api/v1/deploy/lock", body),
+            "POST /api/v1/deploy/lock",
+        )
 
-    def current(self) -> Any | None:
+    def current(self) -> DeployLockDto | None:
         """Get the current deploy lock, or None if unlocked."""
         resp = api_get(self._client, "/api/v1/deploy/lock")
-        if isinstance(resp, dict):
-            return resp.get("data")
+        if isinstance(resp, dict) and resp.get("data") is not None:
+            return parse_model(DeployLockDto, resp["data"], "GET /api/v1/deploy/lock")
         return None
 
     def release(self, lock_id: int | str) -> None:
