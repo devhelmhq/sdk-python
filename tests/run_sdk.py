@@ -12,10 +12,50 @@ from __future__ import annotations
 import json
 import os
 import sys
-from typing import Any
+from typing import Any, TypeVar
 
-from devhelm import Devhelm, DevhelmError
+from pydantic import BaseModel
+
+from devhelm import (
+    AcquireDeployLockRequest,
+    AddCustomDomainRequest,
+    AddResourceGroupMemberRequest,
+    AdminAddSubscriberRequest,
+    CreateAlertChannelRequest,
+    CreateApiKeyRequest,
+    CreateEnvironmentRequest,
+    CreateManualIncidentRequest,
+    CreateMonitorRequest,
+    CreateNotificationPolicyRequest,
+    CreateResourceGroupRequest,
+    CreateSecretRequest,
+    CreateStatusPageComponentGroupRequest,
+    CreateStatusPageComponentRequest,
+    CreateStatusPageIncidentRequest,
+    CreateStatusPageIncidentUpdateRequest,
+    CreateStatusPageRequest,
+    CreateTagRequest,
+    CreateWebhookEndpointRequest,
+    Devhelm,
+    DevhelmError,
+    ReorderComponentsRequest,
+    ResolveIncidentRequest,
+    UpdateAlertChannelRequest,
+    UpdateEnvironmentRequest,
+    UpdateMonitorRequest,
+    UpdateNotificationPolicyRequest,
+    UpdateResourceGroupRequest,
+    UpdateSecretRequest,
+    UpdateStatusPageComponentGroupRequest,
+    UpdateStatusPageComponentRequest,
+    UpdateStatusPageIncidentRequest,
+    UpdateStatusPageRequest,
+    UpdateTagRequest,
+    UpdateWebhookEndpointRequest,
+)
 from devhelm._pagination import CursorPage, Page
+
+M = TypeVar("M", bound=BaseModel)
 
 
 def extract_flag(args: list[str], name: str) -> str | None:
@@ -33,14 +73,26 @@ def to_json(obj: Any) -> Any:
     if obj is None:
         return None
     if isinstance(obj, Page):
-        return {"data": obj.data, "hasNext": obj.has_next, "hasPrev": obj.has_prev}
+        return {
+            "data": [to_json(item) for item in obj.data],
+            "hasNext": obj.has_next,
+            "hasPrev": obj.has_prev,
+        }
     if isinstance(obj, CursorPage):
         return {
-            "data": obj.data,
+            "data": [to_json(item) for item in obj.data],
             "nextCursor": obj.next_cursor,
             "hasMore": obj.has_more,
         }
+    if isinstance(obj, list):
+        return [to_json(item) for item in obj]
+    if isinstance(obj, BaseModel):
+        return obj.model_dump(mode="json", by_alias=True)
     return obj
+
+
+def _parse(model_class: type[M], raw: str) -> M:
+    return model_class.model_validate(json.loads(raw))
 
 
 def run(client: Devhelm, resource: str, action: str, rest: list[str]) -> Any:  # noqa: C901
@@ -52,9 +104,9 @@ def run(client: Devhelm, resource: str, action: str, rest: list[str]) -> Any:  #
     if op == "monitors.get":
         return client.monitors.get(rest[0])
     if op == "monitors.create":
-        return client.monitors.create(json.loads(rest[0]))
+        return client.monitors.create(_parse(CreateMonitorRequest, rest[0]))
     if op == "monitors.update":
-        return client.monitors.update(rest[0], json.loads(rest[1]))
+        return client.monitors.update(rest[0], _parse(UpdateMonitorRequest, rest[1]))
     if op == "monitors.delete":
         client.monitors.delete(rest[0])
         return None
@@ -77,10 +129,14 @@ def run(client: Devhelm, resource: str, action: str, rest: list[str]) -> Any:  #
     if op == "incidents.get":
         return client.incidents.get(rest[0])
     if op == "incidents.create":
-        return client.incidents.create(json.loads(rest[0]))
+        return client.incidents.create(_parse(CreateManualIncidentRequest, rest[0]))
     if op == "incidents.resolve":
-        msg = rest[1] if len(rest) > 1 else None
-        return client.incidents.resolve(rest[0], msg)
+        body = (
+            _parse(ResolveIncidentRequest, rest[1])
+            if len(rest) > 1 and rest[1]
+            else None
+        )
+        return client.incidents.resolve(rest[0], body)
     if op == "incidents.delete":
         client.incidents.delete(rest[0])
         return None
@@ -91,9 +147,11 @@ def run(client: Devhelm, resource: str, action: str, rest: list[str]) -> Any:  #
     if op == "alert-channels.get":
         return client.alert_channels.get(rest[0])
     if op == "alert-channels.create":
-        return client.alert_channels.create(json.loads(rest[0]))
+        return client.alert_channels.create(_parse(CreateAlertChannelRequest, rest[0]))
     if op == "alert-channels.update":
-        return client.alert_channels.update(rest[0], json.loads(rest[1]))
+        return client.alert_channels.update(
+            rest[0], _parse(UpdateAlertChannelRequest, rest[1])
+        )
     if op == "alert-channels.delete":
         client.alert_channels.delete(rest[0])
         return None
@@ -106,9 +164,13 @@ def run(client: Devhelm, resource: str, action: str, rest: list[str]) -> Any:  #
     if op == "notification-policies.get":
         return client.notification_policies.get(rest[0])
     if op == "notification-policies.create":
-        return client.notification_policies.create(json.loads(rest[0]))
+        return client.notification_policies.create(
+            _parse(CreateNotificationPolicyRequest, rest[0])
+        )
     if op == "notification-policies.update":
-        return client.notification_policies.update(rest[0], json.loads(rest[1]))
+        return client.notification_policies.update(
+            rest[0], _parse(UpdateNotificationPolicyRequest, rest[1])
+        )
     if op == "notification-policies.delete":
         client.notification_policies.delete(rest[0])
         return None
@@ -122,9 +184,11 @@ def run(client: Devhelm, resource: str, action: str, rest: list[str]) -> Any:  #
     if op == "environments.get":
         return client.environments.get(rest[0])
     if op == "environments.create":
-        return client.environments.create(json.loads(rest[0]))
+        return client.environments.create(_parse(CreateEnvironmentRequest, rest[0]))
     if op == "environments.update":
-        return client.environments.update(rest[0], json.loads(rest[1]))
+        return client.environments.update(
+            rest[0], _parse(UpdateEnvironmentRequest, rest[1])
+        )
     if op == "environments.delete":
         client.environments.delete(rest[0])
         return None
@@ -133,9 +197,9 @@ def run(client: Devhelm, resource: str, action: str, rest: list[str]) -> Any:  #
     if op == "secrets.list":
         return client.secrets.list()
     if op == "secrets.create":
-        return client.secrets.create(json.loads(rest[0]))
+        return client.secrets.create(_parse(CreateSecretRequest, rest[0]))
     if op == "secrets.update":
-        return client.secrets.update(rest[0], json.loads(rest[1]))
+        return client.secrets.update(rest[0], _parse(UpdateSecretRequest, rest[1]))
     if op == "secrets.delete":
         client.secrets.delete(rest[0])
         return None
@@ -146,9 +210,9 @@ def run(client: Devhelm, resource: str, action: str, rest: list[str]) -> Any:  #
     if op == "tags.get":
         return client.tags.get(rest[0])
     if op == "tags.create":
-        return client.tags.create(json.loads(rest[0]))
+        return client.tags.create(_parse(CreateTagRequest, rest[0]))
     if op == "tags.update":
-        return client.tags.update(rest[0], json.loads(rest[1]))
+        return client.tags.update(rest[0], _parse(UpdateTagRequest, rest[1]))
     if op == "tags.delete":
         client.tags.delete(rest[0])
         return None
@@ -159,14 +223,20 @@ def run(client: Devhelm, resource: str, action: str, rest: list[str]) -> Any:  #
     if op == "resource-groups.get":
         return client.resource_groups.get(rest[0])
     if op == "resource-groups.create":
-        return client.resource_groups.create(json.loads(rest[0]))
+        return client.resource_groups.create(
+            _parse(CreateResourceGroupRequest, rest[0])
+        )
     if op == "resource-groups.update":
-        return client.resource_groups.update(rest[0], json.loads(rest[1]))
+        return client.resource_groups.update(
+            rest[0], _parse(UpdateResourceGroupRequest, rest[1])
+        )
     if op == "resource-groups.delete":
         client.resource_groups.delete(rest[0])
         return None
     if op == "resource-groups.add-member":
-        return client.resource_groups.add_member(rest[0], json.loads(rest[1]))
+        return client.resource_groups.add_member(
+            rest[0], _parse(AddResourceGroupMemberRequest, rest[1])
+        )
     if op == "resource-groups.remove-member":
         client.resource_groups.remove_member(rest[0], rest[1])
         return None
@@ -177,9 +247,11 @@ def run(client: Devhelm, resource: str, action: str, rest: list[str]) -> Any:  #
     if op == "webhooks.get":
         return client.webhooks.get(rest[0])
     if op == "webhooks.create":
-        return client.webhooks.create(json.loads(rest[0]))
+        return client.webhooks.create(_parse(CreateWebhookEndpointRequest, rest[0]))
     if op == "webhooks.update":
-        return client.webhooks.update(rest[0], json.loads(rest[1]))
+        return client.webhooks.update(
+            rest[0], _parse(UpdateWebhookEndpointRequest, rest[1])
+        )
     if op == "webhooks.delete":
         client.webhooks.delete(rest[0])
         return None
@@ -190,7 +262,7 @@ def run(client: Devhelm, resource: str, action: str, rest: list[str]) -> Any:  #
     if op == "api-keys.list":
         return client.api_keys.list()
     if op == "api-keys.create":
-        return client.api_keys.create(json.loads(rest[0]))
+        return client.api_keys.create(_parse(CreateApiKeyRequest, rest[0]))
     if op == "api-keys.revoke":
         client.api_keys.revoke(rest[0])
         return None
@@ -211,7 +283,7 @@ def run(client: Devhelm, resource: str, action: str, rest: list[str]) -> Any:  #
 
     # -- Deploy Lock --
     if op == "deploy-lock.acquire":
-        return client.deploy_lock.acquire(json.loads(rest[0]))
+        return client.deploy_lock.acquire(_parse(AcquireDeployLockRequest, rest[0]))
     if op == "deploy-lock.current":
         return client.deploy_lock.current()
     if op == "deploy-lock.release":
@@ -231,9 +303,11 @@ def run(client: Devhelm, resource: str, action: str, rest: list[str]) -> Any:  #
     if op == "status-pages.get":
         return client.status_pages.get(rest[0])
     if op == "status-pages.create":
-        return client.status_pages.create(json.loads(rest[0]))
+        return client.status_pages.create(_parse(CreateStatusPageRequest, rest[0]))
     if op == "status-pages.update":
-        return client.status_pages.update(rest[0], json.loads(rest[1]))
+        return client.status_pages.update(
+            rest[0], _parse(UpdateStatusPageRequest, rest[1])
+        )
     if op == "status-pages.delete":
         client.status_pages.delete(rest[0])
         return None
@@ -242,47 +316,59 @@ def run(client: Devhelm, resource: str, action: str, rest: list[str]) -> Any:  #
     if op == "status-pages.components.list":
         return client.status_pages.components.list(rest[0])
     if op == "status-pages.components.create":
-        return client.status_pages.components.create(rest[0], json.loads(rest[1]))
+        return client.status_pages.components.create(
+            rest[0], _parse(CreateStatusPageComponentRequest, rest[1])
+        )
     if op == "status-pages.components.update":
         return client.status_pages.components.update(
-            rest[0], rest[1], json.loads(rest[2])
+            rest[0], rest[1], _parse(UpdateStatusPageComponentRequest, rest[2])
         )
     if op == "status-pages.components.delete":
         client.status_pages.components.delete(rest[0], rest[1])
         return None
     if op == "status-pages.components.reorder":
-        client.status_pages.components.reorder(rest[0], json.loads(rest[1]))
+        client.status_pages.components.reorder(
+            rest[0], _parse(ReorderComponentsRequest, rest[1])
+        )
         return None
 
     # -- Status Page Groups --
     if op == "status-pages.groups.list":
         return client.status_pages.groups.list(rest[0])
     if op == "status-pages.groups.create":
-        return client.status_pages.groups.create(rest[0], json.loads(rest[1]))
+        return client.status_pages.groups.create(
+            rest[0], _parse(CreateStatusPageComponentGroupRequest, rest[1])
+        )
     if op == "status-pages.groups.update":
-        return client.status_pages.groups.update(rest[0], rest[1], json.loads(rest[2]))
+        return client.status_pages.groups.update(
+            rest[0], rest[1], _parse(UpdateStatusPageComponentGroupRequest, rest[2])
+        )
     if op == "status-pages.groups.delete":
         client.status_pages.groups.delete(rest[0], rest[1])
         return None
 
     # -- Status Page Incidents --
     if op == "status-pages.incidents.list":
-        return client.status_pages.incidents.list(rest[0])
+        opts = json.loads(rest[1]) if len(rest) > 1 else {}
+        return client.status_pages.incidents.list(
+            rest[0], page=opts.get("page", 0), size=opts.get("size", 20)
+        )
     if op == "status-pages.incidents.get":
         return client.status_pages.incidents.get(rest[0], rest[1])
     if op == "status-pages.incidents.create":
-        return client.status_pages.incidents.create(rest[0], json.loads(rest[1]))
+        return client.status_pages.incidents.create(
+            rest[0], _parse(CreateStatusPageIncidentRequest, rest[1])
+        )
     if op == "status-pages.incidents.update":
         return client.status_pages.incidents.update(
-            rest[0], rest[1], json.loads(rest[2])
+            rest[0], rest[1], _parse(UpdateStatusPageIncidentRequest, rest[2])
         )
     if op == "status-pages.incidents.post-update":
         return client.status_pages.incidents.post_update(
-            rest[0], rest[1], json.loads(rest[2])
+            rest[0], rest[1], _parse(CreateStatusPageIncidentUpdateRequest, rest[2])
         )
     if op == "status-pages.incidents.publish":
-        body = json.loads(rest[2]) if len(rest) > 2 and rest[2] else None
-        return client.status_pages.incidents.publish(rest[0], rest[1], body)
+        return client.status_pages.incidents.publish(rest[0], rest[1])
     if op == "status-pages.incidents.dismiss":
         client.status_pages.incidents.dismiss(rest[0], rest[1])
         return None
@@ -292,9 +378,14 @@ def run(client: Devhelm, resource: str, action: str, rest: list[str]) -> Any:  #
 
     # -- Status Page Subscribers --
     if op == "status-pages.subscribers.list":
-        return client.status_pages.subscribers.list(rest[0])
+        opts = json.loads(rest[1]) if len(rest) > 1 else {}
+        return client.status_pages.subscribers.list(
+            rest[0], page=opts.get("page", 0), size=opts.get("size", 20)
+        )
     if op == "status-pages.subscribers.add":
-        return client.status_pages.subscribers.add(rest[0], json.loads(rest[1]))
+        return client.status_pages.subscribers.add(
+            rest[0], _parse(AdminAddSubscriberRequest, rest[1])
+        )
     if op == "status-pages.subscribers.remove":
         client.status_pages.subscribers.remove(rest[0], rest[1])
         return None
@@ -303,7 +394,9 @@ def run(client: Devhelm, resource: str, action: str, rest: list[str]) -> Any:  #
     if op == "status-pages.domains.list":
         return client.status_pages.domains.list(rest[0])
     if op == "status-pages.domains.add":
-        return client.status_pages.domains.add(rest[0], json.loads(rest[1]))
+        return client.status_pages.domains.add(
+            rest[0], _parse(AddCustomDomainRequest, rest[1])
+        )
     if op == "status-pages.domains.verify":
         return client.status_pages.domains.verify(rest[0], rest[1])
     if op == "status-pages.domains.remove":

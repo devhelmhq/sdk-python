@@ -6,6 +6,7 @@ from typing import Any
 from urllib.parse import quote
 
 import httpx
+from pydantic import BaseModel
 
 from devhelm._errors import DevhelmError, error_from_response
 
@@ -63,6 +64,13 @@ def path_param(value: str | int) -> str:
     return quote(str(value), safe="")
 
 
+def _serialize_body(body: Any) -> Any:
+    """Convert a Pydantic model or dict to a JSON-serializable dict."""
+    if isinstance(body, BaseModel):
+        return body.model_dump(mode="json", by_alias=True, exclude_none=True)
+    return body
+
+
 def checked_fetch(response: httpx.Response) -> Any:
     """Check an httpx response and raise DevhelmError on failure."""
     if response.is_success:
@@ -88,15 +96,15 @@ def api_get(
 def api_post(client: httpx.Client, path: str, body: Any = None) -> Any:
     if body is None:
         return checked_fetch(client.post(path))
-    return checked_fetch(client.post(path, json=body))
+    return checked_fetch(client.post(path, json=_serialize_body(body)))
 
 
 def api_put(client: httpx.Client, path: str, body: Any) -> Any:
-    return checked_fetch(client.put(path, json=body))
+    return checked_fetch(client.put(path, json=_serialize_body(body)))
 
 
 def api_patch(client: httpx.Client, path: str, body: Any) -> Any:
-    return checked_fetch(client.patch(path, json=body))
+    return checked_fetch(client.patch(path, json=_serialize_body(body)))
 
 
 def api_delete(client: httpx.Client, path: str) -> None:

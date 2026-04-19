@@ -1,11 +1,11 @@
 from __future__ import annotations
 
-from typing import Any
-
 import httpx
 
-from devhelm._http import api_delete, api_post, path_param, unwrap_single
+from devhelm._generated import ApiKeyCreateResponse, ApiKeyDto, CreateApiKeyRequest
+from devhelm._http import api_delete, api_post, path_param
 from devhelm._pagination import Page, fetch_all_pages, fetch_page
+from devhelm._validation import parse_single
 
 
 class ApiKeys:
@@ -14,17 +14,21 @@ class ApiKeys:
     def __init__(self, client: httpx.Client) -> None:
         self._client = client
 
-    def list(self) -> list[Any]:
+    def list(self) -> list[ApiKeyDto]:
         """List all API keys."""
-        return fetch_all_pages(self._client, "/api/v1/api-keys")
+        return fetch_all_pages(self._client, "/api/v1/api-keys", ApiKeyDto)
 
-    def list_page(self, page: int, size: int) -> Page[Any]:
+    def list_page(self, page: int, size: int) -> Page[ApiKeyDto]:
         """List API keys with manual page control."""
-        return fetch_page(self._client, "/api/v1/api-keys", page, size)
+        return fetch_page(self._client, "/api/v1/api-keys", ApiKeyDto, page, size)
 
-    def create(self, body: dict[str, Any]) -> Any:
+    def create(self, body: CreateApiKeyRequest) -> ApiKeyCreateResponse:
         """Create an API key. Returns the key value (shown only once)."""
-        return unwrap_single(api_post(self._client, "/api/v1/api-keys", body))
+        return parse_single(
+            ApiKeyCreateResponse,
+            api_post(self._client, "/api/v1/api-keys", body),
+            "POST /api/v1/api-keys",
+        )
 
     def revoke(self, id: int | str) -> None:
         """Revoke an API key."""

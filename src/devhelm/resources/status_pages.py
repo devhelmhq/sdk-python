@@ -1,18 +1,30 @@
 from __future__ import annotations
 
-from typing import Any
-
 import httpx
 
-from devhelm._http import (
-    api_delete,
-    api_get,
-    api_post,
-    api_put,
-    path_param,
-    unwrap_single,
+from devhelm._generated import (
+    AddCustomDomainRequest,
+    AdminAddSubscriberRequest,
+    CreateStatusPageComponentGroupRequest,
+    CreateStatusPageComponentRequest,
+    CreateStatusPageIncidentRequest,
+    CreateStatusPageIncidentUpdateRequest,
+    CreateStatusPageRequest,
+    ReorderComponentsRequest,
+    StatusPageComponentDto,
+    StatusPageComponentGroupDto,
+    StatusPageCustomDomainDto,
+    StatusPageDto,
+    StatusPageIncidentDto,
+    StatusPageSubscriberDto,
+    UpdateStatusPageComponentGroupRequest,
+    UpdateStatusPageComponentRequest,
+    UpdateStatusPageIncidentRequest,
+    UpdateStatusPageRequest,
 )
+from devhelm._http import api_delete, api_get, api_post, api_put, path_param
 from devhelm._pagination import Page, fetch_all_pages, fetch_page
+from devhelm._validation import parse_single
 
 _BASE = "/api/v1/status-pages"
 
@@ -27,26 +39,37 @@ class _Components:
     def __init__(self, client: httpx.Client) -> None:
         self._client = client
 
-    def list(self, page_id: int | str) -> list[Any]:
+    def list(self, page_id: int | str) -> list[StatusPageComponentDto]:
         """List all components on a status page."""
-        return fetch_all_pages(self._client, f"{_page_path(page_id)}/components")
+        return fetch_all_pages(
+            self._client, f"{_page_path(page_id)}/components", StatusPageComponentDto
+        )
 
-    def create(self, page_id: int | str, body: dict[str, Any]) -> Any:
+    def create(
+        self, page_id: int | str, body: CreateStatusPageComponentRequest
+    ) -> StatusPageComponentDto:
         """Add a component to a status page."""
-        return unwrap_single(
-            api_post(self._client, f"{_page_path(page_id)}/components", body)
+        return parse_single(
+            StatusPageComponentDto,
+            api_post(self._client, f"{_page_path(page_id)}/components", body),
+            f"POST {_page_path(page_id)}/components",
         )
 
     def update(
-        self, page_id: int | str, component_id: int | str, body: dict[str, Any]
-    ) -> Any:
+        self,
+        page_id: int | str,
+        component_id: int | str,
+        body: UpdateStatusPageComponentRequest,
+    ) -> StatusPageComponentDto:
         """Update a component."""
-        return unwrap_single(
+        return parse_single(
+            StatusPageComponentDto,
             api_put(
                 self._client,
                 f"{_page_path(page_id)}/components/{path_param(component_id)}",
                 body,
-            )
+            ),
+            f"PUT {_page_path(page_id)}/components/{component_id}",
         )
 
     def delete(self, page_id: int | str, component_id: int | str) -> None:
@@ -55,7 +78,7 @@ class _Components:
             self._client, f"{_page_path(page_id)}/components/{path_param(component_id)}"
         )
 
-    def reorder(self, page_id: int | str, body: dict[str, Any]) -> None:
+    def reorder(self, page_id: int | str, body: ReorderComponentsRequest) -> None:
         """Batch reorder components."""
         api_put(self._client, f"{_page_path(page_id)}/components/reorder", body)
 
@@ -66,26 +89,37 @@ class _Groups:
     def __init__(self, client: httpx.Client) -> None:
         self._client = client
 
-    def list(self, page_id: int | str) -> list[Any]:
+    def list(self, page_id: int | str) -> list[StatusPageComponentGroupDto]:
         """List all component groups (with nested components)."""
-        return fetch_all_pages(self._client, f"{_page_path(page_id)}/groups")
+        return fetch_all_pages(
+            self._client, f"{_page_path(page_id)}/groups", StatusPageComponentGroupDto
+        )
 
-    def create(self, page_id: int | str, body: dict[str, Any]) -> Any:
+    def create(
+        self, page_id: int | str, body: CreateStatusPageComponentGroupRequest
+    ) -> StatusPageComponentGroupDto:
         """Create a component group."""
-        return unwrap_single(
-            api_post(self._client, f"{_page_path(page_id)}/groups", body)
+        return parse_single(
+            StatusPageComponentGroupDto,
+            api_post(self._client, f"{_page_path(page_id)}/groups", body),
+            f"POST {_page_path(page_id)}/groups",
         )
 
     def update(
-        self, page_id: int | str, group_id: int | str, body: dict[str, Any]
-    ) -> Any:
+        self,
+        page_id: int | str,
+        group_id: int | str,
+        body: UpdateStatusPageComponentGroupRequest,
+    ) -> StatusPageComponentGroupDto:
         """Update a component group."""
-        return unwrap_single(
+        return parse_single(
+            StatusPageComponentGroupDto,
             api_put(
                 self._client,
                 f"{_page_path(page_id)}/groups/{path_param(group_id)}",
                 body,
-            )
+            ),
+            f"PUT {_page_path(page_id)}/groups/{group_id}",
         )
 
     def delete(self, page_id: int | str, group_id: int | str) -> None:
@@ -99,62 +133,84 @@ class _Incidents:
     def __init__(self, client: httpx.Client) -> None:
         self._client = client
 
-    def list(self, page_id: int | str, *, page: int = 0, size: int = 20) -> Page[Any]:
+    def list(
+        self, page_id: int | str, *, page: int = 0, size: int = 20
+    ) -> Page[StatusPageIncidentDto]:
         """List incidents on a status page (paginated)."""
-        return fetch_page(self._client, f"{_page_path(page_id)}/incidents", page, size)
+        return fetch_page(
+            self._client,
+            f"{_page_path(page_id)}/incidents",
+            StatusPageIncidentDto,
+            page,
+            size,
+        )
 
-    def get(self, page_id: int | str, incident_id: int | str) -> Any:
+    def get(self, page_id: int | str, incident_id: int | str) -> StatusPageIncidentDto:
         """Get a single incident with timeline."""
-        return unwrap_single(
+        return parse_single(
+            StatusPageIncidentDto,
             api_get(
                 self._client,
                 f"{_page_path(page_id)}/incidents/{path_param(incident_id)}",
-            )
+            ),
+            f"GET {_page_path(page_id)}/incidents/{incident_id}",
         )
 
-    def create(self, page_id: int | str, body: dict[str, Any]) -> Any:
+    def create(
+        self, page_id: int | str, body: CreateStatusPageIncidentRequest
+    ) -> StatusPageIncidentDto:
         """Create a status page incident."""
-        return unwrap_single(
-            api_post(self._client, f"{_page_path(page_id)}/incidents", body)
+        return parse_single(
+            StatusPageIncidentDto,
+            api_post(self._client, f"{_page_path(page_id)}/incidents", body),
+            f"POST {_page_path(page_id)}/incidents",
         )
 
     def update(
-        self, page_id: int | str, incident_id: int | str, body: dict[str, Any]
-    ) -> Any:
+        self,
+        page_id: int | str,
+        incident_id: int | str,
+        body: UpdateStatusPageIncidentRequest,
+    ) -> StatusPageIncidentDto:
         """Update an incident."""
-        return unwrap_single(
+        return parse_single(
+            StatusPageIncidentDto,
             api_put(
                 self._client,
                 f"{_page_path(page_id)}/incidents/{path_param(incident_id)}",
                 body,
-            )
+            ),
+            f"PUT {_page_path(page_id)}/incidents/{incident_id}",
         )
 
     def post_update(
-        self, page_id: int | str, incident_id: int | str, body: dict[str, Any]
-    ) -> Any:
+        self,
+        page_id: int | str,
+        incident_id: int | str,
+        body: CreateStatusPageIncidentUpdateRequest,
+    ) -> StatusPageIncidentDto:
         """Post a timeline update on an incident."""
-        return unwrap_single(
+        return parse_single(
+            StatusPageIncidentDto,
             api_post(
                 self._client,
                 f"{_page_path(page_id)}/incidents/{path_param(incident_id)}/updates",
                 body,
-            )
+            ),
+            f"POST {_page_path(page_id)}/incidents/{incident_id}/updates",
         )
 
     def publish(
-        self,
-        page_id: int | str,
-        incident_id: int | str,
-        body: dict[str, Any] | None = None,
-    ) -> Any:
+        self, page_id: int | str, incident_id: int | str
+    ) -> StatusPageIncidentDto:
         """Publish a draft incident."""
-        return unwrap_single(
+        return parse_single(
+            StatusPageIncidentDto,
             api_post(
                 self._client,
                 f"{_page_path(page_id)}/incidents/{path_param(incident_id)}/publish",
-                body,
-            )
+            ),
+            f"POST {_page_path(page_id)}/incidents/{incident_id}/publish",
         )
 
     def dismiss(self, page_id: int | str, incident_id: int | str) -> None:
@@ -177,16 +233,26 @@ class _Subscribers:
     def __init__(self, client: httpx.Client) -> None:
         self._client = client
 
-    def list(self, page_id: int | str, *, page: int = 0, size: int = 20) -> Page[Any]:
+    def list(
+        self, page_id: int | str, *, page: int = 0, size: int = 20
+    ) -> Page[StatusPageSubscriberDto]:
         """List confirmed subscribers (paginated)."""
         return fetch_page(
-            self._client, f"{_page_path(page_id)}/subscribers", page, size
+            self._client,
+            f"{_page_path(page_id)}/subscribers",
+            StatusPageSubscriberDto,
+            page,
+            size,
         )
 
-    def add(self, page_id: int | str, body: dict[str, Any]) -> Any:
+    def add(
+        self, page_id: int | str, body: AdminAddSubscriberRequest
+    ) -> StatusPageSubscriberDto:
         """Add a subscriber (admin)."""
-        return unwrap_single(
-            api_post(self._client, f"{_page_path(page_id)}/subscribers", body)
+        return parse_single(
+            StatusPageSubscriberDto,
+            api_post(self._client, f"{_page_path(page_id)}/subscribers", body),
+            f"POST {_page_path(page_id)}/subscribers",
         )
 
     def remove(self, page_id: int | str, subscriber_id: int | str) -> None:
@@ -203,23 +269,33 @@ class _Domains:
     def __init__(self, client: httpx.Client) -> None:
         self._client = client
 
-    def list(self, page_id: int | str) -> list[Any]:
+    def list(self, page_id: int | str) -> list[StatusPageCustomDomainDto]:
         """List custom domains on a status page."""
-        return fetch_all_pages(self._client, f"{_page_path(page_id)}/domains")
-
-    def add(self, page_id: int | str, body: dict[str, Any]) -> Any:
-        """Add a custom domain."""
-        return unwrap_single(
-            api_post(self._client, f"{_page_path(page_id)}/domains", body)
+        return fetch_all_pages(
+            self._client, f"{_page_path(page_id)}/domains", StatusPageCustomDomainDto
         )
 
-    def verify(self, page_id: int | str, domain_id: int | str) -> Any:
+    def add(
+        self, page_id: int | str, body: AddCustomDomainRequest
+    ) -> StatusPageCustomDomainDto:
+        """Add a custom domain."""
+        return parse_single(
+            StatusPageCustomDomainDto,
+            api_post(self._client, f"{_page_path(page_id)}/domains", body),
+            f"POST {_page_path(page_id)}/domains",
+        )
+
+    def verify(
+        self, page_id: int | str, domain_id: int | str
+    ) -> StatusPageCustomDomainDto:
         """Trigger domain verification check."""
-        return unwrap_single(
+        return parse_single(
+            StatusPageCustomDomainDto,
             api_post(
                 self._client,
                 f"{_page_path(page_id)}/domains/{path_param(domain_id)}/verify",
-            )
+            ),
+            f"POST {_page_path(page_id)}/domains/{domain_id}/verify",
         )
 
     def remove(self, page_id: int | str, domain_id: int | str) -> None:
@@ -247,21 +323,33 @@ class StatusPages:
         self.subscribers = _Subscribers(client)
         self.domains = _Domains(client)
 
-    def list(self) -> list[Any]:
+    def list(self) -> list[StatusPageDto]:
         """List all status pages in the workspace."""
-        return fetch_all_pages(self._client, _BASE)
+        return fetch_all_pages(self._client, _BASE, StatusPageDto)
 
-    def get(self, id: int | str) -> Any:
+    def get(self, id: int | str) -> StatusPageDto:
         """Get a status page by ID."""
-        return unwrap_single(api_get(self._client, _page_path(id)))
+        return parse_single(
+            StatusPageDto,
+            api_get(self._client, _page_path(id)),
+            f"GET {_page_path(id)}",
+        )
 
-    def create(self, body: dict[str, Any]) -> Any:
+    def create(self, body: CreateStatusPageRequest) -> StatusPageDto:
         """Create a status page."""
-        return unwrap_single(api_post(self._client, _BASE, body))
+        return parse_single(
+            StatusPageDto,
+            api_post(self._client, _BASE, body),
+            "POST /api/v1/status-pages",
+        )
 
-    def update(self, id: int | str, body: dict[str, Any]) -> Any:
+    def update(self, id: int | str, body: UpdateStatusPageRequest) -> StatusPageDto:
         """Update a status page."""
-        return unwrap_single(api_put(self._client, _page_path(id), body))
+        return parse_single(
+            StatusPageDto,
+            api_put(self._client, _page_path(id), body),
+            f"PUT {_page_path(id)}",
+        )
 
     def delete(self, id: int | str) -> None:
         """Delete a status page."""
