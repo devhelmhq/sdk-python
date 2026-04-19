@@ -10,7 +10,7 @@ from devhelm._generated import (
 )
 from devhelm._http import api_delete, api_get, api_post, api_put, path_param
 from devhelm._pagination import Page, fetch_all_pages, fetch_page
-from devhelm._validation import parse_single, validate_request
+from devhelm._validation import RequestBody, parse_single, validate_request
 
 
 class AlertChannels:
@@ -37,7 +37,7 @@ class AlertChannels:
             f"GET /api/v1/alert-channels/{id}",
         )
 
-    def create(self, body: CreateAlertChannelRequest) -> AlertChannelDto:
+    def create(self, body: RequestBody[CreateAlertChannelRequest]) -> AlertChannelDto:
         """Create a new alert channel."""
         body = validate_request(CreateAlertChannelRequest, body, "alertChannels.create")
         return parse_single(
@@ -46,7 +46,9 @@ class AlertChannels:
             "POST /api/v1/alert-channels",
         )
 
-    def update(self, id: int | str, body: UpdateAlertChannelRequest) -> AlertChannelDto:
+    def update(
+        self, id: int | str, body: RequestBody[UpdateAlertChannelRequest]
+    ) -> AlertChannelDto:
         """Update an alert channel."""
         body = validate_request(UpdateAlertChannelRequest, body, "alertChannels.update")
         return parse_single(

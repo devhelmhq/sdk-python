@@ -2,6 +2,7 @@
 
 from devhelm._errors import AuthError, DevhelmError
 from devhelm._pagination import CursorPage, Page
+from devhelm._validation import RequestBody
 from devhelm.client import Devhelm
 from devhelm.resources.alert_channels import AlertChannels
 from devhelm.resources.api_keys import ApiKeys
@@ -20,6 +21,7 @@ from devhelm.resources.webhooks import Webhooks
 from devhelm.types import (
     AcquireDeployLockRequest,
     AddCustomDomainRequest,
+    AddIncidentUpdateRequest,
     AddResourceGroupMemberRequest,
     AdminAddSubscriberRequest,
     AffectedComponentStatus,
@@ -58,8 +60,8 @@ from devhelm.types import (
     IncidentStatus,
     IncidentUpdateCreatedBy,
     LinkedIncidentStatus,
-    MemberStatus,
     MembershipStatus,
+    MemberStatus,
     MonitorAssertionSeverity,
     MonitorCurrentStatus,
     MonitorDto,
@@ -123,6 +125,8 @@ __all__ = [
     # Pagination
     "Page",
     "CursorPage",
+    # Typing helpers
+    "RequestBody",
     # Resource classes
     "Monitors",
     "Incidents",
@@ -170,6 +174,7 @@ __all__ = [
     "TestChannelResult",
     "WebhookTestResult",
     # Request types
+    "AddIncidentUpdateRequest",
     "CreateStatusPageRequest",
     "UpdateStatusPageRequest",
     "CreateStatusPageComponentRequest",

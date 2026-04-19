@@ -29,14 +29,24 @@ from __future__ import annotations
 from devhelm._generated import (
     # ── DTOs ──────────────────────────────────────────────────────────────
     AcquireDeployLockRequest,
+    # ── Enums: unique names (no suffix collisions) ────────────────────────
+    Action,
     AddCustomDomainRequest,
+    AddIncidentUpdateRequest,
     AddResourceGroupMemberRequest,
     AdminAddSubscriberRequest,
+    AggregationType,
     AlertChannelDto,
+    AlertSensitivity,
     ApiKeyCreateResponse,
     ApiKeyDto,
     AssertionTestResultDto,
+    AssertionType,
+    AuthType,
+    ChangedVia,
+    ChannelType,
     CheckResultDto,  # noqa: F401
+    CompletionReason,
     CreateAlertChannelRequest,
     CreateApiKeyRequest,
     CreateEnvironmentRequest,
@@ -55,17 +65,30 @@ from devhelm._generated import (
     DashboardOverviewDto,
     DeployLockDto,
     EnvironmentDto,
+    EventType,
+    HealthThresholdType,
+    Impact,
     IncidentDetailDto,
     IncidentDto,
+    IncidentMode,
+    ManagedBy,
+    Method,
     MonitorDto,
     MonitorVersionDto,
     NotificationPolicyDto,
+    Operator,
+    OrgRole,
+    RecordType,
     ReorderComponentsRequest,
+    ResolutionReason,
     ResolveIncidentRequest,
     ResourceGroupDto,
     ResourceGroupMemberDto,  # noqa: F401
+    RoleOffered,
+    Scope,
     SecretDto,
     ServiceSubscriptionDto,
+    Source,
     StatusPageBranding,
     StatusPageComponentDto,
     StatusPageComponentGroupDto,
@@ -77,6 +100,9 @@ from devhelm._generated import (
     StatusPageSubscriberDto,
     TagDto,
     TestChannelResult,
+    ThresholdStatus,
+    Tier,
+    TierAvailability,
     UpdateAlertChannelRequest,
     UpdateEnvironmentRequest,
     UpdateMonitorRequest,
@@ -89,86 +115,108 @@ from devhelm._generated import (
     UpdateStatusPageRequest,
     UpdateTagRequest,
     UpdateWebhookEndpointRequest,
-    WebhookEndpointDto,
-    WebhookTestResult,
-    # ── Enums: unique names (no suffix collisions) ────────────────────────
-    Action,
-    AggregationType,
-    AlertSensitivity,
-    AssertionType,
-    AuthType,
-    ChangedVia,
-    ChannelType,
-    CompletionReason,
-    EventType,
-    HealthThresholdType,
-    Impact,
-    IncidentMode,
-    ManagedBy,
-    Method,
-    Operator,
-    OrgRole,
-    RecordType,
-    ResolutionReason,
-    RoleOffered,
-    Scope,
-    Source,
-    ThresholdStatus,
-    Tier,
-    TierAvailability,
     VerificationMethod,
     Visibility,
-    # ── Enums: ambiguous generated names → descriptive aliases ────────────
-    #
-    # Status enums
-    Status as AffectedComponentStatus,  # AffectedComponent.status
-    Status1 as AlertDeliveryStatus,  # AlertDeliveryDto.status
-    Status2 as MembershipStatus,  # ChangeStatusRequest.status
-    Status3 as StatusPageIncidentStatus,  # CreateStatusPageIncidentRequest.status
-    Status6 as IncidentStatus,  # IncidentDto.status
-    Status8 as LinkedIncidentStatus,  # LinkedStatusPageIncidentDto.status
-    Status9 as MemberStatus,  # MemberDto.status
-    Status10 as NotificationDispatchStatus,  # NotificationDispatchDto.status
-    Status11 as PublishIncidentStatus,  # PublishStatusPageIncidentRequest.status
-    Status12 as ResourceGroupHealthStatus,  # ResourceGroupHealthDto.status
-    Status14 as CustomDomainStatus,  # StatusPageCustomDomainDto.status
-    Status15 as StatusPageUpdateStatus,  # StatusPageIncidentUpdateDto.status
-    #
-    # Severity enums
-    Severity as AssertionSeverity,  # AssertionResultDto.severity
-    Severity3 as IncidentSeverity,  # CreateManualIncidentRequest.severity
-    Severity6 as MonitorAssertionSeverity,  # MonitorAssertionDto.severity
-    Severity7 as TriggerRuleSeverity,  # TriggerRule.severity
-    Severity8 as UpdateAssertionSeverity,  # UpdateAssertionRequest.severity
-    #
-    # Type enums
-    Type as ConfirmationPolicyType,  # ConfirmationPolicy.type
-    Type1 as MonitorType,  # CreateMonitorRequest.type
-    Type2 as StatusPageComponentType,  # CreateStatusPageComponentRequest.type
-    Type3 as MonitorDtoType,  # MonitorDto.type
-    Type5 as StatusPageComponentDtoType,  # StatusPageComponentDto.type
-    Type6 as TriggerRuleType,  # TriggerRule.type
-    #
-    # CurrentStatus enums
-    CurrentStatus as MonitorCurrentStatus,  # ResultSummaryDto.current_status
-    CurrentStatus1 as StatusPageComponentCurrentStatus,  # StatusPageComponentDto.current_status
+    WebhookEndpointDto,
+    WebhookTestResult,
+)
+from devhelm._generated import (
+    ComponentStatus as StatusPageIncidentComponentStatus,  # StatusPageIncidentComponentDto.component_status
+)
+from devhelm._generated import (
     #
     # CreatedBy enums
     CreatedBy as IncidentUpdateCreatedBy,  # IncidentUpdateDto.created_by
+)
+from devhelm._generated import (
     CreatedBy1 as StatusPageUpdateCreatedBy,  # StatusPageIncidentUpdateDto.created_by
+)
+from devhelm._generated import (
+    #
+    # CurrentStatus enums
+    CurrentStatus as MonitorCurrentStatus,  # ResultSummaryDto.current_status
+)
+from devhelm._generated import (
+    CurrentStatus1 as StatusPageComponentCurrentStatus,  # StatusPageComponentDto.current_status
+)
+from devhelm._generated import (
     #
     # NewStatus / OldStatus / OverallStatus / ComponentStatus — already
     # semi-descriptive but aliased for consistency with the rest of the SDK.
     NewStatus as IncidentNewStatus,  # AddIncidentUpdateRequest.new_status
-    OldStatus as IncidentOldStatus,  # IncidentUpdateDto.old_status
-    OverallStatus as StatusPageOverallStatus,  # StatusPageDto.overall_status
-    ComponentStatus as StatusPageIncidentComponentStatus,  # StatusPageIncidentComponentDto.component_status
 )
+from devhelm._generated import (
+    OldStatus as IncidentOldStatus,  # IncidentUpdateDto.old_status
+)
+from devhelm._generated import (
+    OverallStatus as StatusPageOverallStatus,  # StatusPageDto.overall_status
+)
+from devhelm._generated import (
+    #
+    # Severity enums
+    Severity as AssertionSeverity,  # AssertionResultDto.severity
+)
+from devhelm._generated import (
+    Severity3 as IncidentSeverity,  # CreateManualIncidentRequest.severity
+)
+from devhelm._generated import (
+    Severity6 as MonitorAssertionSeverity,  # MonitorAssertionDto.severity
+)
+from devhelm._generated import Severity7 as TriggerRuleSeverity  # TriggerRule.severity
+from devhelm._generated import (
+    Severity8 as UpdateAssertionSeverity,  # UpdateAssertionRequest.severity
+)
+from devhelm._generated import (
+    # ── Enums: ambiguous generated names → descriptive aliases ────────────
+    #
+    # Status enums
+    Status as AffectedComponentStatus,  # AffectedComponent.status
+)
+from devhelm._generated import Status1 as AlertDeliveryStatus  # AlertDeliveryDto.status
+from devhelm._generated import Status2 as MembershipStatus  # ChangeStatusRequest.status
+from devhelm._generated import (
+    Status3 as StatusPageIncidentStatus,  # CreateStatusPageIncidentRequest.status
+)
+from devhelm._generated import Status6 as IncidentStatus  # IncidentDto.status
+from devhelm._generated import (
+    Status8 as LinkedIncidentStatus,  # LinkedStatusPageIncidentDto.status
+)
+from devhelm._generated import Status9 as MemberStatus  # MemberDto.status
+from devhelm._generated import (
+    Status10 as NotificationDispatchStatus,  # NotificationDispatchDto.status
+)
+from devhelm._generated import (
+    Status11 as PublishIncidentStatus,  # PublishStatusPageIncidentRequest.status
+)
+from devhelm._generated import (
+    Status12 as ResourceGroupHealthStatus,  # ResourceGroupHealthDto.status
+)
+from devhelm._generated import (
+    Status14 as CustomDomainStatus,  # StatusPageCustomDomainDto.status
+)
+from devhelm._generated import (
+    Status15 as StatusPageUpdateStatus,  # StatusPageIncidentUpdateDto.status
+)
+from devhelm._generated import (
+    #
+    # Type enums
+    Type as ConfirmationPolicyType,  # ConfirmationPolicy.type
+)
+from devhelm._generated import Type1 as MonitorType  # CreateMonitorRequest.type
+from devhelm._generated import (
+    Type2 as StatusPageComponentType,  # CreateStatusPageComponentRequest.type
+)
+from devhelm._generated import Type3 as MonitorDtoType  # MonitorDto.type
+from devhelm._generated import (
+    Type5 as StatusPageComponentDtoType,  # StatusPageComponentDto.type
+)
+from devhelm._generated import Type6 as TriggerRuleType  # TriggerRule.type
 
 __all__ = [
     # ── DTOs ──────────────────────────────────────────────────────────────
     "AcquireDeployLockRequest",
     "AddCustomDomainRequest",
+    "AddIncidentUpdateRequest",
     "AddResourceGroupMemberRequest",
     "AdminAddSubscriberRequest",
     "AlertChannelDto",

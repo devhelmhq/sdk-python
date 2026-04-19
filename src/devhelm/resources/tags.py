@@ -5,7 +5,7 @@ import httpx
 from devhelm._generated import CreateTagRequest, TagDto, UpdateTagRequest
 from devhelm._http import api_delete, api_get, api_post, api_put, path_param
 from devhelm._pagination import Page, fetch_all_pages, fetch_page
-from devhelm._validation import parse_single, validate_request
+from devhelm._validation import RequestBody, parse_single, validate_request
 
 
 class Tags:
@@ -30,14 +30,14 @@ class Tags:
             f"GET /api/v1/tags/{id}",
         )
 
-    def create(self, body: CreateTagRequest) -> TagDto:
+    def create(self, body: RequestBody[CreateTagRequest]) -> TagDto:
         """Create a tag."""
         body = validate_request(CreateTagRequest, body, "tags.create")
         return parse_single(
             TagDto, api_post(self._client, "/api/v1/tags", body), "POST /api/v1/tags"
         )
 
-    def update(self, id: int | str, body: UpdateTagRequest) -> TagDto:
+    def update(self, id: int | str, body: RequestBody[UpdateTagRequest]) -> TagDto:
         """Update a tag."""
         body = validate_request(UpdateTagRequest, body, "tags.update")
         return parse_single(
