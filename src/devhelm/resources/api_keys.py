@@ -5,7 +5,7 @@ import httpx
 from devhelm._generated import ApiKeyCreateResponse, ApiKeyDto, CreateApiKeyRequest
 from devhelm._http import api_delete, api_post, path_param
 from devhelm._pagination import Page, fetch_all_pages, fetch_page
-from devhelm._validation import parse_single
+from devhelm._validation import parse_single, validate_request
 
 
 class ApiKeys:
@@ -24,6 +24,7 @@ class ApiKeys:
 
     def create(self, body: CreateApiKeyRequest) -> ApiKeyCreateResponse:
         """Create an API key. Returns the key value (shown only once)."""
+        body = validate_request(CreateApiKeyRequest, body, "apiKeys.create")
         return parse_single(
             ApiKeyCreateResponse,
             api_post(self._client, "/api/v1/api-keys", body),

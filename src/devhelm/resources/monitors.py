@@ -18,7 +18,7 @@ from devhelm._pagination import (
     fetch_cursor_page,
     fetch_page,
 )
-from devhelm._validation import parse_single
+from devhelm._validation import parse_single, validate_request
 
 
 class Monitors:
@@ -45,6 +45,7 @@ class Monitors:
 
     def create(self, body: CreateMonitorRequest) -> MonitorDto:
         """Create a new monitor."""
+        body = validate_request(CreateMonitorRequest, body, "monitors.create")
         return parse_single(
             MonitorDto,
             api_post(self._client, "/api/v1/monitors", body),
@@ -53,6 +54,7 @@ class Monitors:
 
     def update(self, id: int | str, body: UpdateMonitorRequest) -> MonitorDto:
         """Update an existing monitor."""
+        body = validate_request(UpdateMonitorRequest, body, "monitors.update")
         return parse_single(
             MonitorDto,
             api_put(self._client, f"/api/v1/monitors/{path_param(id)}", body),

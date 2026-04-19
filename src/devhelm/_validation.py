@@ -1,4 +1,4 @@
-"""Pydantic-based response validation for API responses.
+"""Pydantic-based validation for API requests and responses.
 
 Parses raw JSON dicts through generated Pydantic models, catching
 shape mismatches before they propagate as silent bugs.
@@ -13,6 +13,27 @@ from pydantic import BaseModel, TypeAdapter, ValidationError
 from devhelm._errors import DevhelmError
 
 M = TypeVar("M", bound=BaseModel)
+
+
+def validate_request(model_class: type[M], body: Any, context: str = "") -> M:
+    """Validate a request body against its Pydantic model before sending.
+
+    If *body* is already an instance of *model_class* it passes through.
+    Dicts and other mappings are coerced through ``model_validate``,
+    raising ``DevhelmError`` on constraint violations.
+    """
+    if isinstance(body, model_class):
+        return body
+    try:
+        return model_class.model_validate(body)
+    except ValidationError as e:
+        ctx = f" ({context})" if context else ""
+        raise DevhelmError(
+            "VALIDATION",
+            f"Request validation failed{ctx}: {e.error_count()} error(s)",
+            0,
+            str(e),
+        ) from e
 
 
 def parse_model(model_class: type[M], data: Any, context: str = "") -> M:

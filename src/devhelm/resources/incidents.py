@@ -10,7 +10,7 @@ from devhelm._generated import (
 )
 from devhelm._http import api_delete, api_get, api_post, path_param
 from devhelm._pagination import Page, fetch_all_pages, fetch_page
-from devhelm._validation import parse_single
+from devhelm._validation import parse_single, validate_request
 
 
 class Incidents:
@@ -37,6 +37,7 @@ class Incidents:
 
     def create(self, body: CreateManualIncidentRequest) -> IncidentDetailDto:
         """Create a manual incident."""
+        body = validate_request(CreateManualIncidentRequest, body, "incidents.create")
         return parse_single(
             IncidentDetailDto,
             api_post(self._client, "/api/v1/incidents", body),
@@ -47,6 +48,8 @@ class Incidents:
         self, id: int | str, body: ResolveIncidentRequest | None = None
     ) -> IncidentDetailDto:
         """Resolve an incident."""
+        if body is not None:
+            body = validate_request(ResolveIncidentRequest, body, "incidents.resolve")
         return parse_single(
             IncidentDetailDto,
             api_post(self._client, f"/api/v1/incidents/{path_param(id)}/resolve", body),

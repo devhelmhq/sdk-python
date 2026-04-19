@@ -5,7 +5,7 @@ import httpx
 from devhelm._generated import CreateSecretRequest, SecretDto, UpdateSecretRequest
 from devhelm._http import api_delete, api_post, api_put, path_param
 from devhelm._pagination import Page, fetch_all_pages, fetch_page
-from devhelm._validation import parse_single
+from devhelm._validation import parse_single, validate_request
 
 
 class Secrets:
@@ -24,6 +24,7 @@ class Secrets:
 
     def create(self, body: CreateSecretRequest) -> SecretDto:
         """Create a secret."""
+        body = validate_request(CreateSecretRequest, body, "secrets.create")
         return parse_single(
             SecretDto,
             api_post(self._client, "/api/v1/secrets", body),
@@ -32,6 +33,7 @@ class Secrets:
 
     def update(self, key: str, body: UpdateSecretRequest) -> SecretDto:
         """Update a secret by key."""
+        body = validate_request(UpdateSecretRequest, body, "secrets.update")
         return parse_single(
             SecretDto,
             api_put(self._client, f"/api/v1/secrets/{path_param(key)}", body),

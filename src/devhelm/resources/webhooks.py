@@ -10,7 +10,7 @@ from devhelm._generated import (
 )
 from devhelm._http import api_delete, api_get, api_post, api_put, path_param
 from devhelm._pagination import Page, fetch_all_pages, fetch_page
-from devhelm._validation import parse_single
+from devhelm._validation import parse_single, validate_request
 
 
 class Webhooks:
@@ -39,6 +39,7 @@ class Webhooks:
 
     def create(self, body: CreateWebhookEndpointRequest) -> WebhookEndpointDto:
         """Create a webhook endpoint."""
+        body = validate_request(CreateWebhookEndpointRequest, body, "webhooks.create")
         return parse_single(
             WebhookEndpointDto,
             api_post(self._client, "/api/v1/webhooks", body),
@@ -49,6 +50,7 @@ class Webhooks:
         self, id: int | str, body: UpdateWebhookEndpointRequest
     ) -> WebhookEndpointDto:
         """Update a webhook endpoint."""
+        body = validate_request(UpdateWebhookEndpointRequest, body, "webhooks.update")
         return parse_single(
             WebhookEndpointDto,
             api_put(self._client, f"/api/v1/webhooks/{path_param(id)}", body),

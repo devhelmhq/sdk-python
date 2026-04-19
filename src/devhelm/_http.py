@@ -65,9 +65,20 @@ def path_param(value: str | int) -> str:
 
 
 def _serialize_body(body: Any) -> Any:
-    """Convert a Pydantic model or dict to a JSON-serializable dict."""
+    """Convert a Pydantic model to a JSON-serializable dict.
+
+    Rejects raw dicts to prevent callers from bypassing Pydantic
+    validation. All request bodies must be validated model instances.
+    """
     if isinstance(body, BaseModel):
         return body.model_dump(mode="json", by_alias=True, exclude_none=True)
+    if isinstance(body, dict):
+        raise DevhelmError(
+            "VALIDATION",
+            "Raw dicts are not accepted as request bodies. "
+            "Use the generated Pydantic model instead.",
+            0,
+        )
     return body
 
 

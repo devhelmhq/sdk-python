@@ -178,11 +178,14 @@ class TestSerializeBody:
         result = _serialize_body(item)
         assert result == {"myField": "test"}
 
-    def test_dict_passthrough(self) -> None:
+    def test_dict_rejected(self) -> None:
+        import pytest
+
+        from devhelm._errors import DevhelmError
         from devhelm._http import _serialize_body
 
-        d = {"key": "value"}
-        assert _serialize_body(d) is d
+        with pytest.raises(DevhelmError, match="Raw dicts are not accepted"):
+            _serialize_body({"key": "value"})
 
     def test_none_passthrough(self) -> None:
         from devhelm._http import _serialize_body
