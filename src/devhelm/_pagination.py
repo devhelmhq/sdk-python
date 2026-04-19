@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 from dataclasses import dataclass, field
-from typing import Any, Generic, TypeVar
+from typing import Any, Generic, TypeVar, cast
 
 import httpx
 from pydantic import BaseModel
@@ -66,8 +66,8 @@ def fetch_page(
         data=items,
         has_next=bool(resp.get("hasNext")) if isinstance(resp, dict) else False,
         has_prev=bool(resp.get("hasPrev")) if isinstance(resp, dict) else False,
-        total_elements=resp.get("totalElements") if isinstance(resp, dict) else None,
-        total_pages=resp.get("totalPages") if isinstance(resp, dict) else None,
+        total_elements=cast(int | None, resp.get("totalElements")) if isinstance(resp, dict) else None,
+        total_pages=cast(int | None, resp.get("totalPages")) if isinstance(resp, dict) else None,
     )
 
 
@@ -90,6 +90,6 @@ def fetch_cursor_page(
     items = parse_list(model_class, raw_items, f"GET {path}")
     return CursorPage(
         data=items,
-        next_cursor=(resp.get("nextCursor") if isinstance(resp, dict) else None),
+        next_cursor=cast(str | None, resp.get("nextCursor")) if isinstance(resp, dict) else None,
         has_more=bool(resp.get("hasMore")) if isinstance(resp, dict) else False,
     )

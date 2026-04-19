@@ -6,28 +6,8 @@ import pytest
 from pydantic import BaseModel, Field
 
 from devhelm._errors import DevhelmError
-from devhelm._http import DevhelmConfig, build_client, path_param, unwrap_single
+from devhelm._http import DevhelmConfig, build_client, path_param
 from devhelm._validation import parse_list, parse_model, parse_single
-
-# ---------- unwrap_single (raw JSON envelope) ----------
-
-
-class TestUnwrapSingle:
-    def test_unwraps_data_key(self) -> None:
-        assert unwrap_single({"data": {"id": 1}}) == {"id": 1}
-
-    def test_returns_bare_value(self) -> None:
-        assert unwrap_single({"id": 1}) == {"id": 1}
-
-    def test_unwraps_null_data(self) -> None:
-        assert unwrap_single({"data": None}) is None
-
-    def test_unwraps_nested_data(self) -> None:
-        result = unwrap_single({"data": {"data": "inner"}})
-        assert result == {"data": "inner"}
-
-    def test_non_dict_passthrough(self) -> None:
-        assert unwrap_single([1, 2, 3]) == [1, 2, 3]
 
 
 # ---------- path_param ----------
