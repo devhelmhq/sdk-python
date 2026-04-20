@@ -8,6 +8,7 @@ fields, invalid format patterns, and null for non-nullable fields.
 
 from __future__ import annotations
 
+from typing import Any
 from uuid import uuid4
 
 import pytest
@@ -92,8 +93,8 @@ NOW = "2026-01-01T00:00:00Z"
 # ---------------------------------------------------------------------------
 
 
-def _monitor(**kw: object) -> dict:
-    base: dict = {
+def _monitor(**kw: object) -> dict[str, Any]:
+    base: dict[str, Any] = {
         "id": UID,
         "organizationId": 1,
         "name": "M",
@@ -110,8 +111,8 @@ def _monitor(**kw: object) -> dict:
     return base
 
 
-def _incident(**kw: object) -> dict:
-    base: dict = {
+def _incident(**kw: object) -> dict[str, Any]:
+    base: dict[str, Any] = {
         "id": UID,
         "organizationId": 1,
         "source": "MANUAL",
@@ -128,8 +129,8 @@ def _incident(**kw: object) -> dict:
     return base
 
 
-def _alert_channel(**kw: object) -> dict:
-    base: dict = {
+def _alert_channel(**kw: object) -> dict[str, Any]:
+    base: dict[str, Any] = {
         "id": UID,
         "name": "ch",
         "channelType": "slack",
@@ -140,8 +141,8 @@ def _alert_channel(**kw: object) -> dict:
     return base
 
 
-def _api_key(**kw: object) -> dict:
-    base: dict = {
+def _api_key(**kw: object) -> dict[str, Any]:
+    base: dict[str, Any] = {
         "id": 1,
         "name": "k",
         "key": "dh_live_x",
@@ -152,8 +153,8 @@ def _api_key(**kw: object) -> dict:
     return base
 
 
-def _environment(**kw: object) -> dict:
-    base: dict = {
+def _environment(**kw: object) -> dict[str, Any]:
+    base: dict[str, Any] = {
         "id": UID,
         "orgId": 1,
         "name": "prod",
@@ -168,8 +169,8 @@ def _environment(**kw: object) -> dict:
     return base
 
 
-def _secret(**kw: object) -> dict:
-    base: dict = {
+def _secret(**kw: object) -> dict[str, Any]:
+    base: dict[str, Any] = {
         "id": UID,
         "key": "MY_KEY",
         "dekVersion": 1,
@@ -181,8 +182,8 @@ def _secret(**kw: object) -> dict:
     return base
 
 
-def _tag(**kw: object) -> dict:
-    base: dict = {
+def _tag(**kw: object) -> dict[str, Any]:
+    base: dict[str, Any] = {
         "id": UID,
         "organizationId": 1,
         "name": "prod",
@@ -194,8 +195,8 @@ def _tag(**kw: object) -> dict:
     return base
 
 
-def _webhook(**kw: object) -> dict:
-    base: dict = {
+def _webhook(**kw: object) -> dict[str, Any]:
+    base: dict[str, Any] = {
         "id": UID,
         "url": "https://hook.example.com",
         "subscribedEvents": ["monitor.created"],
@@ -208,14 +209,19 @@ def _webhook(**kw: object) -> dict:
     return base
 
 
-def _deploy_lock(**kw: object) -> dict:
-    base: dict = {"id": UID, "lockedBy": "ci-job-42", "lockedAt": NOW, "expiresAt": NOW}
+def _deploy_lock(**kw: object) -> dict[str, Any]:
+    base: dict[str, Any] = {
+        "id": UID,
+        "lockedBy": "ci-job-42",
+        "lockedAt": NOW,
+        "expiresAt": NOW,
+    }
     base.update(kw)
     return base
 
 
-def _resource_group(**kw: object) -> dict:
-    base: dict = {
+def _resource_group(**kw: object) -> dict[str, Any]:
+    base: dict[str, Any] = {
         "id": UID,
         "organizationId": 1,
         "name": "rg",
@@ -234,8 +240,8 @@ def _resource_group(**kw: object) -> dict:
     return base
 
 
-def _notification_policy(**kw: object) -> dict:
-    base: dict = {
+def _notification_policy(**kw: object) -> dict[str, Any]:
+    base: dict[str, Any] = {
         "id": UID,
         "organizationId": 1,
         "name": "np",
@@ -250,8 +256,8 @@ def _notification_policy(**kw: object) -> dict:
     return base
 
 
-def _status_page(**kw: object) -> dict:
-    base: dict = {
+def _status_page(**kw: object) -> dict[str, Any]:
+    base: dict[str, Any] = {
         "id": UID,
         "organizationId": 1,
         "workspaceId": 1,
@@ -268,8 +274,8 @@ def _status_page(**kw: object) -> dict:
     return base
 
 
-def _sp_component(**kw: object) -> dict:
-    base: dict = {
+def _sp_component(**kw: object) -> dict[str, Any]:
+    base: dict[str, Any] = {
         "id": UID,
         "statusPageId": UID,
         "name": "API",
@@ -286,8 +292,8 @@ def _sp_component(**kw: object) -> dict:
     return base
 
 
-def _sp_group(**kw: object) -> dict:
-    base: dict = {
+def _sp_group(**kw: object) -> dict[str, Any]:
+    base: dict[str, Any] = {
         "id": UID,
         "statusPageId": UID,
         "name": "Infra",
@@ -301,8 +307,8 @@ def _sp_group(**kw: object) -> dict:
     return base
 
 
-def _sp_incident(**kw: object) -> dict:
-    base: dict = {
+def _sp_incident(**kw: object) -> dict[str, Any]:
+    base: dict[str, Any] = {
         "id": UID,
         "statusPageId": UID,
         "title": "Down",
@@ -318,8 +324,8 @@ def _sp_incident(**kw: object) -> dict:
     return base
 
 
-def _sp_incident_update(**kw: object) -> dict:
-    base: dict = {
+def _sp_incident_update(**kw: object) -> dict[str, Any]:
+    base: dict[str, Any] = {
         "id": UID,
         "status": "INVESTIGATING",
         "body": "Looking into it",
@@ -330,14 +336,19 @@ def _sp_incident_update(**kw: object) -> dict:
     return base
 
 
-def _sp_subscriber(**kw: object) -> dict:
-    base: dict = {"id": UID, "email": "a@b.com", "confirmed": True, "createdAt": NOW}
+def _sp_subscriber(**kw: object) -> dict[str, Any]:
+    base: dict[str, Any] = {
+        "id": UID,
+        "email": "a@b.com",
+        "confirmed": True,
+        "createdAt": NOW,
+    }
     base.update(kw)
     return base
 
 
-def _sp_custom_domain(**kw: object) -> dict:
-    base: dict = {
+def _sp_custom_domain(**kw: object) -> dict[str, Any]:
+    base: dict[str, Any] = {
         "id": UID,
         "hostname": "status.example.com",
         "status": "ACTIVE",
@@ -352,8 +363,8 @@ def _sp_custom_domain(**kw: object) -> dict:
     return base
 
 
-def _sp_incident_component(**kw: object) -> dict:
-    base: dict = {
+def _sp_incident_component(**kw: object) -> dict[str, Any]:
+    base: dict[str, Any] = {
         "statusPageComponentId": UID,
         "componentStatus": "OPERATIONAL",
         "componentName": "API",
@@ -362,14 +373,19 @@ def _sp_incident_component(**kw: object) -> dict:
     return base
 
 
-def _check_result(**kw: object) -> dict:
-    base: dict = {"id": UID, "timestamp": NOW, "region": "us-east", "passed": True}
+def _check_result(**kw: object) -> dict[str, Any]:
+    base: dict[str, Any] = {
+        "id": UID,
+        "timestamp": NOW,
+        "region": "us-east",
+        "passed": True,
+    }
     base.update(kw)
     return base
 
 
-def _incident_policy(**kw: object) -> dict:
-    base: dict = {
+def _incident_policy(**kw: object) -> dict[str, Any]:
+    base: dict[str, Any] = {
         "id": UID,
         "monitorId": UID,
         "triggerRules": [
@@ -392,8 +408,8 @@ def _incident_policy(**kw: object) -> dict:
     return base
 
 
-def _monitor_version(**kw: object) -> dict:
-    base: dict = {
+def _monitor_version(**kw: object) -> dict[str, Any]:
+    base: dict[str, Any] = {
         "id": UID,
         "monitorId": UID,
         "version": 1,
@@ -405,7 +421,7 @@ def _monitor_version(**kw: object) -> dict:
     return base
 
 
-def _del(d: dict, key: str) -> dict:
+def _del(d: dict[str, Any], key: str) -> dict[str, Any]:
     c = dict(d)
     del c[key]
     return c
@@ -904,44 +920,24 @@ class TestCreateNotificationPolicyRequestNegative:
                 }
             )
 
-    def test_missing_match_rules(self) -> None:
-        with pytest.raises(ValidationError, match="matchRules"):
-            CreateNotificationPolicyRequest.model_validate(
-                {
-                    "name": "np",
-                    "escalation": {"steps": [{"delayMinutes": 0, "channelIds": [UID]}]},
-                    "enabled": True,
-                    "priority": 0,
-                }
-            )
-
     def test_missing_escalation(self) -> None:
         with pytest.raises(ValidationError, match="escalation"):
             CreateNotificationPolicyRequest.model_validate(
                 {"name": "np", "matchRules": [], "enabled": True, "priority": 0}
             )
 
-    def test_missing_enabled(self) -> None:
-        with pytest.raises(ValidationError, match="enabled"):
-            CreateNotificationPolicyRequest.model_validate(
-                {
-                    "name": "np",
-                    "matchRules": [],
-                    "escalation": {"steps": [{"delayMinutes": 0, "channelIds": [UID]}]},
-                    "priority": 0,
-                }
-            )
-
-    def test_missing_priority(self) -> None:
-        with pytest.raises(ValidationError, match="priority"):
-            CreateNotificationPolicyRequest.model_validate(
-                {
-                    "name": "np",
-                    "matchRules": [],
-                    "escalation": {"steps": [{"delayMinutes": 0, "channelIds": [UID]}]},
-                    "enabled": True,
-                }
-            )
+    def test_missing_optional_fields_accepted(self) -> None:
+        """matchRules / enabled / priority are optional in the spec; only name +
+        escalation are required. The model must accept payloads without them."""
+        model = CreateNotificationPolicyRequest.model_validate(
+            {
+                "name": "np",
+                "escalation": {"steps": [{"delayMinutes": 0, "channelIds": [UID]}]},
+            }
+        )
+        assert model.match_rules is None
+        assert model.enabled is None or model.enabled is True
+        assert model.priority is None or model.priority == 0
 
     def test_null_name(self) -> None:
         with pytest.raises(ValidationError):
@@ -2781,13 +2777,15 @@ class TestComponentPositionNegative:
 
 
 class TestResolveIncidentRequestNegative:
-    def test_missing_body(self) -> None:
-        with pytest.raises(ValidationError, match="body"):
-            ResolveIncidentRequest.model_validate({})
+    def test_missing_body_accepted(self) -> None:
+        """body is optional (nullable) — empty payload should be accepted."""
+        model = ResolveIncidentRequest.model_validate({})
+        assert model.body is None
 
-    def test_null_body(self) -> None:
-        with pytest.raises(ValidationError):
-            ResolveIncidentRequest.model_validate({"body": None})
+    def test_null_body_accepted(self) -> None:
+        """Explicit null body matches the spec's nullable=true and should be ok."""
+        model = ResolveIncidentRequest.model_validate({"body": None})
+        assert model.body is None
 
     def test_wrong_body_type(self) -> None:
         with pytest.raises(ValidationError):

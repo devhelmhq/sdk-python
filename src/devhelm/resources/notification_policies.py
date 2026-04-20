@@ -9,7 +9,7 @@ from devhelm._generated import (
 )
 from devhelm._http import api_delete, api_get, api_post, api_put, path_param
 from devhelm._pagination import Page, fetch_all_pages, fetch_page
-from devhelm._validation import parse_single
+from devhelm._validation import RequestBody, parse_single, validate_request
 
 
 class NotificationPolicies:
@@ -42,8 +42,13 @@ class NotificationPolicies:
             f"GET /api/v1/notification-policies/{id}",
         )
 
-    def create(self, body: CreateNotificationPolicyRequest) -> NotificationPolicyDto:
+    def create(
+        self, body: RequestBody[CreateNotificationPolicyRequest]
+    ) -> NotificationPolicyDto:
         """Create a notification policy."""
+        body = validate_request(
+            CreateNotificationPolicyRequest, body, "notificationPolicies.create"
+        )
         return parse_single(
             NotificationPolicyDto,
             api_post(self._client, "/api/v1/notification-policies", body),
@@ -51,9 +56,12 @@ class NotificationPolicies:
         )
 
     def update(
-        self, id: int | str, body: UpdateNotificationPolicyRequest
+        self, id: int | str, body: RequestBody[UpdateNotificationPolicyRequest]
     ) -> NotificationPolicyDto:
         """Update a notification policy."""
+        body = validate_request(
+            UpdateNotificationPolicyRequest, body, "notificationPolicies.update"
+        )
         return parse_single(
             NotificationPolicyDto,
             api_put(
@@ -68,6 +76,4 @@ class NotificationPolicies:
 
     def test(self, id: int | str) -> None:
         """Send a test dispatch to verify policy routing."""
-        api_post(
-            self._client, f"/api/v1/notification-policies/{path_param(id)}/test", {}
-        )
+        api_post(self._client, f"/api/v1/notification-policies/{path_param(id)}/test")

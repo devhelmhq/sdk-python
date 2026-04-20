@@ -9,7 +9,7 @@ from devhelm._generated import (
 )
 from devhelm._http import api_delete, api_get, api_post, api_put, path_param
 from devhelm._pagination import Page, fetch_all_pages, fetch_page
-from devhelm._validation import parse_single
+from devhelm._validation import RequestBody, parse_single, validate_request
 
 
 class Environments:
@@ -36,16 +36,20 @@ class Environments:
             f"GET /api/v1/environments/{slug}",
         )
 
-    def create(self, body: CreateEnvironmentRequest) -> EnvironmentDto:
+    def create(self, body: RequestBody[CreateEnvironmentRequest]) -> EnvironmentDto:
         """Create an environment."""
+        body = validate_request(CreateEnvironmentRequest, body, "environments.create")
         return parse_single(
             EnvironmentDto,
             api_post(self._client, "/api/v1/environments", body),
             "POST /api/v1/environments",
         )
 
-    def update(self, slug: str, body: UpdateEnvironmentRequest) -> EnvironmentDto:
+    def update(
+        self, slug: str, body: RequestBody[UpdateEnvironmentRequest]
+    ) -> EnvironmentDto:
         """Update an environment."""
+        body = validate_request(UpdateEnvironmentRequest, body, "environments.update")
         return parse_single(
             EnvironmentDto,
             api_put(self._client, f"/api/v1/environments/{path_param(slug)}", body),

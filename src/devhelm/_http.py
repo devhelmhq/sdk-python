@@ -64,46 +64,61 @@ def path_param(value: str | int) -> str:
     return quote(str(value), safe="")
 
 
-def _serialize_body(body: Any) -> Any:
-    """Convert a Pydantic model or dict to a JSON-serializable dict."""
+_JsonResponse = dict[str, object] | list[object] | None
+
+
+def _serialize_body(
+    body: BaseModel | dict[str, object] | None,
+) -> dict[str, object] | None:
+    """Convert a Pydantic model to a JSON-serializable dict.
+
+    Rejects raw dicts to prevent callers from bypassing Pydantic
+    validation. All request bodies must be validated model instances.
+    """
     if isinstance(body, BaseModel):
         return body.model_dump(mode="json", by_alias=True, exclude_none=True)
+    if isinstance(body, dict):
+        raise DevhelmError(
+            "VALIDATION",
+            "Raw dicts are not accepted as request bodies. "
+            "Use the generated Pydantic model instead.",
+            0,
+        )
     return body
 
 
-def checked_fetch(response: httpx.Response) -> Any:
+def checked_fetch(response: httpx.Response) -> _JsonResponse:
     """Check an httpx response and raise DevhelmError on failure."""
     if response.is_success:
         if response.status_code == 204:
             return None
-        return response.json()
+        return response.json()  # type: ignore[no-any-return]
     raise error_from_response(response.status_code, response.text)
-
-
-def unwrap_single(resp: Any) -> Any:
-    """Unwrap a SingleValueResponse envelope: {data: T} -> T."""
-    if isinstance(resp, dict) and "data" in resp:
-        return resp["data"]
-    return resp
 
 
 def api_get(
     client: httpx.Client, path: str, params: dict[str, Any] | None = None
-) -> Any:
+) -> _JsonResponse:
     return checked_fetch(client.get(path, params=params))
 
 
-def api_post(client: httpx.Client, path: str, body: Any = None) -> Any:
+def api_post(
+    client: httpx.Client, path: str, body: BaseModel | dict[str, object] | None = None
+) -> _JsonResponse:
     if body is None:
         return checked_fetch(client.post(path))
     return checked_fetch(client.post(path, json=_serialize_body(body)))
 
 
-def api_put(client: httpx.Client, path: str, body: Any) -> Any:
+def api_put(
+    client: httpx.Client, path: str, body: BaseModel | dict[str, object] | None
+) -> _JsonResponse:
     return checked_fetch(client.put(path, json=_serialize_body(body)))
 
 
-def api_patch(client: httpx.Client, path: str, body: Any) -> Any:
+def api_patch(
+    client: httpx.Client, path: str, body: BaseModel | dict[str, object] | None
+) -> _JsonResponse:
     return checked_fetch(client.patch(path, json=_serialize_body(body)))
 
 

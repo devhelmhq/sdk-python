@@ -4,7 +4,7 @@ import httpx
 
 from devhelm._generated import AcquireDeployLockRequest, DeployLockDto
 from devhelm._http import api_delete, api_get, api_post, path_param
-from devhelm._validation import parse_model, parse_single
+from devhelm._validation import RequestBody, parse_model, parse_single, validate_request
 
 
 class DeployLock:
@@ -13,8 +13,9 @@ class DeployLock:
     def __init__(self, client: httpx.Client) -> None:
         self._client = client
 
-    def acquire(self, body: AcquireDeployLockRequest) -> DeployLockDto:
+    def acquire(self, body: RequestBody[AcquireDeployLockRequest]) -> DeployLockDto:
         """Acquire a deploy lock."""
+        body = validate_request(AcquireDeployLockRequest, body, "deployLock.acquire")
         return parse_single(
             DeployLockDto,
             api_post(self._client, "/api/v1/deploy/lock", body),

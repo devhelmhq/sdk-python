@@ -11,7 +11,7 @@ from devhelm._generated import (
 )
 from devhelm._http import api_delete, api_get, api_post, api_put, path_param
 from devhelm._pagination import Page, fetch_all_pages, fetch_page
-from devhelm._validation import parse_single
+from devhelm._validation import RequestBody, parse_single, validate_request
 
 
 class ResourceGroups:
@@ -40,8 +40,11 @@ class ResourceGroups:
             f"GET /api/v1/resource-groups/{id}",
         )
 
-    def create(self, body: CreateResourceGroupRequest) -> ResourceGroupDto:
+    def create(self, body: RequestBody[CreateResourceGroupRequest]) -> ResourceGroupDto:
         """Create a resource group."""
+        body = validate_request(
+            CreateResourceGroupRequest, body, "resourceGroups.create"
+        )
         return parse_single(
             ResourceGroupDto,
             api_post(self._client, "/api/v1/resource-groups", body),
@@ -49,9 +52,12 @@ class ResourceGroups:
         )
 
     def update(
-        self, id: int | str, body: UpdateResourceGroupRequest
+        self, id: int | str, body: RequestBody[UpdateResourceGroupRequest]
     ) -> ResourceGroupDto:
         """Update a resource group."""
+        body = validate_request(
+            UpdateResourceGroupRequest, body, "resourceGroups.update"
+        )
         return parse_single(
             ResourceGroupDto,
             api_put(self._client, f"/api/v1/resource-groups/{path_param(id)}", body),
@@ -63,9 +69,12 @@ class ResourceGroups:
         api_delete(self._client, f"/api/v1/resource-groups/{path_param(id)}")
 
     def add_member(
-        self, group_id: int | str, body: AddResourceGroupMemberRequest
+        self, group_id: int | str, body: RequestBody[AddResourceGroupMemberRequest]
     ) -> ResourceGroupMemberDto:
         """Add a member to a resource group."""
+        body = validate_request(
+            AddResourceGroupMemberRequest, body, "resourceGroups.addMember"
+        )
         return parse_single(
             ResourceGroupMemberDto,
             api_post(

@@ -24,7 +24,7 @@ from devhelm._generated import (
 )
 from devhelm._http import api_delete, api_get, api_post, api_put, path_param
 from devhelm._pagination import Page, fetch_all_pages, fetch_page
-from devhelm._validation import parse_single
+from devhelm._validation import RequestBody, parse_single, validate_request
 
 _BASE = "/api/v1/status-pages"
 
@@ -46,9 +46,12 @@ class _Components:
         )
 
     def create(
-        self, page_id: int | str, body: CreateStatusPageComponentRequest
+        self, page_id: int | str, body: RequestBody[CreateStatusPageComponentRequest]
     ) -> StatusPageComponentDto:
         """Add a component to a status page."""
+        body = validate_request(
+            CreateStatusPageComponentRequest, body, "statusPages.components.create"
+        )
         return parse_single(
             StatusPageComponentDto,
             api_post(self._client, f"{_page_path(page_id)}/components", body),
@@ -59,9 +62,12 @@ class _Components:
         self,
         page_id: int | str,
         component_id: int | str,
-        body: UpdateStatusPageComponentRequest,
+        body: RequestBody[UpdateStatusPageComponentRequest],
     ) -> StatusPageComponentDto:
         """Update a component."""
+        body = validate_request(
+            UpdateStatusPageComponentRequest, body, "statusPages.components.update"
+        )
         return parse_single(
             StatusPageComponentDto,
             api_put(
@@ -78,8 +84,13 @@ class _Components:
             self._client, f"{_page_path(page_id)}/components/{path_param(component_id)}"
         )
 
-    def reorder(self, page_id: int | str, body: ReorderComponentsRequest) -> None:
+    def reorder(
+        self, page_id: int | str, body: RequestBody[ReorderComponentsRequest]
+    ) -> None:
         """Batch reorder components."""
+        body = validate_request(
+            ReorderComponentsRequest, body, "statusPages.components.reorder"
+        )
         api_put(self._client, f"{_page_path(page_id)}/components/reorder", body)
 
 
@@ -96,9 +107,14 @@ class _Groups:
         )
 
     def create(
-        self, page_id: int | str, body: CreateStatusPageComponentGroupRequest
+        self,
+        page_id: int | str,
+        body: RequestBody[CreateStatusPageComponentGroupRequest],
     ) -> StatusPageComponentGroupDto:
         """Create a component group."""
+        body = validate_request(
+            CreateStatusPageComponentGroupRequest, body, "statusPages.groups.create"
+        )
         return parse_single(
             StatusPageComponentGroupDto,
             api_post(self._client, f"{_page_path(page_id)}/groups", body),
@@ -109,9 +125,12 @@ class _Groups:
         self,
         page_id: int | str,
         group_id: int | str,
-        body: UpdateStatusPageComponentGroupRequest,
+        body: RequestBody[UpdateStatusPageComponentGroupRequest],
     ) -> StatusPageComponentGroupDto:
         """Update a component group."""
+        body = validate_request(
+            UpdateStatusPageComponentGroupRequest, body, "statusPages.groups.update"
+        )
         return parse_single(
             StatusPageComponentGroupDto,
             api_put(
@@ -157,9 +176,12 @@ class _Incidents:
         )
 
     def create(
-        self, page_id: int | str, body: CreateStatusPageIncidentRequest
+        self, page_id: int | str, body: RequestBody[CreateStatusPageIncidentRequest]
     ) -> StatusPageIncidentDto:
         """Create a status page incident."""
+        body = validate_request(
+            CreateStatusPageIncidentRequest, body, "statusPages.incidents.create"
+        )
         return parse_single(
             StatusPageIncidentDto,
             api_post(self._client, f"{_page_path(page_id)}/incidents", body),
@@ -170,9 +192,12 @@ class _Incidents:
         self,
         page_id: int | str,
         incident_id: int | str,
-        body: UpdateStatusPageIncidentRequest,
+        body: RequestBody[UpdateStatusPageIncidentRequest],
     ) -> StatusPageIncidentDto:
         """Update an incident."""
+        body = validate_request(
+            UpdateStatusPageIncidentRequest, body, "statusPages.incidents.update"
+        )
         return parse_single(
             StatusPageIncidentDto,
             api_put(
@@ -187,9 +212,14 @@ class _Incidents:
         self,
         page_id: int | str,
         incident_id: int | str,
-        body: CreateStatusPageIncidentUpdateRequest,
+        body: RequestBody[CreateStatusPageIncidentUpdateRequest],
     ) -> StatusPageIncidentDto:
         """Post a timeline update on an incident."""
+        body = validate_request(
+            CreateStatusPageIncidentUpdateRequest,
+            body,
+            "statusPages.incidents.postUpdate",
+        )
         return parse_single(
             StatusPageIncidentDto,
             api_post(
@@ -246,9 +276,12 @@ class _Subscribers:
         )
 
     def add(
-        self, page_id: int | str, body: AdminAddSubscriberRequest
+        self, page_id: int | str, body: RequestBody[AdminAddSubscriberRequest]
     ) -> StatusPageSubscriberDto:
         """Add a subscriber (admin)."""
+        body = validate_request(
+            AdminAddSubscriberRequest, body, "statusPages.subscribers.add"
+        )
         return parse_single(
             StatusPageSubscriberDto,
             api_post(self._client, f"{_page_path(page_id)}/subscribers", body),
@@ -276,9 +309,10 @@ class _Domains:
         )
 
     def add(
-        self, page_id: int | str, body: AddCustomDomainRequest
+        self, page_id: int | str, body: RequestBody[AddCustomDomainRequest]
     ) -> StatusPageCustomDomainDto:
         """Add a custom domain."""
+        body = validate_request(AddCustomDomainRequest, body, "statusPages.domains.add")
         return parse_single(
             StatusPageCustomDomainDto,
             api_post(self._client, f"{_page_path(page_id)}/domains", body),
@@ -335,16 +369,20 @@ class StatusPages:
             f"GET {_page_path(id)}",
         )
 
-    def create(self, body: CreateStatusPageRequest) -> StatusPageDto:
+    def create(self, body: RequestBody[CreateStatusPageRequest]) -> StatusPageDto:
         """Create a status page."""
+        body = validate_request(CreateStatusPageRequest, body, "statusPages.create")
         return parse_single(
             StatusPageDto,
             api_post(self._client, _BASE, body),
             "POST /api/v1/status-pages",
         )
 
-    def update(self, id: int | str, body: UpdateStatusPageRequest) -> StatusPageDto:
+    def update(
+        self, id: int | str, body: RequestBody[UpdateStatusPageRequest]
+    ) -> StatusPageDto:
         """Update a status page."""
+        body = validate_request(UpdateStatusPageRequest, body, "statusPages.update")
         return parse_single(
             StatusPageDto,
             api_put(self._client, _page_path(id), body),

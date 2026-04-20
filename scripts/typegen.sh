@@ -2,6 +2,14 @@
 #
 # Regenerate Pydantic models from the vendored OpenAPI spec.
 #
+# Uses @devhelm/openapi-tools for preprocessing (shared with all surfaces),
+# then runs datamodel-codegen for Pydantic model generation.
+#
+# Preprocessing resolution order:
+#   1. $OPENAPI_TOOLS env var (explicit override)
+#   2. Local monorepo sibling (../mini/packages/openapi-tools)
+#   3. npx from npm (CI / standalone)
+#
 set -euo pipefail
 
 SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
@@ -16,8 +24,23 @@ if [[ ! -f "$INPUT" ]]; then
   exit 1
 fi
 
-echo "=> Preprocessing OpenAPI spec..."
-python3 "$SCRIPT_DIR/preprocess_spec.py" "$INPUT" "$PREPROCESSED"
+resolve_openapi_tools() {
+  if [[ -n "${OPENAPI_TOOLS:-}" ]]; then
+    echo "$OPENAPI_TOOLS"
+    return
+  fi
+  local local_cli="$ROOT_DIR/../mini/packages/openapi-tools/dist/cli.js"
+  if [[ -f "$local_cli" ]]; then
+    echo "node $local_cli"
+    return
+  fi
+  echo "npx --yes --package=@devhelm/openapi-tools devhelm-openapi"
+}
+
+TOOLS_CMD=$(resolve_openapi_tools)
+
+echo "=> Preprocessing OpenAPI spec (via @devhelm/openapi-tools)..."
+$TOOLS_CMD preprocess "$INPUT" "$PREPROCESSED"
 
 echo "=> Generating Pydantic models from preprocessed spec..."
 
