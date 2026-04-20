@@ -69,7 +69,9 @@ pretty = true
 warn_unreachable = true
 plugins = ["pydantic.mypy"]
 mypy_path = "src"
-exclude = ["src/devhelm/_generated\\.py$"]
+# P5 (cast budget): _generated.py is checked in strict mode along with
+# everything else. The single justified suppression in there is the
+# `[assignment]` collision documented in scripts/typegen.sh.
 
 [tool.pytest.ini_options]
 testpaths = ["tests"]

@@ -55,5 +55,17 @@ uv run datamodel-codegen \
   --input-file-type openapi \
   --formatters ruff-format
 
+# Post-process: inject `model_config = ConfigDict(extra='forbid')` into every
+# generated class so that requests with unknown fields and responses with
+# unknown fields BOTH fail loudly. Implements P1 + P2 from
+# `mini/cowork/design/040-codegen-policies.md`.
+echo "=> Injecting strict-fail config (extra='forbid') into generated models..."
+uv run python "$SCRIPT_DIR/inject_strict_config.py" "$OUTPUT"
+
+# Re-format after injection so the file stays ruff-clean. Non-fatal so the
+# spec-evolution harness keeps moving even if ruff is misconfigured in the
+# child env (e.g. inherited VIRTUAL_ENV from a pytest parent).
+uv run ruff format --quiet "$OUTPUT" || echo "warning: ruff format skipped" >&2
+
 rm -f "$PREPROCESSED"
 echo "=> Generated: $OUTPUT"

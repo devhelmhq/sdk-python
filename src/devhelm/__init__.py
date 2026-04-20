@@ -1,6 +1,17 @@
 """DevHelm SDK for Python — typed client for monitors, incidents, alerting, and more."""
 
-from devhelm._errors import AuthError, DevhelmError
+from devhelm._errors import (
+    AuthError,
+    DevhelmApiError,
+    DevhelmAuthError,
+    DevhelmConflictError,
+    DevhelmError,
+    DevhelmNotFoundError,
+    DevhelmRateLimitError,
+    DevhelmServerError,
+    DevhelmTransportError,
+    DevhelmValidationError,
+)
 from devhelm._pagination import CursorPage, Page
 from devhelm._validation import RequestBody
 from devhelm.client import Devhelm
@@ -121,6 +132,14 @@ __all__ = [
     "Devhelm",
     # Errors
     "DevhelmError",
+    "DevhelmValidationError",
+    "DevhelmApiError",
+    "DevhelmAuthError",
+    "DevhelmNotFoundError",
+    "DevhelmConflictError",
+    "DevhelmRateLimitError",
+    "DevhelmServerError",
+    "DevhelmTransportError",
     "AuthError",
     # Pagination
     "Page",

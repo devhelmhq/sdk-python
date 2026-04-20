@@ -52,9 +52,15 @@ def test_handwritten_modules_have_only_documented_type_ignores() -> None:
             if pattern.search(line):
                 offenders.append(f"{path.relative_to(ROOT)}:{lineno}: {line.strip()}")
     expected = {
-        "src/devhelm/_validation.py:79: adapter: TypeAdapter[list[M]] = "
+        "src/devhelm/_validation.py:76: adapter: TypeAdapter[list[M]] = "
         "TypeAdapter(list[model_class])  # type: ignore[valid-type]",
         "src/devhelm/_http.py:95: return response.json()  # type: "
+        "ignore[no-any-return]",
+        # `_send` is a generic dispatcher over httpx.Client.{get,post,put,...};
+        # untyped getattr means the return type widens to Any. Wrapping it
+        # is safe because every caller passes the result straight into
+        # `checked_fetch`, which is fully typed.
+        "src/devhelm/_http.py:116: return fn(*args, **kwargs)  # type: "
         "ignore[no-any-return]",
     }
     actual = set(offenders)

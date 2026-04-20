@@ -8,7 +8,11 @@ from urllib.parse import quote
 import httpx
 from pydantic import BaseModel
 
-from devhelm._errors import DevhelmError, error_from_response
+from devhelm._errors import (
+    DevhelmTransportError,
+    DevhelmValidationError,
+    error_from_response,
+)
 
 DEFAULT_BASE_URL = "https://api.devhelm.io"
 DEFAULT_PAGE_SIZE = 200
@@ -28,10 +32,8 @@ class DevhelmConfig:
 def _resolve(value: str | None, env_key: str, label: str) -> str:
     result = value or os.environ.get(env_key)
     if not result:
-        raise DevhelmError(
-            "VALIDATION",
+        raise DevhelmValidationError(
             f"{label} is required. Pass it to Devhelm() or set {env_key}.",
-            0,
         )
     return result
 
@@ -78,17 +80,15 @@ def _serialize_body(
     if isinstance(body, BaseModel):
         return body.model_dump(mode="json", by_alias=True, exclude_none=True)
     if isinstance(body, dict):
-        raise DevhelmError(
-            "VALIDATION",
+        raise DevhelmValidationError(
             "Raw dicts are not accepted as request bodies. "
             "Use the generated Pydantic model instead.",
-            0,
         )
     return body
 
 
 def checked_fetch(response: httpx.Response) -> _JsonResponse:
-    """Check an httpx response and raise DevhelmError on failure."""
+    """Check an httpx response and raise a typed DevhelmApiError on failure."""
     if response.is_success:
         if response.status_code == 204:
             return None
@@ -96,31 +96,56 @@ def checked_fetch(response: httpx.Response) -> _JsonResponse:
     raise error_from_response(response.status_code, response.text)
 
 
+# ---------------------------------------------------------------------------
+# Transport-error wrapping
+# ---------------------------------------------------------------------------
+
+
+def _send(method: str, client: httpx.Client, *args: Any, **kwargs: Any) -> httpx.Response:
+    """Invoke `client.<method>(*args, **kwargs)` translating httpx transport
+    failures into `DevhelmTransportError` with `__cause__` preserved.
+
+    httpx-level exceptions that indicate the request never reached the server
+    (or the server's response never reached us) are wrapped here. We let
+    `httpx.HTTPStatusError`-style failures fall through unchanged because
+    those should not occur — `checked_fetch` reads `response.is_success`
+    explicitly rather than calling `.raise_for_status()`.
+    """
+    fn = getattr(client, method)
+    try:
+        return fn(*args, **kwargs)  # type: ignore[no-any-return]
+    except httpx.HTTPError as exc:
+        raise DevhelmTransportError(
+            f"{type(exc).__name__}: {exc}",
+            cause=exc,
+        ) from exc
+
+
 def api_get(
     client: httpx.Client, path: str, params: dict[str, Any] | None = None
 ) -> _JsonResponse:
-    return checked_fetch(client.get(path, params=params))
+    return checked_fetch(_send("get", client, path, params=params))
 
 
 def api_post(
     client: httpx.Client, path: str, body: BaseModel | dict[str, object] | None = None
 ) -> _JsonResponse:
     if body is None:
-        return checked_fetch(client.post(path))
-    return checked_fetch(client.post(path, json=_serialize_body(body)))
+        return checked_fetch(_send("post", client, path))
+    return checked_fetch(_send("post", client, path, json=_serialize_body(body)))
 
 
 def api_put(
     client: httpx.Client, path: str, body: BaseModel | dict[str, object] | None
 ) -> _JsonResponse:
-    return checked_fetch(client.put(path, json=_serialize_body(body)))
+    return checked_fetch(_send("put", client, path, json=_serialize_body(body)))
 
 
 def api_patch(
     client: httpx.Client, path: str, body: BaseModel | dict[str, object] | None
 ) -> _JsonResponse:
-    return checked_fetch(client.patch(path, json=_serialize_body(body)))
+    return checked_fetch(_send("patch", client, path, json=_serialize_body(body)))
 
 
 def api_delete(client: httpx.Client, path: str) -> None:
-    checked_fetch(client.delete(path))
+    checked_fetch(_send("delete", client, path))

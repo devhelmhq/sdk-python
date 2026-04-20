@@ -11,7 +11,7 @@ from typing import Any, TypeAlias, TypeVar, Union
 
 from pydantic import BaseModel, TypeAdapter, ValidationError
 
-from devhelm._errors import DevhelmError
+from devhelm._errors import DevhelmValidationError
 
 M = TypeVar("M", bound=BaseModel)
 
@@ -39,25 +39,23 @@ def validate_request(
         return model_class.model_validate(body)
     except ValidationError as e:
         ctx = f" ({context})" if context else ""
-        raise DevhelmError(
-            "VALIDATION",
-            f"Request validation failed{ctx}: {e.error_count()} error(s)",
-            0,
-            str(e),
+        raise DevhelmValidationError(
+            f"Request validation failed{ctx}: {e.error_count()} error(s) — {e}",
+            errors=e.errors(),
+            cause=e,
         ) from e
 
 
 def parse_model(model_class: type[M], data: Any, context: str = "") -> M:
-    """Parse a raw dict/JSON through a Pydantic model, raising DevhelmError on failure."""
+    """Parse a raw dict/JSON through a Pydantic model, raising on failure."""
     try:
         return model_class.model_validate(data)
     except ValidationError as e:
         ctx = f" ({context})" if context else ""
-        raise DevhelmError(
-            "VALIDATION",
-            f"Response validation failed{ctx}: {e.error_count()} error(s)",
-            0,
-            str(e),
+        raise DevhelmValidationError(
+            f"Response validation failed{ctx}: {e.error_count()} error(s) — {e}",
+            errors=e.errors(),
+            cause=e,
         ) from e
 
 
@@ -71,19 +69,17 @@ def parse_single(model_class: type[M], data: Any, context: str = "") -> M:
 def parse_list(model_class: type[M], data: Any, context: str = "") -> list[M]:
     """Parse a list of items through a Pydantic model."""
     if not isinstance(data, list):
-        raise DevhelmError(
-            "VALIDATION",
-            f"Expected list, got {type(data).__name__}{f' ({context})' if context else ''}",
-            0,
+        ctx = f" ({context})" if context else ""
+        raise DevhelmValidationError(
+            f"Expected list, got {type(data).__name__}{ctx}",
         )
     adapter: TypeAdapter[list[M]] = TypeAdapter(list[model_class])  # type: ignore[valid-type]
     try:
         return adapter.validate_python(data)
     except ValidationError as e:
         ctx = f" ({context})" if context else ""
-        raise DevhelmError(
-            "VALIDATION",
-            f"List validation failed{ctx}: {e.error_count()} error(s)",
-            0,
-            str(e),
+        raise DevhelmValidationError(
+            f"List validation failed{ctx}: {e.error_count()} error(s) — {e}",
+            errors=e.errors(),
+            cause=e,
         ) from e
