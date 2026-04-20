@@ -201,9 +201,9 @@ class TestResolveIncidentRequest:
         r = ResolveIncidentRequest.model_validate({"body": "All clear"})
         assert r.body == "All clear"
 
-    def test_missing_body_raises(self) -> None:
-        with pytest.raises(ValidationError, match="body"):
-            ResolveIncidentRequest.model_validate({})
+    def test_missing_body_accepted(self) -> None:
+        r = ResolveIncidentRequest.model_validate({})
+        assert r.body is None
 
 
 class TestCreateManualIncidentRequest:

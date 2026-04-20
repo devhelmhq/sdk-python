@@ -9,7 +9,6 @@ from devhelm._errors import DevhelmError
 from devhelm._http import DevhelmConfig, build_client, path_param
 from devhelm._validation import parse_list, parse_model, parse_single
 
-
 # ---------- path_param ----------
 
 

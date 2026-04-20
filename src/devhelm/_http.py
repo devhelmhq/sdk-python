@@ -103,9 +103,7 @@ def api_get(
 
 
 def api_post(
-    client: httpx.Client,
-    path: str,
-    body: BaseModel | dict[str, object] | None = None,
+    client: httpx.Client, path: str, body: BaseModel | dict[str, object] | None = None
 ) -> _JsonResponse:
     if body is None:
         return checked_fetch(client.post(path))

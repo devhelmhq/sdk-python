@@ -55,17 +55,20 @@ SPEC_PATH = Path(__file__).parent.parent / "docs" / "openapi" / "monitoring-api.
 @pytest.fixture(scope="module")
 def spec() -> dict[str, Any]:
     """Load the vendored OpenAPI spec once per module."""
-    return json.loads(SPEC_PATH.read_text())
+    loaded: dict[str, Any] = json.loads(SPEC_PATH.read_text())
+    return loaded
 
 
 @pytest.fixture(scope="module")
 def schemas(spec: dict[str, Any]) -> dict[str, Any]:
-    return spec["components"]["schemas"]
+    result: dict[str, Any] = spec["components"]["schemas"]
+    return result
 
 
 @pytest.fixture(scope="module")
 def paths(spec: dict[str, Any]) -> dict[str, Any]:
-    return spec["paths"]
+    result: dict[str, Any] = spec["paths"]
+    return result
 
 
 # ---------- 1. Schema parity: every public DTO must exist in the spec ----------
