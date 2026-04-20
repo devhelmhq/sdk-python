@@ -1,11 +1,12 @@
 from __future__ import annotations
 
 from dataclasses import dataclass, field
-from typing import Any, Generic, TypeVar, cast
+from typing import Any, Generic, TypeVar
 
 import httpx
-from pydantic import BaseModel
+from pydantic import BaseModel, ConfigDict
 
+from devhelm._errors import DevhelmValidationError
 from devhelm._http import DEFAULT_PAGE_SIZE, api_get
 from devhelm._validation import parse_list
 
@@ -33,6 +34,55 @@ class CursorPage(Generic[T]):
     has_more: bool = False
 
 
+class _PageEnvelope(BaseModel):
+    """Server-side page metadata as a typed model.
+
+    Items are validated separately via ``parse_list(model_class, ...)`` so the
+    envelope only describes the surrounding pagination shape; that keeps this
+    layer P5-clean (no casts) without forcing every model to be expressed
+    twice. ``extra="forbid"`` so unknown envelope keys surface as a typed
+    ``DevhelmValidationError`` (P1) rather than silently disappearing.
+    """
+
+    model_config = ConfigDict(extra="forbid")
+
+    data: list[Any] = []  # validated separately
+    hasNext: bool = False
+    hasPrev: bool = False
+    totalElements: int | None = None
+    totalPages: int | None = None
+
+
+class _CursorPageEnvelope(BaseModel):
+    """Cursor-page envelope. See ``_PageEnvelope`` for the rationale."""
+
+    model_config = ConfigDict(extra="forbid")
+
+    data: list[Any] = []
+    nextCursor: str | None = None
+    hasMore: bool = False
+
+
+def _validate_page(resp: object) -> _PageEnvelope:
+    try:
+        return _PageEnvelope.model_validate(resp)
+    except Exception as e:
+        raise DevhelmValidationError(
+            "Invalid paginated response envelope",
+            errors=[{"loc": (), "msg": str(e), "type": "value_error"}],
+        ) from e
+
+
+def _validate_cursor_page(resp: object) -> _CursorPageEnvelope:
+    try:
+        return _CursorPageEnvelope.model_validate(resp)
+    except Exception as e:
+        raise DevhelmValidationError(
+            "Invalid cursor-paginated response envelope",
+            errors=[{"loc": (), "msg": str(e), "type": "value_error"}],
+        ) from e
+
+
 def fetch_all_pages(
     client: httpx.Client,
     path: str,
@@ -45,10 +95,9 @@ def fetch_all_pages(
 
     while True:
         resp = api_get(client, path, params={"page": page, "size": page_size})
-        raw_items = resp.get("data", []) if isinstance(resp, dict) else []
-        items = parse_list(model_class, raw_items, f"GET {path}")
-        all_items.extend(items)
-        if not (isinstance(resp, dict) and resp.get("hasNext")):
+        envelope = _validate_page(resp)
+        all_items.extend(parse_list(model_class, envelope.data, f"GET {path}"))
+        if not envelope.hasNext:
             break
         page += 1
 
@@ -60,18 +109,13 @@ def fetch_page(
 ) -> Page[M]:
     """Fetch a single page from an offset-paginated endpoint with validation."""
     resp = api_get(client, path, params={"page": page, "size": size})
-    raw_items = resp.get("data", []) if isinstance(resp, dict) else []
-    items = parse_list(model_class, raw_items, f"GET {path}")
+    envelope = _validate_page(resp)
     return Page(
-        data=items,
-        has_next=bool(resp.get("hasNext")) if isinstance(resp, dict) else False,
-        has_prev=bool(resp.get("hasPrev")) if isinstance(resp, dict) else False,
-        total_elements=cast(int | None, resp.get("totalElements"))
-        if isinstance(resp, dict)
-        else None,
-        total_pages=cast(int | None, resp.get("totalPages"))
-        if isinstance(resp, dict)
-        else None,
+        data=parse_list(model_class, envelope.data, f"GET {path}"),
+        has_next=envelope.hasNext,
+        has_prev=envelope.hasPrev,
+        total_elements=envelope.totalElements,
+        total_pages=envelope.totalPages,
     )
 
 
@@ -90,12 +134,9 @@ def fetch_cursor_page(
         params["limit"] = limit
 
     resp = api_get(client, path, params=params or None)
-    raw_items = resp.get("data", []) if isinstance(resp, dict) else []
-    items = parse_list(model_class, raw_items, f"GET {path}")
+    envelope = _validate_cursor_page(resp)
     return CursorPage(
-        data=items,
-        next_cursor=cast(str | None, resp.get("nextCursor"))
-        if isinstance(resp, dict)
-        else None,
-        has_more=bool(resp.get("hasMore")) if isinstance(resp, dict) else False,
+        data=parse_list(model_class, envelope.data, f"GET {path}"),
+        next_cursor=envelope.nextCursor,
+        has_more=envelope.hasMore,
     )
