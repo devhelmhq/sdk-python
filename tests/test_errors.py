@@ -99,6 +99,55 @@ class TestErrorFromResponse:
         err = error_from_response(400, json.dumps({"message": "Bad request"}))
         assert err.detail is None
 
+    def test_json_with_code_and_request_id(self) -> None:
+        # The new error envelope (post-Batch A contract lockdown) carries
+        # `code` and `requestId` alongside `message`. Both must round-trip
+        # so callers can switch on `code` and surface `request_id` in
+        # support tickets.
+        err = error_from_response(
+            404,
+            json.dumps(
+                {
+                    "status": 404,
+                    "code": "NOT_FOUND",
+                    "message": "Monitor not found",
+                    "requestId": "5b6f7a8c-1234-4d5e-9f0a-1b2c3d4e5f6a",
+                }
+            ),
+        )
+        assert isinstance(err, DevhelmNotFoundError)
+        assert err.code == "NOT_FOUND"
+        assert err.request_id == "5b6f7a8c-1234-4d5e-9f0a-1b2c3d4e5f6a"
+
+    def test_request_id_header_overrides_body(self) -> None:
+        # If a non-JSON body comes through (e.g. an upstream proxy returning
+        # HTML) we still need the request_id, so the header wins by design.
+        err = error_from_response(
+            502, "<html>Bad Gateway</html>", request_id="hdr-uuid-1"
+        )
+        assert err.request_id == "hdr-uuid-1"
+        assert err.code is None
+
+    def test_request_id_header_takes_precedence_over_body(self) -> None:
+        err = error_from_response(
+            500,
+            json.dumps({"message": "boom", "requestId": "body-uuid"}),
+            request_id="hdr-uuid-2",
+        )
+        assert err.request_id == "hdr-uuid-2"
+
+    def test_request_id_falls_back_to_body_when_header_absent(self) -> None:
+        err = error_from_response(
+            500,
+            json.dumps({"message": "boom", "requestId": "body-uuid-3"}),
+        )
+        assert err.request_id == "body-uuid-3"
+
+    def test_no_code_or_request_id_for_non_json_body(self) -> None:
+        err = error_from_response(503, "")
+        assert err.code is None
+        assert err.request_id is None
+
 
 class TestDevhelmErrorInheritance:
     def test_api_error_is_devhelm_error(self) -> None:

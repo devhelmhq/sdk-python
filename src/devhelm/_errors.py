@@ -62,12 +62,23 @@ class DevhelmApiError(DevhelmError):
 
     Always carries the HTTP status code and the (best-effort parsed) error
     body. Use the subclasses below for HTTP-class-specific handling.
+
+    The optional `code` field is the API's coarse machine-readable error
+    category (e.g. `NOT_FOUND`, `RATE_LIMITED`); see the `ErrorResponse`
+    schema in the OpenAPI spec. Surface clients should switch on `code`,
+    not the human-readable `message`.
+
+    The optional `request_id` field is the per-request id emitted by the
+    API as the `X-Request-Id` response header and embedded in the JSON
+    error body. Always include it in support tickets.
     """
 
     status: int
     message: str
     detail: str | None
     body: dict[str, Any] | str | None
+    code: str | None
+    request_id: str | None
 
     def __init__(
         self,
@@ -76,12 +87,16 @@ class DevhelmApiError(DevhelmError):
         status: int,
         detail: str | None = None,
         body: dict[str, Any] | str | None = None,
+        code: str | None = None,
+        request_id: str | None = None,
     ) -> None:
         super().__init__(message)
         self.status = status
         self.message = message
         self.detail = detail
         self.body = body
+        self.code = code
+        self.request_id = request_id
 
 
 class DevhelmAuthError(DevhelmApiError):
@@ -119,10 +134,20 @@ class DevhelmTransportError(DevhelmError):
             self.__cause__ = cause
 
 
-def error_from_response(status: int, body: str) -> DevhelmApiError:
-    """Map an HTTP error response to a typed DevhelmApiError subclass."""
+def error_from_response(
+    status: int, body: str, *, request_id: str | None = None
+) -> DevhelmApiError:
+    """Map an HTTP error response to a typed DevhelmApiError subclass.
+
+    `request_id` is the value of the `X-Request-Id` response header. It is
+    pulled out at the call site (rather than re-parsed from the body) so the
+    SDK still surfaces the id even when the server returns a non-JSON body
+    (e.g. an HTML error page from a misconfigured proxy).
+    """
     message = f"HTTP {status}"
     detail: str | None = None
+    code: str | None = None
+    body_request_id: str | None = None
     parsed_body: dict[str, Any] | str | None = body or None
 
     try:
@@ -133,34 +158,35 @@ def error_from_response(status: int, body: str) -> DevhelmApiError:
             raw_detail = parsed.get("detail")
             if raw_detail is not None:
                 detail = str(raw_detail)
+            raw_code = parsed.get("code")
+            if isinstance(raw_code, str):
+                code = raw_code
+            raw_request_id = parsed.get("requestId") or parsed.get("request_id")
+            if isinstance(raw_request_id, str):
+                body_request_id = raw_request_id
     except (json.JSONDecodeError, ValueError):
         pass
 
+    # Header value wins: the body may be missing/non-JSON, but the header is
+    # always present (set by RequestCorrelationFilter on the API side).
+    resolved_request_id = request_id or body_request_id
+
+    kwargs: dict[str, Any] = {
+        "status": status,
+        "detail": detail,
+        "body": parsed_body,
+        "code": code,
+        "request_id": resolved_request_id,
+    }
+
     if status in (401, 403):
-        return DevhelmAuthError(message, status=status, detail=detail, body=parsed_body)
+        return DevhelmAuthError(message, **kwargs)
     if status == 404:
-        return DevhelmNotFoundError(
-            message, status=status, detail=detail, body=parsed_body
-        )
+        return DevhelmNotFoundError(message, **kwargs)
     if status == 409:
-        return DevhelmConflictError(
-            message, status=status, detail=detail, body=parsed_body
-        )
+        return DevhelmConflictError(message, **kwargs)
     if status == 429:
-        return DevhelmRateLimitError(
-            message, status=status, detail=detail, body=parsed_body
-        )
+        return DevhelmRateLimitError(message, **kwargs)
     if status >= 500:
-        return DevhelmServerError(
-            message, status=status, detail=detail, body=parsed_body
-        )
-    return DevhelmApiError(message, status=status, detail=detail, body=parsed_body)
-
-
-# ---------------------------------------------------------------------------
-# Backwards-compatible aliases (no customers yet, but our own tests + scripts
-# still import the legacy names; flip these to deprecation warnings once the
-# rest of the codebase is migrated).
-# ---------------------------------------------------------------------------
-
-AuthError = DevhelmAuthError
+        return DevhelmServerError(message, **kwargs)
+    return DevhelmApiError(message, **kwargs)
