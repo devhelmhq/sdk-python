@@ -4,7 +4,7 @@ from dataclasses import dataclass, field
 from typing import Any, Generic, TypeVar
 
 import httpx
-from pydantic import BaseModel, ConfigDict
+from pydantic import BaseModel, ConfigDict, ValidationError
 
 from devhelm._errors import DevhelmValidationError
 from devhelm._http import DEFAULT_PAGE_SIZE, api_get
@@ -66,20 +66,27 @@ class _CursorPageEnvelope(BaseModel):
 def _validate_page(resp: object) -> _PageEnvelope:
     try:
         return _PageEnvelope.model_validate(resp)
-    except Exception as e:
+    except ValidationError as e:
+        # Surface the structured Pydantic errors so callers can introspect
+        # the failed location instead of getting a string-summarised
+        # `value_error`. Non-`ValidationError` exceptions (network, IO,
+        # programmer mistake) intentionally propagate — wrapping them here
+        # would mask real bugs as fake "validation" failures.
         raise DevhelmValidationError(
             "Invalid paginated response envelope",
-            errors=[{"loc": (), "msg": str(e), "type": "value_error"}],
+            errors=e.errors(),
+            cause=e,
         ) from e
 
 
 def _validate_cursor_page(resp: object) -> _CursorPageEnvelope:
     try:
         return _CursorPageEnvelope.model_validate(resp)
-    except Exception as e:
+    except ValidationError as e:
         raise DevhelmValidationError(
             "Invalid cursor-paginated response envelope",
-            errors=[{"loc": (), "msg": str(e), "type": "value_error"}],
+            errors=e.errors(),
+            cause=e,
         ) from e
 
 

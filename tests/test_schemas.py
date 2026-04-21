@@ -15,6 +15,7 @@ from pydantic import ValidationError
 from devhelm._generated import (
     AddCustomDomainRequest,
     AdminAddSubscriberRequest,
+    CheckTypeDetailsDto,
     ComponentPosition,
     CreateManualIncidentRequest,
     CreateMonitorRequest,
@@ -34,6 +35,7 @@ from devhelm._generated import (
     StatusPageComponentDto,
     StatusPageDto,
     StatusPageIncidentDto,
+    SubscribedEvent,
     WebhookTestResult,
 )
 
@@ -655,4 +657,58 @@ class TestEnumValidationRejectsInvalid:
         with pytest.raises(ValidationError):
             CreateStatusPageComponentRequest.model_validate(
                 {"name": "X", "type": "INVALID_TYPE"}
+            )
+
+
+class TestRootModelStrictness:
+    """`scripts/inject_strict_config.py` deliberately skips RootModel classes
+    because Pydantic raises ``root-model-extra`` if you try to set
+    ``extra='forbid'`` on them. Strictness on ``RootModel[Inner]`` is
+    delegated to the *inner* type. These tests pin that contract — if the
+    inner variants ever lose their ``extra='forbid'`` config, ``RootModel``
+    discriminated unions would silently accept unknown fields, which is the
+    exact spec-drift class we're guarding against (P1)."""
+
+    def test_subscribed_event_accepts_valid_string(self) -> None:
+        # `SubscribedEvent(RootModel[str])` — the inner type is a scalar, so
+        # the strictness contract reduces to type/length validation.
+        ev = SubscribedEvent.model_validate("monitor.created")
+        assert ev.root == "monitor.created"
+
+    def test_subscribed_event_rejects_non_string(self) -> None:
+        with pytest.raises(ValidationError):
+            SubscribedEvent.model_validate(42)
+
+    def test_subscribed_event_rejects_empty_string(self) -> None:
+        # min_length=1 from the spec.
+        with pytest.raises(ValidationError):
+            SubscribedEvent.model_validate("")
+
+    def test_check_type_details_routes_by_discriminator(self) -> None:
+        details = CheckTypeDetailsDto.model_validate({"check_type": "http"})
+        assert details.root.check_type == "http"
+
+    def test_check_type_details_rejects_unknown_discriminator(self) -> None:
+        with pytest.raises(ValidationError):
+            CheckTypeDetailsDto.model_validate({"check_type": "graphql"})
+
+    def test_check_type_details_inner_variant_rejects_extra_keys(self) -> None:
+        # The Http inner variant has `extra='forbid'`. If anyone ever drops
+        # it, this test fails — that's the whole point of having explicit
+        # coverage for RootModel-wrapped inners (P1).
+        with pytest.raises(ValidationError, match="extra"):
+            CheckTypeDetailsDto.model_validate(
+                {"check_type": "http", "totally_made_up_key": True}
+            )
+
+    def test_check_type_details_dns_variant_rejects_extra_keys(self) -> None:
+        with pytest.raises(ValidationError, match="extra"):
+            CheckTypeDetailsDto.model_validate(
+                {"check_type": "dns", "rogue_field": "x"}
+            )
+
+    def test_check_type_details_tcp_variant_rejects_extra_keys(self) -> None:
+        with pytest.raises(ValidationError, match="extra"):
+            CheckTypeDetailsDto.model_validate(
+                {"check_type": "tcp", "tls_extra": True}
             )

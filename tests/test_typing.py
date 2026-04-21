@@ -2,7 +2,13 @@
 
 These tests ensure that:
   * mypy strict + ``disallow_any_explicit`` runs cleanly across the entire
-    package, including the previously-excluded ``_generated.py``.
+    package, including the previously-excluded ``_generated.py``. The
+    JSON-boundary modules (``_errors``, ``_http``, ``_pagination``,
+    ``_validation``, ``_generated``) are allowlisted in ``pyproject.toml``
+    via ``tool.mypy.overrides`` because they intentionally model unparsed
+    JSON; every other module is ``Any``-free.
+  * The resource layer — everything customers import — does not use
+    ``typing.Any``.
   * The single justified ``# type: ignore`` comment is the only one in
     hand-written code (generated code may add ``[assignment]`` for the
     ``HealthThresholdType.count`` collision documented in ``scripts/typegen.sh``).
@@ -40,6 +46,40 @@ def test_mypy_strict_passes_including_generated() -> None:
     )
 
 
+def test_resource_layer_is_any_free() -> None:
+    """The resource modules (everything customers import) must not use ``Any``.
+
+    The five JSON-boundary modules are explicitly allowlisted because they
+    serialise unparsed JSON; *every other* module — and especially the
+    public ``resources/`` package — must stay ``Any``-free so end-user code
+    inherits the strict typing guarantees promised in ``pyproject.toml``.
+    """
+    pattern = re.compile(r"\bAny\b")
+    boundary_modules = {
+        "_errors.py",
+        "_http.py",
+        "_pagination.py",
+        "_validation.py",
+        "_generated.py",
+    }
+    offenders: list[str] = []
+    for path in SRC.rglob("*.py"):
+        if path.name in boundary_modules:
+            continue
+        text = path.read_text()
+        for lineno, line in enumerate(text.splitlines(), start=1):
+            stripped = line.strip()
+            if stripped.startswith("#"):
+                continue
+            if pattern.search(line):
+                offenders.append(f"{path.relative_to(ROOT)}:{lineno}: {line.strip()}")
+    assert not offenders, (
+        "The resource layer must stay `Any`-free. If you genuinely need an "
+        "untyped JSON value here, prefer parsing it through a Pydantic model "
+        "instead of widening the public API:\n" + "\n".join(offenders)
+    )
+
+
 def test_handwritten_modules_have_only_documented_type_ignores() -> None:
     """Catch sneaky `# type: ignore` additions outside the generated file."""
     pattern = re.compile(r"#\s*type:\s*ignore")
@@ -57,7 +97,7 @@ def test_handwritten_modules_have_only_documented_type_ignores() -> None:
         # value-time generic line up with the annotation's type-time
         # generic. There is no way to express that in PEP-484, so the
         # ignore stays. (See `_validation.parse_list`.)
-        "src/devhelm/_validation.py:76: adapter: TypeAdapter[list[M]] = "
+        "src/devhelm/_validation.py:126: adapter: TypeAdapter[list[M]] = "
         "TypeAdapter(list[model_class])  # type: ignore[valid-type]",
     }
     actual = set(offenders)
