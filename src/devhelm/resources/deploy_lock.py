@@ -4,7 +4,12 @@ import httpx
 
 from devhelm._generated import AcquireDeployLockRequest, DeployLockDto
 from devhelm._http import api_delete, api_get, api_post, path_param
-from devhelm._validation import RequestBody, parse_model, parse_single, validate_request
+from devhelm._validation import (
+    RequestBody,
+    parse_single,
+    parse_strict_envelope,
+    validate_request,
+)
 
 
 class DeployLock:
@@ -23,11 +28,17 @@ class DeployLock:
         )
 
     def current(self) -> DeployLockDto | None:
-        """Get the current deploy lock, or None if unlocked."""
+        """Get the current deploy lock, or ``None`` if unlocked.
+
+        Uses :func:`parse_strict_envelope` so unknown top-level fields fail
+        loud (P1) — the API returns ``{"data": null}`` when no lock is held,
+        which is the only place in the SDK where ``data`` is legitimately
+        nullable.
+        """
         resp = api_get(self._client, "/api/v1/deploy/lock")
-        if isinstance(resp, dict) and resp.get("data") is not None:
-            return parse_model(DeployLockDto, resp["data"], "GET /api/v1/deploy/lock")
-        return None
+        return parse_strict_envelope(
+            DeployLockDto, resp, optional=True, context="GET /api/v1/deploy/lock"
+        )
 
     def release(self, lock_id: int | str) -> None:
         """Release a deploy lock by ID."""

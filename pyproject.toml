@@ -67,9 +67,28 @@ strict = true
 show_error_codes = true
 pretty = true
 warn_unreachable = true
+disallow_any_explicit = true
 plugins = ["pydantic.mypy"]
 mypy_path = "src"
-exclude = ["src/devhelm/_generated\\.py$"]
+# P5 (cast budget): _generated.py is checked in strict mode along with
+# everything else. The single justified suppression in there is the
+# `[assignment]` collision documented in scripts/typegen.sh.
+#
+# `disallow_any_explicit` is enforced everywhere except the JSON-boundary
+# modules below. The boundary intentionally uses `Any` to model unparsed
+# JSON values; the resource layer (and everything customers import) is
+# `Any`-free, which is what the docstring on `tests/test_typing.py`
+# actually promises.
+
+[[tool.mypy.overrides]]
+module = [
+    "devhelm._errors",
+    "devhelm._http",
+    "devhelm._pagination",
+    "devhelm._validation",
+    "devhelm._generated",
+]
+disallow_any_explicit = false
 
 [tool.pytest.ini_options]
 testpaths = ["tests"]

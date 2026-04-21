@@ -11,7 +11,7 @@ from typing import Any, TypeAlias, TypeVar, Union
 
 from pydantic import BaseModel, TypeAdapter, ValidationError
 
-from devhelm._errors import DevhelmError
+from devhelm._errors import DevhelmValidationError
 
 M = TypeVar("M", bound=BaseModel)
 
@@ -39,25 +39,23 @@ def validate_request(
         return model_class.model_validate(body)
     except ValidationError as e:
         ctx = f" ({context})" if context else ""
-        raise DevhelmError(
-            "VALIDATION",
-            f"Request validation failed{ctx}: {e.error_count()} error(s)",
-            0,
-            str(e),
+        raise DevhelmValidationError(
+            f"Request validation failed{ctx}: {e.error_count()} error(s) — {e}",
+            errors=e.errors(),
+            cause=e,
         ) from e
 
 
 def parse_model(model_class: type[M], data: Any, context: str = "") -> M:
-    """Parse a raw dict/JSON through a Pydantic model, raising DevhelmError on failure."""
+    """Parse a raw dict/JSON through a Pydantic model, raising on failure."""
     try:
         return model_class.model_validate(data)
     except ValidationError as e:
         ctx = f" ({context})" if context else ""
-        raise DevhelmError(
-            "VALIDATION",
-            f"Response validation failed{ctx}: {e.error_count()} error(s)",
-            0,
-            str(e),
+        raise DevhelmValidationError(
+            f"Response validation failed{ctx}: {e.error_count()} error(s) — {e}",
+            errors=e.errors(),
+            cause=e,
         ) from e
 
 
@@ -68,22 +66,66 @@ def parse_single(model_class: type[M], data: Any, context: str = "") -> M:
     return parse_model(model_class, data, context)
 
 
+def parse_strict_envelope(
+    model_class: type[M], data: Any, *, optional: bool = False, context: str = ""
+) -> M | None:
+    """Parse a strict ``{"data": T}`` envelope, rejecting unknown top-level keys.
+
+    Implements P1 (response extras forbidden) at the envelope layer for
+    endpoints whose ``data`` field can legitimately be ``null`` (e.g.
+    ``GET /api/v1/deploy/lock`` returns ``{"data": null}`` when no lock is
+    held). Unlike :func:`parse_single`, this helper:
+
+    * Raises if the response is not a dict at all.
+    * Raises if any top-level key besides ``data`` is present (loud spec
+      drift detection — equivalent to ``ConfigDict(extra='forbid')`` on a
+      hand-rolled envelope ``BaseModel``, but without forcing the resource
+      module to declare a Pydantic class purely to get strictness).
+    * Returns ``None`` for ``{"data": null}`` only when ``optional=True``.
+
+    Hand-rolled instead of declaring an envelope ``BaseModel`` because
+    Pydantic's mypy plugin synthesises ``__init__(**data: Any)`` on every
+    subclass, which would trip ``disallow_any_explicit`` in the resource
+    layer.
+    """
+    ctx = f" ({context})" if context else ""
+    if not isinstance(data, dict):
+        raise DevhelmValidationError(
+            f"Expected envelope dict, got {type(data).__name__}{ctx}"
+        )
+    extra = set(data.keys()) - {"data"}
+    if extra:
+        raise DevhelmValidationError(
+            f"Unknown envelope fields{ctx}: {sorted(extra)}",
+            errors=[
+                {
+                    "loc": (key,),
+                    "msg": "Extra inputs are not permitted",
+                    "type": "extra_forbidden",
+                }
+                for key in sorted(extra)
+            ],
+        )
+    inner = data.get("data")
+    if inner is None:
+        if optional:
+            return None
+        raise DevhelmValidationError(f"Envelope missing required `data` field{ctx}")
+    return parse_model(model_class, inner, context)
+
+
 def parse_list(model_class: type[M], data: Any, context: str = "") -> list[M]:
     """Parse a list of items through a Pydantic model."""
     if not isinstance(data, list):
-        raise DevhelmError(
-            "VALIDATION",
-            f"Expected list, got {type(data).__name__}{f' ({context})' if context else ''}",
-            0,
-        )
+        ctx = f" ({context})" if context else ""
+        raise DevhelmValidationError(f"Expected list, got {type(data).__name__}{ctx}")
     adapter: TypeAdapter[list[M]] = TypeAdapter(list[model_class])  # type: ignore[valid-type]
     try:
         return adapter.validate_python(data)
     except ValidationError as e:
         ctx = f" ({context})" if context else ""
-        raise DevhelmError(
-            "VALIDATION",
-            f"List validation failed{ctx}: {e.error_count()} error(s)",
-            0,
-            str(e),
+        raise DevhelmValidationError(
+            f"List validation failed{ctx}: {e.error_count()} error(s) — {e}",
+            errors=e.errors(),
+            cause=e,
         ) from e
