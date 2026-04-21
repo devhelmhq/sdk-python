@@ -83,27 +83,39 @@ def test_resource_layer_is_any_free() -> None:
 def test_handwritten_modules_have_only_documented_type_ignores() -> None:
     """Catch sneaky `# type: ignore` additions outside the generated file."""
     pattern = re.compile(r"#\s*type:\s*ignore")
+    # Allow-list entries are (relative_path, stripped_line) tuples so that
+    # incidental line-number shifts (e.g. ruff format reflowing nearby code)
+    # don't churn this list. Add a new entry only with a documented reason
+    # in a code comment alongside the suppression itself.
+    expected: set[tuple[str, str]] = {
+        # `TypeAdapter[list[M]] = TypeAdapter(list[model_class])` would
+        # require a higher-kinded type so mypy knows the constructor's
+        # value-time generic lines up with the annotation's type-time
+        # generic. There is no way to express that in PEP-484, so the
+        # ignore stays. (See `_validation.parse_list`.)
+        (
+            "src/devhelm/_validation.py",
+            "adapter: TypeAdapter[list[M]] = TypeAdapter(list[model_class])  # type: ignore[valid-type]",
+        )
+    }
     offenders: list[str] = []
+    actual: set[tuple[str, str]] = set()
     for path in SRC.rglob("*.py"):
         if path.name == "_generated.py":
             continue
         text = path.read_text()
         for lineno, line in enumerate(text.splitlines(), start=1):
-            if pattern.search(line):
-                offenders.append(f"{path.relative_to(ROOT)}:{lineno}: {line.strip()}")
-    expected = {
-        # `TypeAdapter[list[M]] = TypeAdapter(list[model_class])` would
-        # require a higher-kinded type so mypy knows the constructor's
-        # value-time generic line up with the annotation's type-time
-        # generic. There is no way to express that in PEP-484, so the
-        # ignore stays. (See `_validation.parse_list`.)
-        "src/devhelm/_validation.py:126: adapter: TypeAdapter[list[M]] = "
-        "TypeAdapter(list[model_class])  # type: ignore[valid-type]",
-    }
-    actual = set(offenders)
+            if not pattern.search(line):
+                continue
+            rel = str(path.relative_to(ROOT))
+            stripped = line.strip()
+            actual.add((rel, stripped))
+            offenders.append(f"{rel}:{lineno}: {stripped}")
     extra = actual - expected
     assert not extra, (
         "Unexpected `# type: ignore` comments outside the generated file. "
         "Each suppression must be documented and added to the test allow-list:\n"
-        + "\n".join(sorted(extra))
+        + "\n".join(f"{rel}: {line}" for rel, line in sorted(extra))
+        + "\n\nFull offender list with line numbers:\n"
+        + "\n".join(sorted(offenders))
     )

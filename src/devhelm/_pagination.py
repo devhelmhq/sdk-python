@@ -73,9 +73,7 @@ def _validate_page(resp: object) -> _PageEnvelope:
         # programmer mistake) intentionally propagate — wrapping them here
         # would mask real bugs as fake "validation" failures.
         raise DevhelmValidationError(
-            "Invalid paginated response envelope",
-            errors=e.errors(),
-            cause=e,
+            "Invalid paginated response envelope", errors=e.errors(), cause=e
         ) from e
 
 
@@ -84,9 +82,7 @@ def _validate_cursor_page(resp: object) -> _CursorPageEnvelope:
         return _CursorPageEnvelope.model_validate(resp)
     except ValidationError as e:
         raise DevhelmValidationError(
-            "Invalid cursor-paginated response envelope",
-            errors=e.errors(),
-            cause=e,
+            "Invalid cursor-paginated response envelope", errors=e.errors(), cause=e
         ) from e
 
 

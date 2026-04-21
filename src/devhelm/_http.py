@@ -33,7 +33,7 @@ def _resolve(value: str | None, env_key: str, label: str) -> str:
     result = value or os.environ.get(env_key)
     if not result:
         raise DevhelmValidationError(
-            f"{label} is required. Pass it to Devhelm() or set {env_key}.",
+            f"{label} is required. Pass it to Devhelm() or set {env_key}."
         )
     return result
 
@@ -82,7 +82,7 @@ def _serialize_body(
     if isinstance(body, dict):
         raise DevhelmValidationError(
             "Raw dicts are not accepted as request bodies. "
-            "Use the generated Pydantic model instead.",
+            "Use the generated Pydantic model instead."
         )
     return body
 
@@ -106,7 +106,7 @@ def _decode_body(response: httpx.Response) -> _JsonResponse:
     # not silently reshape into an unknown.
     raise DevhelmValidationError(
         "Expected a JSON object, JSON array, or empty body from the server, "
-        f"got {type(body).__name__}.",
+        f"got {type(body).__name__}."
     )
 
 
@@ -137,10 +137,7 @@ def _wrap_transport_errors(send: Any) -> httpx.Response:
     try:
         result = send()
     except httpx.HTTPError as exc:
-        raise DevhelmTransportError(
-            f"{type(exc).__name__}: {exc}",
-            cause=exc,
-        ) from exc
+        raise DevhelmTransportError(f"{type(exc).__name__}: {exc}", cause=exc) from exc
     if not isinstance(result, httpx.Response):
         # Defensive: every httpx.Client.{get,post,...} returns httpx.Response.
         # Anyone who feeds `_wrap_transport_errors` a callable that returns
@@ -154,7 +151,9 @@ def _wrap_transport_errors(send: Any) -> httpx.Response:
 def api_get(
     client: httpx.Client, path: str, params: dict[str, Any] | None = None
 ) -> _JsonResponse:
-    return checked_fetch(_wrap_transport_errors(lambda: client.get(path, params=params)))
+    return checked_fetch(
+        _wrap_transport_errors(lambda: client.get(path, params=params))
+    )
 
 
 def api_post(
@@ -163,7 +162,9 @@ def api_post(
     if body is None:
         return checked_fetch(_wrap_transport_errors(lambda: client.post(path)))
     payload = _serialize_body(body)
-    return checked_fetch(_wrap_transport_errors(lambda: client.post(path, json=payload)))
+    return checked_fetch(
+        _wrap_transport_errors(lambda: client.post(path, json=payload))
+    )
 
 
 def api_put(
@@ -177,7 +178,9 @@ def api_patch(
     client: httpx.Client, path: str, body: BaseModel | dict[str, object] | None
 ) -> _JsonResponse:
     payload = _serialize_body(body)
-    return checked_fetch(_wrap_transport_errors(lambda: client.patch(path, json=payload)))
+    return checked_fetch(
+        _wrap_transport_errors(lambda: client.patch(path, json=payload))
+    )
 
 
 def api_delete(client: httpx.Client, path: str) -> None:

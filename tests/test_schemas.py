@@ -709,6 +709,4 @@ class TestRootModelStrictness:
 
     def test_check_type_details_tcp_variant_rejects_extra_keys(self) -> None:
         with pytest.raises(ValidationError, match="extra"):
-            CheckTypeDetailsDto.model_validate(
-                {"check_type": "tcp", "tls_extra": True}
-            )
+            CheckTypeDetailsDto.model_validate({"check_type": "tcp", "tls_extra": True})

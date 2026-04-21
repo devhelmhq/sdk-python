@@ -91,7 +91,7 @@ def parse_strict_envelope(
     ctx = f" ({context})" if context else ""
     if not isinstance(data, dict):
         raise DevhelmValidationError(
-            f"Expected envelope dict, got {type(data).__name__}{ctx}",
+            f"Expected envelope dict, got {type(data).__name__}{ctx}"
         )
     extra = set(data.keys()) - {"data"}
     if extra:
@@ -110,9 +110,7 @@ def parse_strict_envelope(
     if inner is None:
         if optional:
             return None
-        raise DevhelmValidationError(
-            f"Envelope missing required `data` field{ctx}",
-        )
+        raise DevhelmValidationError(f"Envelope missing required `data` field{ctx}")
     return parse_model(model_class, inner, context)
 
 
@@ -120,9 +118,7 @@ def parse_list(model_class: type[M], data: Any, context: str = "") -> list[M]:
     """Parse a list of items through a Pydantic model."""
     if not isinstance(data, list):
         ctx = f" ({context})" if context else ""
-        raise DevhelmValidationError(
-            f"Expected list, got {type(data).__name__}{ctx}",
-        )
+        raise DevhelmValidationError(f"Expected list, got {type(data).__name__}{ctx}")
     adapter: TypeAdapter[list[M]] = TypeAdapter(list[model_class])  # type: ignore[valid-type]
     try:
         return adapter.validate_python(data)

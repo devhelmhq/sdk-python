@@ -52,14 +52,20 @@ class TestParseStrictEnvelope:
     def test_unknown_keys_surface_as_structured_errors(self) -> None:
         with pytest.raises(DevhelmValidationError) as exc_info:
             parse_strict_envelope(
-                DeployLockDto,
-                {"data": None, "x": 1, "y": 2},
-                optional=True,
+                DeployLockDto, {"data": None, "x": 1, "y": 2}, optional=True
             )
         # Sorted by key for determinism — `x` first, `y` second.
         assert exc_info.value.errors == [
-            {"loc": ("x",), "msg": "Extra inputs are not permitted", "type": "extra_forbidden"},
-            {"loc": ("y",), "msg": "Extra inputs are not permitted", "type": "extra_forbidden"},
+            {
+                "loc": ("x",),
+                "msg": "Extra inputs are not permitted",
+                "type": "extra_forbidden",
+            },
+            {
+                "loc": ("y",),
+                "msg": "Extra inputs are not permitted",
+                "type": "extra_forbidden",
+            },
         ]
 
     def test_rejects_non_dict_response(self) -> None:

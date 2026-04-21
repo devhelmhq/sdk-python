@@ -137,9 +137,7 @@ def error_from_response(status: int, body: str) -> DevhelmApiError:
         pass
 
     if status in (401, 403):
-        return DevhelmAuthError(
-            message, status=status, detail=detail, body=parsed_body
-        )
+        return DevhelmAuthError(message, status=status, detail=detail, body=parsed_body)
     if status == 404:
         return DevhelmNotFoundError(
             message, status=status, detail=detail, body=parsed_body
