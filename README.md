@@ -108,20 +108,37 @@ print(results.has_more)
 
 ## Error Handling
 
+The SDK raises three top-level error types (see
+[`040-codegen-policies.md`](https://github.com/devhelmhq/mono/blob/main/cowork/design/040-codegen-policies.md)):
+
+- `DevhelmValidationError` — local request/response shape validation failed.
+- `DevhelmApiError` — the API returned a non-2xx status. Subclassed by HTTP
+  class for ergonomics: `DevhelmAuthError` (401/403), `DevhelmNotFoundError`
+  (404), `DevhelmConflictError` (409), `DevhelmRateLimitError` (429),
+  `DevhelmServerError` (5xx).
+- `DevhelmTransportError` — the request never reached a server response
+  (connection refused, timeout, TLS failure, etc.).
+
+Every `DevhelmApiError` carries:
+
+- `status` — the HTTP status code
+- `code` — coarse machine-readable category (e.g. `NOT_FOUND`,
+  `RATE_LIMITED`); switch on this, not the human-readable `message`
+- `request_id` — the per-request id from the `X-Request-Id` response header;
+  always include this in support tickets
+
 ```python
-from devhelm import Devhelm, DevhelmError, AuthError
+from devhelm import Devhelm, DevhelmAuthError, DevhelmError
 
 client = Devhelm(token="bad-token", org_id="1", workspace_id="1")
 
 try:
     client.monitors.list()
-except AuthError as e:
-    print(f"Auth failed: {e.message} (HTTP {e.status})")
+except DevhelmAuthError as e:
+    print(f"Auth failed: {e.message} (HTTP {e.status}, request_id={e.request_id})")
 except DevhelmError as e:
     print(f"API error [{e.code}]: {e.message}")
 ```
-
-Error codes: `AUTH`, `NOT_FOUND`, `CONFLICT`, `VALIDATION`, `API`.
 
 ## Development
 

@@ -660,29 +660,28 @@ class TestEnumValidationRejectsInvalid:
             )
 
 
-class TestRootModelStrictness:
-    """`scripts/inject_strict_config.py` deliberately skips RootModel classes
-    because Pydantic raises ``root-model-extra`` if you try to set
-    ``extra='forbid'`` on them. Strictness on ``RootModel[Inner]`` is
-    delegated to the *inner* type. These tests pin that contract — if the
-    inner variants ever lose their ``extra='forbid'`` config, ``RootModel``
-    discriminated unions would silently accept unknown fields, which is the
-    exact spec-drift class we're guarding against (P1)."""
+class TestSubscribedEventStrictness:
+    """`SubscribedEvent` is a closed enum in the spec — datamodel-codegen
+    emits it as a `StrEnum`, so unknown values fail at construction and
+    inside Pydantic models. These tests pin the closed-set contract so a
+    spec rename or type-loosening trips CI rather than silently accepting
+    new event names (P1)."""
 
-    def test_subscribed_event_accepts_valid_string(self) -> None:
-        # `SubscribedEvent(RootModel[str])` — the inner type is a scalar, so
-        # the strictness contract reduces to type/length validation.
-        ev = SubscribedEvent.model_validate("monitor.created")
-        assert ev.root == "monitor.created"
+    def test_subscribed_event_accepts_known_value(self) -> None:
+        ev = SubscribedEvent("monitor.created")
+        assert ev.value == "monitor.created"
 
     def test_subscribed_event_rejects_non_string(self) -> None:
-        with pytest.raises(ValidationError):
-            SubscribedEvent.model_validate(42)
+        with pytest.raises(ValueError):
+            SubscribedEvent(42)  # type: ignore[arg-type]
+
+    def test_subscribed_event_rejects_unknown_event(self) -> None:
+        with pytest.raises(ValueError):
+            SubscribedEvent("monitor.exploded")
 
     def test_subscribed_event_rejects_empty_string(self) -> None:
-        # min_length=1 from the spec.
-        with pytest.raises(ValidationError):
-            SubscribedEvent.model_validate("")
+        with pytest.raises(ValueError):
+            SubscribedEvent("")
 
     def test_check_type_details_routes_by_discriminator(self) -> None:
         details = CheckTypeDetailsDto.model_validate({"check_type": "http"})

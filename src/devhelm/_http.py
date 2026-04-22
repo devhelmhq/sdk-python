@@ -116,7 +116,11 @@ def checked_fetch(response: httpx.Response) -> _JsonResponse:
         if response.status_code == 204:
             return None
         return _decode_body(response)
-    raise error_from_response(response.status_code, response.text)
+    raise error_from_response(
+        response.status_code,
+        response.text,
+        request_id=response.headers.get("x-request-id"),
+    )
 
 
 # ---------------------------------------------------------------------------
