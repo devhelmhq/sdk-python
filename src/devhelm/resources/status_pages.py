@@ -11,6 +11,7 @@ from devhelm._generated import (
     CreateStatusPageIncidentUpdateRequest,
     CreateStatusPageRequest,
     ReorderComponentsRequest,
+    ReorderPageLayoutRequest,
     StatusPageComponentDto,
     StatusPageComponentGroupDto,
     StatusPageCustomDomainDto,
@@ -392,3 +393,16 @@ class StatusPages:
     def delete(self, id: int | str) -> None:
         """Delete a status page."""
         api_delete(self._client, _page_path(id))
+
+    def reorder_layout(
+        self, id: int | str, body: RequestBody[ReorderPageLayoutRequest]
+    ) -> None:
+        """Batch-reorder the page layout: top-level sections (groups +
+        ungrouped components) and, optionally, within-group component ordering.
+
+        Returns 204 No Content on success.
+        """
+        body = validate_request(
+            ReorderPageLayoutRequest, body, "statusPages.reorderLayout"
+        )
+        api_put(self._client, f"{_page_path(id)}/layout/reorder", body)

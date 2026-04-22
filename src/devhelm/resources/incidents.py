@@ -8,7 +8,7 @@ from devhelm._generated import (
     IncidentDto,
     ResolveIncidentRequest,
 )
-from devhelm._http import api_delete, api_get, api_post, path_param
+from devhelm._http import api_get, api_post, path_param
 from devhelm._pagination import Page, fetch_all_pages, fetch_page
 from devhelm._validation import RequestBody, parse_single, validate_request
 
@@ -57,7 +57,3 @@ class Incidents:
             api_post(self._client, f"/api/v1/incidents/{path_param(id)}/resolve", body),
             f"POST /api/v1/incidents/{id}/resolve",
         )
-
-    def delete(self, id: int | str) -> None:
-        """Delete an incident."""
-        api_delete(self._client, f"/api/v1/incidents/{path_param(id)}")
