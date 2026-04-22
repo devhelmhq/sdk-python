@@ -140,8 +140,7 @@ class TestErrorFromResponse:
 
     def test_request_id_falls_back_to_body_when_header_absent(self) -> None:
         err = error_from_response(
-            500,
-            json.dumps({"message": "boom", "requestId": "body-uuid-3"}),
+            500, json.dumps({"message": "boom", "requestId": "body-uuid-3"})
         )
         assert err.request_id == "body-uuid-3"
 
