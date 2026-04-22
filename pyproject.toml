@@ -1,6 +1,6 @@
 [project]
 name = "devhelm"
-version = "0.1.3"
+version = "0.2.0"
 description = "DevHelm SDK for Python — typed client for monitors, incidents, alerting, and more"
 authors = [{ name = "DevHelm", email = "hello@devhelm.io" }]
 license = "MIT"
