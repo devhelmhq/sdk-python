@@ -31,7 +31,16 @@ class DevhelmError(Exception):
     """Umbrella class — every typed SDK error inherits from this.
 
     Use this in catch-all sites; otherwise prefer the specific subclass.
+
+    Every subclass populates ``code`` so callers can switch on the error
+    category without ``isinstance`` chains:
+
+    - :class:`DevhelmValidationError` → ``"VALIDATION"``
+    - :class:`DevhelmTransportError` → ``"TRANSPORT"``
+    - :class:`DevhelmApiError` → server-supplied (e.g. ``"NOT_FOUND"``)
     """
+
+    code: str = "ERROR"
 
 
 class DevhelmValidationError(DevhelmError):
@@ -41,6 +50,8 @@ class DevhelmValidationError(DevhelmError):
     a Pydantic failure; otherwise it's a single-element list with `loc`,
     `msg`, and `type`.
     """
+
+    code = "VALIDATION"
 
     def __init__(
         self,
@@ -77,7 +88,10 @@ class DevhelmApiError(DevhelmError):
     message: str
     detail: str | None
     body: dict[str, Any] | str | None
-    code: str | None
+    # mypy infers `code: str` from the parent default, but we always populate
+    # it in __init__ — declaring it again here is documentation, not a
+    # narrowing. (Subclasses still inherit the same `str` type.)
+    code: str
     request_id: str | None
 
     def __init__(
@@ -95,7 +109,9 @@ class DevhelmApiError(DevhelmError):
         self.message = message
         self.detail = detail
         self.body = body
-        self.code = code
+        # Server-supplied code wins; fall back to a generic API-error label so
+        # `err.code` is never ``None`` for callers switching on category.
+        self.code = code or "API_ERROR"
         self.request_id = request_id
 
 
@@ -126,6 +142,8 @@ class DevhelmTransportError(DevhelmError):
     request/read/write timeout, etc. Wraps the underlying httpx exception
     on `__cause__` for full traceback.
     """
+
+    code = "TRANSPORT"
 
     def __init__(self, message: str, *, cause: Exception | None = None) -> None:
         super().__init__(message)

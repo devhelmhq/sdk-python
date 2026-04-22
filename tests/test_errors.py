@@ -126,7 +126,9 @@ class TestErrorFromResponse:
             502, "<html>Bad Gateway</html>", request_id="hdr-uuid-1"
         )
         assert err.request_id == "hdr-uuid-1"
-        assert err.code is None
+        # No server-supplied code → the SDK falls back to the generic
+        # API_ERROR sentinel so `err.code` is always populated.
+        assert err.code == "API_ERROR"
 
     def test_request_id_header_takes_precedence_over_body(self) -> None:
         err = error_from_response(
@@ -145,7 +147,8 @@ class TestErrorFromResponse:
 
     def test_no_code_or_request_id_for_non_json_body(self) -> None:
         err = error_from_response(503, "")
-        assert err.code is None
+        # Server didn't supply a code → SDK falls back to API_ERROR sentinel.
+        assert err.code == "API_ERROR"
         assert err.request_id is None
 
 
