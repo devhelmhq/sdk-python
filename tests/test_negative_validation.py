@@ -299,7 +299,7 @@ def _sp_group(**kw: object) -> dict[str, Any]:
         "name": "Infra",
         "displayOrder": 0,
         "pageOrder": 0,
-        "collapsed": True,
+        "defaultOpen": True,
         "createdAt": NOW,
         "updatedAt": NOW,
     }
@@ -1874,9 +1874,9 @@ class TestStatusPageComponentGroupDtoNegative:
                 _del(_sp_group(), "displayOrder")
             )
 
-    def test_missing_collapsed(self) -> None:
-        with pytest.raises(ValidationError, match="collapsed"):
-            StatusPageComponentGroupDto.model_validate(_del(_sp_group(), "collapsed"))
+    def test_missing_default_open(self) -> None:
+        with pytest.raises(ValidationError, match="defaultOpen"):
+            StatusPageComponentGroupDto.model_validate(_del(_sp_group(), "defaultOpen"))
 
     def test_empty_dict(self) -> None:
         with pytest.raises(ValidationError):
@@ -1924,9 +1924,9 @@ class TestUpdateStatusPageComponentGroupRequestNegative:
                 {"description": "x" * 501}
             )
 
-    def test_wrong_collapsed_type(self) -> None:
+    def test_wrong_default_open_type(self) -> None:
         with pytest.raises(ValidationError):
-            UpdateStatusPageComponentGroupRequest.model_validate({"collapsed": [1]})
+            UpdateStatusPageComponentGroupRequest.model_validate({"defaultOpen": [1]})
 
 
 # ===================================================================
