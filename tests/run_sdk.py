@@ -39,6 +39,7 @@ from devhelm import (
     Devhelm,
     DevhelmError,
     ReorderComponentsRequest,
+    ReorderPageLayoutRequest,
     ResolveIncidentRequest,
     UpdateAlertChannelRequest,
     UpdateEnvironmentRequest,
@@ -137,9 +138,6 @@ def run(client: Devhelm, resource: str, action: str, rest: list[str]) -> Any:  #
             else None
         )
         return client.incidents.resolve(rest[0], body)
-    if op == "incidents.delete":
-        client.incidents.delete(rest[0])
-        return None
 
     # -- Alert Channels --
     if op == "alert-channels.list":
@@ -310,6 +308,11 @@ def run(client: Devhelm, resource: str, action: str, rest: list[str]) -> Any:  #
         )
     if op == "status-pages.delete":
         client.status_pages.delete(rest[0])
+        return None
+    if op == "status-pages.reorder-layout":
+        client.status_pages.reorder_layout(
+            rest[0], _parse(ReorderPageLayoutRequest, rest[1])
+        )
         return None
 
     # -- Status Page Components --
