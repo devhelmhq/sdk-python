@@ -2319,11 +2319,18 @@ class TestTriggerRuleNegative:
 
 
 class TestConfirmationPolicyNegative:
-    def test_missing_type(self) -> None:
-        with pytest.raises(ValidationError, match="type"):
-            ConfirmationPolicy.model_validate(
-                {"minRegionsFailing": 1, "maxWaitSeconds": 30}
-            )
+    def test_omitted_type_defaults_to_only_variant(self) -> None:
+        # ConfirmationPolicy.type is a single-value Literal in the spec
+        # (currently only "multi_region"). The codegen defaults single-value
+        # Literals so callers don't repeat the discriminator string. Omitting
+        # the field on `model_validate` is therefore valid and yields the
+        # default. If a second variant is added to the spec, the codegen will
+        # drop the default and this test should flip back to a missing-field
+        # ValidationError.
+        policy = ConfirmationPolicy.model_validate(
+            {"minRegionsFailing": 1, "maxWaitSeconds": 30}
+        )
+        assert policy.type == "multi_region"
 
     def test_missing_min_regions_failing(self) -> None:
         with pytest.raises(ValidationError, match="minRegionsFailing"):
