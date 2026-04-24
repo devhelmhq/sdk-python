@@ -52,8 +52,21 @@ uv run datamodel-codegen \
   --use-annotated \
   --field-constraints \
   --snake-case-field \
+  --enum-field-as-literal one \
+  --use-one-literal-as-default \
   --input-file-type openapi \
   --formatters ruff-format
+
+# Why --enum-field-as-literal=one + --use-one-literal-as-default?
+#
+# Without these, single-value enums (used as discriminators on sealed unions
+# like AuditMetadata.kind) generate as `kind: Kind` where `Kind(StrEnum)` has
+# one entry. Pydantic 2.12+ rejects this when the parent is a discriminated
+# union: "Model 'X' needs field 'kind' to be of type `Literal`".
+#
+# These flags make the codegen emit `kind: Literal["..."] = "..."` instead,
+# satisfying the discriminator requirement and making the field optional at
+# construction (callers don't need to repeat the discriminator value).
 
 # Post-process: inject `model_config = ConfigDict(extra='forbid')` into every
 # generated class so that requests with unknown fields and responses with
