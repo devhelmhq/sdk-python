@@ -19,6 +19,7 @@ from devhelm.resources.api_keys import ApiKeys
 from devhelm.resources.dependencies import Dependencies
 from devhelm.resources.deploy_lock import DeployLock
 from devhelm.resources.environments import Environments
+from devhelm.resources.forensics import Forensics
 from devhelm.resources.incidents import Incidents
 from devhelm.resources.monitors import Monitors
 from devhelm.resources.notification_policies import NotificationPolicies
@@ -42,6 +43,7 @@ from devhelm.types import (
     AssertionSeverity,
     AssertionTestResultDto,
     CheckResultDto,
+    CheckTraceDto,
     ConfirmationPolicyType,
     CreateAlertChannelRequest,
     CreateApiKeyRequest,
@@ -67,7 +69,9 @@ from devhelm.types import (
     IncidentNewStatus,
     IncidentOldStatus,
     IncidentSeverity,
+    IncidentStateTransitionDto,
     IncidentStatus,
+    IncidentTimelineDto,
     IncidentUpdateCreatedBy,
     LinkedIncidentStatus,
     MembershipStatus,
@@ -80,6 +84,7 @@ from devhelm.types import (
     MonitorVersionDto,
     NotificationDispatchStatus,
     NotificationPolicyDto,
+    PolicySnapshotDto,
     PublishIncidentStatus,
     ReorderComponentsRequest,
     ReorderPageLayoutRequest,
@@ -87,6 +92,7 @@ from devhelm.types import (
     ResourceGroupDto,
     ResourceGroupHealthStatus,
     ResourceGroupMemberDto,
+    RuleEvaluationDto,
     SecretDto,
     ServiceSubscriptionDto,
     StatusPageBranding,
@@ -148,6 +154,7 @@ __all__ = [
     # Resource classes
     "Monitors",
     "Incidents",
+    "Forensics",
     "AlertChannels",
     "NotificationPolicies",
     "Environments",
@@ -173,6 +180,11 @@ __all__ = [
     "MonitorDto",
     "IncidentDto",
     "IncidentDetailDto",
+    "IncidentTimelineDto",
+    "IncidentStateTransitionDto",
+    "PolicySnapshotDto",
+    "RuleEvaluationDto",
+    "CheckTraceDto",
     "AlertChannelDto",
     "NotificationPolicyDto",
     "EnvironmentDto",

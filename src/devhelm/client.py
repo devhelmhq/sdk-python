@@ -8,6 +8,7 @@ from devhelm.resources.api_keys import ApiKeys
 from devhelm.resources.dependencies import Dependencies
 from devhelm.resources.deploy_lock import DeployLock
 from devhelm.resources.environments import Environments
+from devhelm.resources.forensics import Forensics
 from devhelm.resources.incidents import Incidents
 from devhelm.resources.monitors import Monitors
 from devhelm.resources.notification_policies import NotificationPolicies
@@ -39,6 +40,7 @@ class Devhelm:
 
     monitors: Monitors
     incidents: Incidents
+    forensics: Forensics
     alert_channels: AlertChannels
     notification_policies: NotificationPolicies
     environments: Environments
@@ -72,6 +74,7 @@ class Devhelm:
 
         self.monitors = Monitors(client)
         self.incidents = Incidents(client)
+        self.forensics = Forensics(client)
         self.alert_channels = AlertChannels(client)
         self.notification_policies = NotificationPolicies(client)
         self.environments = Environments(client)
