@@ -10,6 +10,7 @@ from devhelm.resources.api_keys import ApiKeys
 from devhelm.resources.dependencies import Dependencies
 from devhelm.resources.deploy_lock import DeployLock
 from devhelm.resources.environments import Environments
+from devhelm.resources.forensics import Forensics
 from devhelm.resources.incidents import Incidents
 from devhelm.resources.monitors import Monitors
 from devhelm.resources.notification_policies import NotificationPolicies
@@ -35,6 +36,14 @@ class TestClientResources:
 
     def test_incidents(self, client: Devhelm) -> None:
         assert isinstance(client.incidents, Incidents)
+
+    def test_forensics(self, client: Devhelm) -> None:
+        assert isinstance(client.forensics, Forensics)
+        assert callable(client.forensics.incident_timeline)
+        assert callable(client.forensics.check_trace)
+        assert callable(client.forensics.policy_snapshot)
+        assert callable(client.forensics.monitor_rule_evaluations)
+        assert callable(client.forensics.monitor_transitions)
 
     def test_alert_channels(self, client: Devhelm) -> None:
         assert isinstance(client.alert_channels, AlertChannels)
