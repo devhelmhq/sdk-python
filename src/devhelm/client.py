@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-from devhelm._http import DevhelmConfig, build_client
+from devhelm._http import DEFAULT_SURFACE, DevhelmConfig, build_client
 from devhelm.resources.alert_channels import AlertChannels
 from devhelm.resources.api_keys import ApiKeys
 from devhelm.resources.dependencies import Dependencies
@@ -62,13 +62,24 @@ class Devhelm:
         org_id: str | None = None,
         workspace_id: str | None = None,
         timeout: float = 30.0,
+        surface: str | None = None,
+        surface_version: str | None = None,
+        surface_metadata: dict[str, str] | None = None,
     ) -> None:
+        # ``surface`` / ``surface_version`` / ``surface_metadata`` are passthroughs
+        # for wrappers (e.g. the MCP server) that want their traffic attributed
+        # to a different devtool surface than the default ``sdk-py``. End users
+        # of the SDK should leave these unset. See
+        # https://devhelm.io/telemetry for the wire contract and opt-out.
         config = DevhelmConfig(
             token=token,
             base_url=base_url,
             org_id=org_id,
             workspace_id=workspace_id,
             timeout=timeout,
+            surface=surface if surface is not None else DEFAULT_SURFACE,
+            surface_version=surface_version,
+            surface_metadata=surface_metadata if surface_metadata is not None else {},
         )
         client = build_client(config)
 
