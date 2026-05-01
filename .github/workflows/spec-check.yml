@@ -20,6 +20,9 @@ jobs:
       - uses: actions/setup-python@v5
         with:
           python-version: '3.13'
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
 
       - name: Download latest OpenAPI spec from monorepo
         run: |
@@ -29,10 +32,33 @@ jobs:
         env:
           GH_TOKEN: ${{ secrets.MONOREPO_DISPATCH_TOKEN }}
 
+      # Sparse-checkout the shared OpenAPI preprocessor from mono.
+      # typegen.sh prefers $OPENAPI_TOOLS → local sibling → npx; without this
+      # step, CI falls through to `npx @devhelm/openapi-tools` which is
+      # intentionally unpublished (internal-only package).
+      - name: Checkout @devhelm/openapi-tools from mono
+        uses: actions/checkout@v4
+        with:
+          repository: devhelmhq/mono
+          token: ${{ secrets.MONOREPO_DISPATCH_TOKEN }}
+          path: .mono
+          sparse-checkout: packages/openapi-tools
+          sparse-checkout-cone-mode: false
+
+      - name: Build @devhelm/openapi-tools
+        working-directory: .mono/packages/openapi-tools
+        # mono uses pnpm workspaces; we only need this one package's deps here,
+        # so install standalone with npm (no lockfile in this subdir).
+        run: |
+          npm install --no-package-lock --no-audit --no-fund
+          npm run build
+
       - run: uv sync
       - run: uv run pytest -v
 
       - name: Regenerate types from spec
+        env:
+          OPENAPI_TOOLS: node ${{ github.workspace }}/.mono/packages/openapi-tools/dist/cli.js
         run: ./scripts/typegen.sh
 
       - name: Check for type changes
