@@ -55,7 +55,8 @@ uv run datamodel-codegen \
   --enum-field-as-literal one \
   --use-one-literal-as-default \
   --input-file-type openapi \
-  --formatters ruff-format
+  --formatters ruff-format \
+  --disable-timestamp
 
 # Why --enum-field-as-literal=one + --use-one-literal-as-default?
 #
