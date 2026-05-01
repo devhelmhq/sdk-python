@@ -64,6 +64,62 @@ class TestBuildClient:
         client.close()
 
 
+# ---------- Surface telemetry headers ----------
+
+
+class TestSurfaceTelemetry:
+    """The SDK reports its identity to the API on every authenticated request
+    so the GTM rollup can attribute usage. See https://devhelm.io/telemetry."""
+
+    def test_default_headers_announce_sdk_py(
+        self, monkeypatch: pytest.MonkeyPatch
+    ) -> None:
+        monkeypatch.delenv("DEVHELM_TELEMETRY", raising=False)
+        client = build_client(DevhelmConfig(token="t"))
+        assert client.headers["x-devhelm-surface"] == "sdk-py"
+        # version comes from importlib.metadata; its exact value is the
+        # SDK release, but it must always be a non-empty string.
+        assert client.headers["x-devhelm-surface-version"]
+        assert client.headers["x-devhelm-sdk-name"] == "sdk-py"
+        client.close()
+
+    def test_wrapper_can_override_surface(
+        self, monkeypatch: pytest.MonkeyPatch
+    ) -> None:
+        monkeypatch.delenv("DEVHELM_TELEMETRY", raising=False)
+        client = build_client(
+            DevhelmConfig(
+                token="t",
+                surface="mcp",
+                surface_version="0.5.0",
+                surface_metadata={"Mcp-Client": "cursor"},
+            )
+        )
+        assert client.headers["x-devhelm-surface"] == "mcp"
+        assert client.headers["x-devhelm-surface-version"] == "0.5.0"
+        # SDK identity is preserved alongside the wrapper surface.
+        assert client.headers["x-devhelm-sdk-name"] == "sdk-py"
+        assert client.headers["x-devhelm-mcp-client"] == "cursor"
+        client.close()
+
+    def test_env_opt_out_drops_all_surface_headers(
+        self, monkeypatch: pytest.MonkeyPatch
+    ) -> None:
+        monkeypatch.setenv("DEVHELM_TELEMETRY", "0")
+        client = build_client(
+            DevhelmConfig(token="t", surface="mcp", surface_metadata={"X": "y"})
+        )
+        # Surface, version, sdk-name, and any extras must all be absent.
+        assert "x-devhelm-surface" not in client.headers
+        assert "x-devhelm-surface-version" not in client.headers
+        assert "x-devhelm-sdk-name" not in client.headers
+        assert "x-devhelm-x" not in client.headers
+        # Auth + tenant headers must still be there — opt-out is for
+        # telemetry only, not for legitimate routing headers.
+        assert client.headers["x-phelm-org-id"] == "1"
+        client.close()
+
+
 # ---------- Pydantic validation helpers ----------
 
 

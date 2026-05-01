@@ -1,7 +1,9 @@
 from __future__ import annotations
 
 import os
-from dataclasses import dataclass
+from dataclasses import dataclass, field
+from importlib.metadata import PackageNotFoundError
+from importlib.metadata import version as _pkg_version
 from typing import Any
 from urllib.parse import quote
 
@@ -17,6 +19,26 @@ from devhelm._errors import (
 DEFAULT_BASE_URL = "https://api.devhelm.io"
 DEFAULT_PAGE_SIZE = 200
 
+# Default surface identifier sent on every authenticated request. Wrappers
+# (e.g. the MCP server) override this at construction time so the API can
+# attribute usage to the right devtool. See ``DevhelmConfig.surface``.
+DEFAULT_SURFACE = "sdk-py"
+
+
+def _sdk_version() -> str:
+    """Resolve the installed package version once at import time.
+
+    Uses ``importlib.metadata`` instead of hardcoding so a single source of
+    truth (``pyproject.toml``) flows through to the wire telemetry header.
+    Falls back to ``"unknown"`` for editable / source-tree installs that
+    don't yet have a dist-info directory; the API treats that as "no version
+    reported" rather than rejecting the request.
+    """
+    try:
+        return _pkg_version("devhelm")
+    except PackageNotFoundError:
+        return "unknown"
+
 
 @dataclass(frozen=True)
 class DevhelmConfig:
@@ -27,6 +49,19 @@ class DevhelmConfig:
     org_id: str | None = None
     workspace_id: str | None = None
     timeout: float = 30.0
+    # Devtool surface identifier reported to the API for adoption and
+    # version-distribution telemetry. Defaults to ``"sdk-py"``; wrappers
+    # such as the MCP server pass ``"mcp"`` instead so their traffic is
+    # attributed correctly. See https://devhelm.io/telemetry for the full
+    # contract and opt-out semantics.
+    surface: str = DEFAULT_SURFACE
+    # Surface version. Defaults to the installed ``devhelm`` package
+    # version; wrappers should pass their own package version.
+    surface_version: str | None = None
+    # Surface-specific metadata forwarded as ``X-DevHelm-*`` headers (e.g.
+    # the MCP server attaches ``mcp_client``). Keys are normalised to
+    # lower-kebab-case and mapped onto ``X-DevHelm-<key>`` on the wire.
+    surface_metadata: dict[str, str] = field(default_factory=dict)
 
 
 def _resolve(value: str | None, env_key: str, label: str) -> str:
@@ -40,6 +75,30 @@ def _resolve(value: str | None, env_key: str, label: str) -> str:
 
 def _resolve_optional(value: str | None, env_key: str, default: str) -> str:
     return value or os.environ.get(env_key) or default
+
+
+def _telemetry_headers(config: DevhelmConfig) -> dict[str, str]:
+    """Build the ``X-DevHelm-Surface*`` headers for one client instance.
+
+    Returns an empty dict when ``DEVHELM_TELEMETRY=0`` so the API receives
+    no surface signal at all. The opt-out is intentionally a single env var
+    rather than a constructor flag — users opt out once for the whole
+    process, not per call site. See https://devhelm.io/telemetry.
+    """
+    if os.environ.get("DEVHELM_TELEMETRY", "").strip() == "0":
+        return {}
+    headers: dict[str, str] = {
+        "X-DevHelm-Surface": config.surface,
+        "X-DevHelm-Surface-Version": config.surface_version or _sdk_version(),
+        # Always identify the underlying SDK so the API can distinguish
+        # "raw SDK call" from "wrapper-on-top-of-SDK call" (the latter
+        # overrides ``Surface`` to e.g. ``mcp`` but the SDK fingerprint
+        # stays available for debugging client-version skew).
+        "X-DevHelm-Sdk-Name": "sdk-py",
+    }
+    for key, value in config.surface_metadata.items():
+        headers[f"X-DevHelm-{key}"] = value
+    return headers
 
 
 def build_client(config: DevhelmConfig) -> httpx.Client:
@@ -56,6 +115,7 @@ def build_client(config: DevhelmConfig) -> httpx.Client:
             "Content-Type": "application/json",
             "x-phelm-org-id": org_id,
             "x-phelm-workspace-id": workspace_id,
+            **_telemetry_headers(config),
         },
         timeout=config.timeout,
     )
