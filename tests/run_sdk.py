@@ -393,6 +393,20 @@ def run(client: Devhelm, resource: str, action: str, rest: list[str]) -> Any:  #
         client.status_pages.subscribers.remove(rest[0], rest[1])
         return None
 
+    # -- Forensics --
+    if op == "forensics.incident-timeline":
+        return client.forensics.incident_timeline(rest[0])
+    if op == "forensics.check-trace":
+        return client.forensics.check_trace(rest[0])
+    if op == "forensics.policy-snapshot":
+        return client.forensics.policy_snapshot(rest[0])
+    if op == "forensics.monitor-rule-evaluations":
+        opts = json.loads(rest[1]) if len(rest) > 1 and rest[1] else {}
+        return client.forensics.monitor_rule_evaluations(rest[0], **opts)
+    if op == "forensics.monitor-transitions":
+        opts = json.loads(rest[1]) if len(rest) > 1 and rest[1] else {}
+        return client.forensics.monitor_transitions(rest[0], **opts)
+
     # -- Status Page Domains --
     if op == "status-pages.domains.list":
         return client.status_pages.domains.list(rest[0])
