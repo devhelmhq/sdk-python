@@ -1,19 +1,32 @@
 #!/usr/bin/env python3
-"""Inject `model_config = ConfigDict(extra='forbid')` into every generated
-Pydantic BaseModel and RootModel class.
+"""Inject ``model_config = ConfigDict(extra='forbid', populate_by_name=True)``
+into every generated Pydantic BaseModel class.
 
 datamodel-code-generator does not emit a config block when the source
-OpenAPI spec lacks `additionalProperties: false`. Springdoc never emits
+OpenAPI spec lacks ``additionalProperties: false``. Springdoc never emits
 that key, so we patch every generated class here.
 
+Why ``populate_by_name=True``?
+==============================
+Without it, models with ``validation_alias=camelCase`` reject snake_case
+kwargs because ``extra='forbid'`` treats them as unknown keys. Setting
+``populate_by_name=True`` lets callers pass *either* the wire alias
+(``frequencySeconds=60``) *or* the Python field name
+(``frequency_seconds=60``), which makes the SDK feel like a proper
+Python library instead of a thin JSON wrapper. Implements P1.Bug5 from
+the round-3 DevEx audit.
+
 This implements policies P1 (response extras forbidden) and P2 (request
-extras forbidden) from `mini/cowork/design/040-codegen-policies.md`.
+extras forbidden) from `mini/cowork/design/040-codegen-policies.md` plus
+the populate-by-name DevEx fix above.
 
-The transform is purely syntactic: scan each line, find `class Foo(BaseModel):`
-or `class Foo(RootModel[...]):` and inject `model_config = ConfigDict(...)`
-on the next non-empty indented line.
+The transform is purely syntactic: scan each line, find ``class Foo(BaseModel):``
+and inject ``model_config = ConfigDict(...)`` on the next non-empty
+indented line.
 
-Idempotent: skips classes that already declare `model_config`.
+Idempotent: re-runs upgrade an existing ``model_config`` line in place if
+it's missing the populate_by_name flag, so partial regeneration after a
+script update produces a consistent output.
 """
 
 from __future__ import annotations
@@ -26,7 +39,7 @@ from pathlib import Path
 # `root-model-extra`), so skip them. Their behavior is governed by the
 # inner type, which on its own enforces strict validation.
 CLASS_RE = re.compile(r"^class\s+([A-Za-z_][\w]*)\s*\(\s*(BaseModel)\s*\)\s*:\s*$")
-CONFIG_LINE = "    model_config = ConfigDict(extra='forbid')"
+CONFIG_LINE = "    model_config = ConfigDict(extra='forbid', populate_by_name=True)"
 
 
 # StrEnum members that shadow inherited str methods need a `# type: ignore`
@@ -98,6 +111,13 @@ def inject(source: str) -> tuple[str, int]:
         next_idx = i + 1
         next_line = lines[next_idx] if next_idx < len(lines) else ""
         if "model_config" in next_line:
+            # Upgrade the existing config line to include populate_by_name=True
+            # if it isn't already there. Idempotent across re-runs.
+            if "populate_by_name" not in next_line:
+                out.append(CONFIG_LINE + "\n")
+                i += 2  # replace the existing model_config line
+                modified += 1
+                continue
             i += 1
             continue
         # Replace bare `pass` (empty class body) with model_config. Use
