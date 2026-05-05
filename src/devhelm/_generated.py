@@ -6818,6 +6818,8 @@ class MonitorAssertionDto(BaseModel):
 
 
 class MonitorDto(BaseModel):
+    """Note: ``currentStatus`` was removed from this DTO. Inspect ``enabled`` and the incident-policy API to derive a live status for a monitor instead."""
+
     model_config = ConfigDict(extra="forbid", populate_by_name=True)
     id: Annotated[UUID, Field(description="Unique monitor identifier")]
     organization_id: Annotated[

@@ -52,6 +52,18 @@ from pathlib import Path
 CLASS_RE = re.compile(r"^class\s+([A-Za-z_][\w]*)\s*\(\s*(BaseModel)\s*\)\s*:\s*$")
 CONFIG_LINE = "    model_config = ConfigDict(extra='forbid', populate_by_name=True)"
 
+# Doc-banner injections keyed by class name. Inserted as a leading docstring
+# inside the target class so the note shows up in IDE hovers and stays put
+# across regeneration. Keep messages short and actionable; long-form
+# documentation belongs in the API reference, not the generated source.
+CLASS_BANNERS: dict[str, str] = {
+    "MonitorDto": (
+        "Note: ``currentStatus`` was removed from this DTO. "
+        "Inspect ``enabled`` and the incident-policy API to derive a "
+        "live status for a monitor instead."
+    ),
+}
+
 
 # StrEnum members that shadow inherited str methods need a `# type: ignore`
 # because mypy thinks they're overriding the base method with an incompatible
@@ -117,10 +129,17 @@ def inject(source: str) -> tuple[str, int]:
         if not m:
             i += 1
             continue
+        class_name = m.group(1)
         # Look at the very next line. If it's already model_config or pass,
         # leave the class alone (idempotency / empty class).
         next_idx = i + 1
         next_line = lines[next_idx] if next_idx < len(lines) else ""
+        # Inject the class-level docstring banner if requested. Skip if a
+        # docstring is already present (idempotent on partial reruns).
+        banner = CLASS_BANNERS.get(class_name)
+        if banner and not next_line.lstrip().startswith(('"""', "'''")):
+            out.append(f'    """{banner}"""\n')
+            modified += 1
         if "model_config" in next_line:
             # Upgrade the existing config line to include populate_by_name=True
             # if it isn't already there. Idempotent across re-runs.
