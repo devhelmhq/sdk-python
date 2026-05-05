@@ -5,6 +5,7 @@ from __future__ import annotations
 import pytest
 
 from devhelm import Devhelm
+from devhelm._http import DevhelmConfig
 from devhelm.resources.alert_channels import AlertChannels
 from devhelm.resources.api_keys import ApiKeys
 from devhelm.resources.dependencies import Dependencies
@@ -131,3 +132,31 @@ class TestStatusPagesResource:
         assert callable(d.add)
         assert callable(d.verify)
         assert callable(d.remove)
+
+
+class TestClientOptionalTenantArgs:
+    """`org_id` / `workspace_id` are optional — single-tenant tokens
+    auto-resolve them server-side, so the README quickstart and the
+    constructor must work with just a token (the most common case).
+    """
+
+    def test_constructible_without_org_or_workspace(
+        self, monkeypatch: pytest.MonkeyPatch
+    ) -> None:
+        # Strip any env fallback so we prove the constructor itself accepts
+        # missing tenant args, not that the test environment leaks them in.
+        monkeypatch.delenv("DEVHELM_ORG_ID", raising=False)
+        monkeypatch.delenv("DEVHELM_WORKSPACE_ID", raising=False)
+
+        client = Devhelm(token="test-token", base_url="http://localhost:8080")
+
+        assert client.monitors is not None
+        assert client.incidents is not None
+
+    def test_config_defaults_tenant_ids_to_none(self) -> None:
+        # Documents the API contract: leaving them unset on the config
+        # dataclass yields ``None``, which ``build_client`` then resolves
+        # via env var or the server-side default.
+        config = DevhelmConfig(token="test-token")
+        assert config.org_id is None
+        assert config.workspace_id is None
