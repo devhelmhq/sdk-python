@@ -10,7 +10,7 @@ from datetime import date as date_aliased
 
 
 class AcquireDeployLockRequest(BaseModel):
-    model_config = ConfigDict(extra="forbid")
+    model_config = ConfigDict(extra="forbid", populate_by_name=True)
     locked_by: Annotated[
         str,
         Field(
@@ -30,7 +30,7 @@ class AcquireDeployLockRequest(BaseModel):
 
 
 class AddCustomDomainRequest(BaseModel):
-    model_config = ConfigDict(extra="forbid")
+    model_config = ConfigDict(extra="forbid", populate_by_name=True)
     hostname: Annotated[
         str,
         Field(
@@ -50,7 +50,7 @@ class NewStatus(StrEnum):
 
 
 class AddIncidentUpdateRequest(BaseModel):
-    model_config = ConfigDict(extra="forbid")
+    model_config = ConfigDict(extra="forbid", populate_by_name=True)
     body: Annotated[
         str | None, Field(description="Update message or post-mortem notes")
     ] = None
@@ -71,7 +71,7 @@ class AddIncidentUpdateRequest(BaseModel):
 
 
 class AddResourceGroupMemberRequest(BaseModel):
-    model_config = ConfigDict(extra="forbid")
+    model_config = ConfigDict(extra="forbid", populate_by_name=True)
     member_type: Annotated[
         str,
         Field(
@@ -87,7 +87,7 @@ class AddResourceGroupMemberRequest(BaseModel):
 
 
 class AdminAddSubscriberRequest(BaseModel):
-    model_config = ConfigDict(extra="forbid")
+    model_config = ConfigDict(extra="forbid", populate_by_name=True)
     email: Annotated[
         EmailStr,
         Field(
@@ -105,7 +105,7 @@ class Status(StrEnum):
 
 
 class AffectedComponent(BaseModel):
-    model_config = ConfigDict(extra="forbid")
+    model_config = ConfigDict(extra="forbid", populate_by_name=True)
     component_id: Annotated[
         UUID, Field(alias="componentId", description="Status page component ID")
     ]
@@ -115,7 +115,7 @@ class AffectedComponent(BaseModel):
 
 
 class AlertChannelDisplayConfig(BaseModel):
-    model_config = ConfigDict(extra="forbid")
+    model_config = ConfigDict(extra="forbid", populate_by_name=True)
     recipients: Annotated[
         list[str] | None, Field(description="Email recipients list (email channels)")
     ] = None
@@ -156,7 +156,7 @@ class ChannelType(StrEnum):
 
 
 class AlertChannelDto(BaseModel):
-    model_config = ConfigDict(extra="forbid")
+    model_config = ConfigDict(extra="forbid", populate_by_name=True)
     id: Annotated[UUID, Field(description="Unique alert channel identifier")]
     name: Annotated[str, Field(description="Human-readable channel name")]
     channel_type: Annotated[
@@ -217,7 +217,7 @@ class EventType(StrEnum):
 
 
 class AlertDeliveryDto(BaseModel):
-    model_config = ConfigDict(extra="forbid")
+    model_config = ConfigDict(extra="forbid", populate_by_name=True)
     id: UUID
     incident_id: Annotated[
         UUID,
@@ -295,7 +295,7 @@ class AlertDeliveryDto(BaseModel):
 
 
 class ApiKeyAuthConfig(BaseModel):
-    model_config = ConfigDict(extra="forbid")
+    model_config = ConfigDict(extra="forbid", populate_by_name=True)
     type: Literal["api_key"] = "api_key"
     header_name: Annotated[
         str,
@@ -315,7 +315,7 @@ class ApiKeyAuthConfig(BaseModel):
 
 
 class ApiKeyCreateResponse(BaseModel):
-    model_config = ConfigDict(extra="forbid")
+    model_config = ConfigDict(extra="forbid", populate_by_name=True)
     id: Annotated[int, Field(description="Unique API key identifier")]
     name: Annotated[
         str, Field(description="Human-readable name for this API key", min_length=1)
@@ -341,7 +341,7 @@ class ApiKeyCreateResponse(BaseModel):
 
 
 class ApiKeyDto(BaseModel):
-    model_config = ConfigDict(extra="forbid")
+    model_config = ConfigDict(extra="forbid", populate_by_name=True)
     id: Annotated[int, Field(description="Unique API key identifier")]
     name: Annotated[
         str, Field(description="Human-readable name for this API key", min_length=1)
@@ -386,7 +386,7 @@ class Severity(StrEnum):
 
 
 class AssertionResultDto(BaseModel):
-    model_config = ConfigDict(extra="forbid")
+    model_config = ConfigDict(extra="forbid", populate_by_name=True)
     type: Annotated[str, Field(description="Assertion type", examples=["status_code"])]
     passed: Annotated[bool, Field(description="Whether the assertion passed")]
     severity: Annotated[Severity, Field(description="Assertion severity")]
@@ -447,7 +447,7 @@ class AssertionType(StrEnum):
 
 
 class AssertionTestResultDto(BaseModel):
-    model_config = ConfigDict(extra="forbid")
+    model_config = ConfigDict(extra="forbid", populate_by_name=True)
     assertion_type: Annotated[
         AssertionType,
         Field(alias="assertionType", description="Assertion type evaluated"),
@@ -462,7 +462,7 @@ class AssertionTestResultDto(BaseModel):
 
 
 class BasicAuthConfig(BaseModel):
-    model_config = ConfigDict(extra="forbid")
+    model_config = ConfigDict(extra="forbid", populate_by_name=True)
     type: Literal["basic"] = "basic"
     vault_secret_id: Annotated[
         UUID | None,
@@ -474,7 +474,7 @@ class BasicAuthConfig(BaseModel):
 
 
 class BearerAuthConfig(BaseModel):
-    model_config = ConfigDict(extra="forbid")
+    model_config = ConfigDict(extra="forbid", populate_by_name=True)
     type: Literal["bearer"] = "bearer"
     vault_secret_id: Annotated[
         UUID | None,
@@ -486,7 +486,7 @@ class BearerAuthConfig(BaseModel):
 
 
 class BodyContainsAssertion(BaseModel):
-    model_config = ConfigDict(extra="forbid")
+    model_config = ConfigDict(extra="forbid", populate_by_name=True)
     type: Literal["body_contains"] = "body_contains"
     substring: Annotated[
         str,
@@ -505,7 +505,7 @@ class Action(StrEnum):
 
 
 class CategoryDto(BaseModel):
-    model_config = ConfigDict(extra="forbid")
+    model_config = ConfigDict(extra="forbid", populate_by_name=True)
     category: Annotated[
         str, Field(description="Category name (e.g. CI/CD, Cloud, Payments)")
     ]
@@ -522,7 +522,7 @@ class OrgRole(StrEnum):
 
 
 class ChangeRoleRequest(BaseModel):
-    model_config = ConfigDict(extra="forbid")
+    model_config = ConfigDict(extra="forbid", populate_by_name=True)
     org_role: Annotated[
         OrgRole, Field(alias="orgRole", description="New role to assign")
     ]
@@ -538,14 +538,14 @@ class Status2(StrEnum):
 
 
 class ChangeStatusRequest(BaseModel):
-    model_config = ConfigDict(extra="forbid")
+    model_config = ConfigDict(extra="forbid", populate_by_name=True)
     status: Annotated[
         Status2, Field(description="New membership status (ACTIVE or SUSPENDED)")
     ]
 
 
 class ChartBucketDto(BaseModel):
-    model_config = ConfigDict(extra="forbid")
+    model_config = ConfigDict(extra="forbid", populate_by_name=True)
     bucket: Annotated[
         AwareDatetime,
         Field(
@@ -588,7 +588,7 @@ class ChartBucketDto(BaseModel):
 
 
 class ComponentImpact(BaseModel):
-    model_config = ConfigDict(extra="forbid")
+    model_config = ConfigDict(extra="forbid", populate_by_name=True)
     component_id: Annotated[
         UUID, Field(alias="componentId", description="Status page component UUID")
     ]
@@ -626,7 +626,7 @@ class ComponentImpact(BaseModel):
 
 
 class ComponentPosition(BaseModel):
-    model_config = ConfigDict(extra="forbid")
+    model_config = ConfigDict(extra="forbid", populate_by_name=True)
     component_id: Annotated[
         UUID, Field(alias="componentId", description="Component ID")
     ]
@@ -640,7 +640,7 @@ class ComponentPosition(BaseModel):
 
 
 class ComponentsSummaryDto(BaseModel):
-    model_config = ConfigDict(extra="forbid")
+    model_config = ConfigDict(extra="forbid", populate_by_name=True)
     total_count: Annotated[
         int,
         Field(
@@ -665,7 +665,7 @@ class ComponentsSummaryDto(BaseModel):
 
 
 class ComponentStatusDto(BaseModel):
-    model_config = ConfigDict(extra="forbid")
+    model_config = ConfigDict(extra="forbid", populate_by_name=True)
     id: Annotated[str, Field(description="Component UUID")]
     name: Annotated[str, Field(description="Human-readable component name")]
     status: Annotated[
@@ -677,7 +677,7 @@ class ComponentStatusDto(BaseModel):
 
 
 class ComponentUptimeSummaryDto(BaseModel):
-    model_config = ConfigDict(extra="forbid")
+    model_config = ConfigDict(extra="forbid", populate_by_name=True)
     day: Annotated[
         float | None,
         Field(description="Uptime percentage over the last 24 hours", examples=[99.95]),
@@ -700,7 +700,7 @@ class ComponentUptimeSummaryDto(BaseModel):
 
 
 class ConfirmationPolicy(BaseModel):
-    model_config = ConfigDict(extra="forbid")
+    model_config = ConfigDict(extra="forbid", populate_by_name=True)
     type: Annotated[
         Literal["multi_region"],
         Field(description="How incident confirmation is coordinated across regions"),
@@ -722,7 +722,7 @@ class ConfirmationPolicy(BaseModel):
 
 
 class CreateApiKeyRequest(BaseModel):
-    model_config = ConfigDict(extra="forbid")
+    model_config = ConfigDict(extra="forbid", populate_by_name=True)
     name: Annotated[
         str,
         Field(
@@ -741,7 +741,7 @@ class CreateApiKeyRequest(BaseModel):
 
 
 class CreateEnvironmentRequest(BaseModel):
-    model_config = ConfigDict(extra="forbid")
+    model_config = ConfigDict(extra="forbid", populate_by_name=True)
     name: Annotated[
         str,
         Field(
@@ -777,7 +777,7 @@ class RoleOffered(StrEnum):
 
 
 class CreateInviteRequest(BaseModel):
-    model_config = ConfigDict(extra="forbid")
+    model_config = ConfigDict(extra="forbid", populate_by_name=True)
     email: Annotated[
         EmailStr, Field(description="Email address to invite", min_length=1)
     ]
@@ -788,7 +788,7 @@ class CreateInviteRequest(BaseModel):
 
 
 class CreateMaintenanceWindowRequest(BaseModel):
-    model_config = ConfigDict(extra="forbid")
+    model_config = ConfigDict(extra="forbid", populate_by_name=True)
     monitor_id: Annotated[
         UUID | None,
         Field(
@@ -838,7 +838,7 @@ class Severity3(StrEnum):
 
 
 class CreateManualIncidentRequest(BaseModel):
-    model_config = ConfigDict(extra="forbid")
+    model_config = ConfigDict(extra="forbid", populate_by_name=True)
     title: Annotated[
         str, Field(description="Short summary of the incident", min_length=1)
     ]
@@ -869,6 +869,8 @@ class ManagedBy(StrEnum):
     dashboard = "DASHBOARD"
     cli = "CLI"
     terraform = "TERRAFORM"
+    mcp = "MCP"
+    api = "API"
 
 
 class HealthThresholdType(StrEnum):
@@ -877,7 +879,7 @@ class HealthThresholdType(StrEnum):
 
 
 class CreateSecretRequest(BaseModel):
-    model_config = ConfigDict(extra="forbid")
+    model_config = ConfigDict(extra="forbid", populate_by_name=True)
     key: Annotated[
         str,
         Field(
@@ -897,7 +899,7 @@ class CreateSecretRequest(BaseModel):
 
 
 class CreateStatusPageComponentGroupRequest(BaseModel):
-    model_config = ConfigDict(extra="forbid")
+    model_config = ConfigDict(extra="forbid", populate_by_name=True)
     name: Annotated[
         str, Field(description="Group display name", max_length=255, min_length=0)
     ]
@@ -925,7 +927,7 @@ class Type1(StrEnum):
 
 
 class CreateStatusPageComponentRequest(BaseModel):
-    model_config = ConfigDict(extra="forbid")
+    model_config = ConfigDict(extra="forbid", populate_by_name=True)
     name: Annotated[
         str, Field(description="Component display name", max_length=255, min_length=0)
     ]
@@ -997,7 +999,7 @@ class Impact(StrEnum):
 
 
 class CreateStatusPageIncidentRequest(BaseModel):
-    model_config = ConfigDict(extra="forbid")
+    model_config = ConfigDict(extra="forbid", populate_by_name=True)
     title: Annotated[
         str,
         Field(
@@ -1052,7 +1054,7 @@ class CreateStatusPageIncidentRequest(BaseModel):
 
 
 class CreateStatusPageIncidentUpdateRequest(BaseModel):
-    model_config = ConfigDict(extra="forbid")
+    model_config = ConfigDict(extra="forbid", populate_by_name=True)
     status: Annotated[
         Status3, Field(description="Incident status at this point in the timeline")
     ]
@@ -1086,7 +1088,7 @@ class IncidentMode(StrEnum):
 
 
 class CreateTagRequest(BaseModel):
-    model_config = ConfigDict(extra="forbid")
+    model_config = ConfigDict(extra="forbid", populate_by_name=True)
     name: Annotated[
         str,
         Field(
@@ -1117,7 +1119,7 @@ class SubscribedEvent(StrEnum):
 
 
 class CreateWebhookEndpointRequest(BaseModel):
-    model_config = ConfigDict(extra="forbid")
+    model_config = ConfigDict(extra="forbid", populate_by_name=True)
     url: Annotated[
         str,
         Field(
@@ -1143,12 +1145,12 @@ class CreateWebhookEndpointRequest(BaseModel):
 
 
 class CreateWorkspaceRequest(BaseModel):
-    model_config = ConfigDict(extra="forbid")
+    model_config = ConfigDict(extra="forbid", populate_by_name=True)
     name: Annotated[str, Field(description="Workspace name", min_length=1)]
 
 
 class DayIncident(BaseModel):
-    model_config = ConfigDict(extra="forbid")
+    model_config = ConfigDict(extra="forbid", populate_by_name=True)
     id: Annotated[UUID, Field(description="Status page incident UUID")]
     title: Annotated[str, Field(description="Incident title")]
     status: Annotated[
@@ -1187,7 +1189,7 @@ class DayIncident(BaseModel):
 
 
 class DekRotationResultDto(BaseModel):
-    model_config = ConfigDict(extra="forbid")
+    model_config = ConfigDict(extra="forbid", populate_by_name=True)
     previous_dek_version: Annotated[
         int,
         Field(alias="previousDekVersion", description="DEK version before rotation"),
@@ -1218,7 +1220,7 @@ class DekRotationResultDto(BaseModel):
 
 
 class DeleteChannelResult(BaseModel):
-    model_config = ConfigDict(extra="forbid")
+    model_config = ConfigDict(extra="forbid", populate_by_name=True)
     affected_policies: Annotated[
         int,
         Field(
@@ -1236,7 +1238,7 @@ class DeleteChannelResult(BaseModel):
 
 
 class DeliveryAttemptDto(BaseModel):
-    model_config = ConfigDict(extra="forbid")
+    model_config = ConfigDict(extra="forbid", populate_by_name=True)
     id: UUID
     delivery_id: Annotated[UUID, Field(alias="deliveryId")]
     attempt_number: Annotated[
@@ -1292,7 +1294,7 @@ class DeliveryAttemptDto(BaseModel):
 
 
 class DeployLockDto(BaseModel):
-    model_config = ConfigDict(extra="forbid")
+    model_config = ConfigDict(extra="forbid", populate_by_name=True)
     id: Annotated[UUID, Field(description="Unique lock identifier")]
     locked_by: Annotated[
         str,
@@ -1316,7 +1318,7 @@ class DeployLockDto(BaseModel):
 
 
 class DiscordChannelConfig(BaseModel):
-    model_config = ConfigDict(extra="forbid")
+    model_config = ConfigDict(extra="forbid", populate_by_name=True)
     channel_type: Annotated[Literal["discord"], Field(alias="channelType")] = "discord"
     webhook_url: Annotated[
         str, Field(alias="webhookUrl", description="Discord webhook URL", min_length=1)
@@ -1331,7 +1333,7 @@ class DiscordChannelConfig(BaseModel):
 
 
 class Dns(BaseModel):
-    model_config = ConfigDict(extra="forbid")
+    model_config = ConfigDict(extra="forbid", populate_by_name=True)
     check_type: Literal["dns"] = "dns"
     hostname: Annotated[str | None, Field(description="Target hostname")] = None
     requested_types: Annotated[
@@ -1356,7 +1358,7 @@ class Dns(BaseModel):
 
 
 class DnsExpectedCnameAssertion(BaseModel):
-    model_config = ConfigDict(extra="forbid")
+    model_config = ConfigDict(extra="forbid", populate_by_name=True)
     type: Literal["dns_expected_cname"] = "dns_expected_cname"
     value: Annotated[
         str,
@@ -1368,7 +1370,7 @@ class DnsExpectedCnameAssertion(BaseModel):
 
 
 class DnsExpectedIpsAssertion(BaseModel):
-    model_config = ConfigDict(extra="forbid")
+    model_config = ConfigDict(extra="forbid", populate_by_name=True)
     type: Literal["dns_expected_ips"] = "dns_expected_ips"
     ips: Annotated[
         list[str],
@@ -1380,7 +1382,7 @@ class DnsExpectedIpsAssertion(BaseModel):
 
 
 class DnsMaxAnswersAssertion(BaseModel):
-    model_config = ConfigDict(extra="forbid")
+    model_config = ConfigDict(extra="forbid", populate_by_name=True)
     type: Literal["dns_max_answers"] = "dns_max_answers"
     record_type: Annotated[
         str,
@@ -1396,7 +1398,7 @@ class DnsMaxAnswersAssertion(BaseModel):
 
 
 class DnsMinAnswersAssertion(BaseModel):
-    model_config = ConfigDict(extra="forbid")
+    model_config = ConfigDict(extra="forbid", populate_by_name=True)
     type: Literal["dns_min_answers"] = "dns_min_answers"
     record_type: Annotated[
         str,
@@ -1426,7 +1428,7 @@ class RecordType(StrEnum):
 
 
 class DnsMonitorConfig(BaseModel):
-    model_config = ConfigDict(extra="forbid")
+    model_config = ConfigDict(extra="forbid", populate_by_name=True)
     hostname: Annotated[str, Field(description="Domain name to resolve", min_length=1)]
     record_types: Annotated[
         list[RecordType] | None,
@@ -1455,7 +1457,7 @@ class DnsMonitorConfig(BaseModel):
 
 
 class DnsRecordContainsAssertion(BaseModel):
-    model_config = ConfigDict(extra="forbid")
+    model_config = ConfigDict(extra="forbid", populate_by_name=True)
     type: Literal["dns_record_contains"] = "dns_record_contains"
     record_type: Annotated[
         str,
@@ -1475,7 +1477,7 @@ class DnsRecordContainsAssertion(BaseModel):
 
 
 class DnsRecordEqualsAssertion(BaseModel):
-    model_config = ConfigDict(extra="forbid")
+    model_config = ConfigDict(extra="forbid", populate_by_name=True)
     type: Literal["dns_record_equals"] = "dns_record_equals"
     record_type: Annotated[
         str,
@@ -1492,12 +1494,12 @@ class DnsRecordEqualsAssertion(BaseModel):
 
 
 class DnsResolvesAssertion(BaseModel):
-    model_config = ConfigDict(extra="forbid")
+    model_config = ConfigDict(extra="forbid", populate_by_name=True)
     type: Literal["dns_resolves"] = "dns_resolves"
 
 
 class DnsResponseTimeAssertion(BaseModel):
-    model_config = ConfigDict(extra="forbid")
+    model_config = ConfigDict(extra="forbid", populate_by_name=True)
     type: Literal["dns_response_time"] = "dns_response_time"
     max_ms: Annotated[
         int,
@@ -1509,7 +1511,7 @@ class DnsResponseTimeAssertion(BaseModel):
 
 
 class DnsResponseTimeWarnAssertion(BaseModel):
-    model_config = ConfigDict(extra="forbid")
+    model_config = ConfigDict(extra="forbid", populate_by_name=True)
     type: Literal["dns_response_time_warn"] = "dns_response_time_warn"
     warn_ms: Annotated[
         int,
@@ -1521,7 +1523,7 @@ class DnsResponseTimeWarnAssertion(BaseModel):
 
 
 class DnsTtlHighAssertion(BaseModel):
-    model_config = ConfigDict(extra="forbid")
+    model_config = ConfigDict(extra="forbid", populate_by_name=True)
     type: Literal["dns_ttl_high"] = "dns_ttl_high"
     max_ttl: Annotated[
         int,
@@ -1533,7 +1535,7 @@ class DnsTtlHighAssertion(BaseModel):
 
 
 class DnsTtlLowAssertion(BaseModel):
-    model_config = ConfigDict(extra="forbid")
+    model_config = ConfigDict(extra="forbid", populate_by_name=True)
     type: Literal["dns_ttl_low"] = "dns_ttl_low"
     min_ttl: Annotated[
         int,
@@ -1545,7 +1547,7 @@ class DnsTtlLowAssertion(BaseModel):
 
 
 class DnsTxtContainsAssertion(BaseModel):
-    model_config = ConfigDict(extra="forbid")
+    model_config = ConfigDict(extra="forbid", populate_by_name=True)
     type: Literal["dns_txt_contains"] = "dns_txt_contains"
     substring: Annotated[
         str,
@@ -1557,7 +1559,7 @@ class DnsTxtContainsAssertion(BaseModel):
 
 
 class EmailChannelConfig(BaseModel):
-    model_config = ConfigDict(extra="forbid")
+    model_config = ConfigDict(extra="forbid", populate_by_name=True)
     channel_type: Annotated[Literal["email"], Field(alias="channelType")] = "email"
     recipients: Annotated[
         list[EmailStr],
@@ -1566,7 +1568,7 @@ class EmailChannelConfig(BaseModel):
 
 
 class EntitlementDto(BaseModel):
-    model_config = ConfigDict(extra="forbid")
+    model_config = ConfigDict(extra="forbid", populate_by_name=True)
     key: Annotated[str, Field(description="Entitlement key")]
     value: Annotated[
         int, Field(description="Effective limit value (overrides applied)")
@@ -1583,7 +1585,7 @@ class EntitlementDto(BaseModel):
 
 
 class EnvironmentDto(BaseModel):
-    model_config = ConfigDict(extra="forbid")
+    model_config = ConfigDict(extra="forbid", populate_by_name=True)
     id: Annotated[UUID, Field(description="Unique environment identifier")]
     org_id: Annotated[
         int,
@@ -1627,7 +1629,7 @@ class EnvironmentDto(BaseModel):
 
 
 class ErrorResponse(BaseModel):
-    model_config = ConfigDict(extra="forbid")
+    model_config = ConfigDict(extra="forbid", populate_by_name=True)
     status: Annotated[
         int,
         Field(
@@ -1667,7 +1669,7 @@ class ErrorResponse(BaseModel):
 
 
 class EscalationStep(BaseModel):
-    model_config = ConfigDict(extra="forbid")
+    model_config = ConfigDict(extra="forbid", populate_by_name=True)
     delay_minutes: Annotated[
         int,
         Field(
@@ -1702,7 +1704,7 @@ class EscalationStep(BaseModel):
 
 
 class FailureDetail(BaseModel):
-    model_config = ConfigDict(extra="forbid")
+    model_config = ConfigDict(extra="forbid", populate_by_name=True)
     monitor_id: Annotated[
         UUID, Field(alias="monitorId", description="Monitor ID that failed")
     ]
@@ -1710,7 +1712,7 @@ class FailureDetail(BaseModel):
 
 
 class GroupComponentOrder(BaseModel):
-    model_config = ConfigDict(extra="forbid")
+    model_config = ConfigDict(extra="forbid", populate_by_name=True)
     group_id: Annotated[
         UUID, Field(alias="groupId", description="Group these components belong to")
     ]
@@ -1724,7 +1726,7 @@ class GroupComponentOrder(BaseModel):
 
 
 class HeaderAuthConfig(BaseModel):
-    model_config = ConfigDict(extra="forbid")
+    model_config = ConfigDict(extra="forbid", populate_by_name=True)
     type: Literal["header"] = "header"
     header_name: Annotated[
         str,
@@ -1753,7 +1755,7 @@ class Operator(StrEnum):
 
 
 class HeaderValueAssertion(BaseModel):
-    model_config = ConfigDict(extra="forbid")
+    model_config = ConfigDict(extra="forbid", populate_by_name=True)
     type: Literal["header_value"] = "header_value"
     header_name: Annotated[
         str,
@@ -1775,7 +1777,7 @@ class HeaderValueAssertion(BaseModel):
 
 
 class HeartbeatIntervalDriftAssertion(BaseModel):
-    model_config = ConfigDict(extra="forbid")
+    model_config = ConfigDict(extra="forbid", populate_by_name=True)
     type: Literal["heartbeat_interval_drift"] = "heartbeat_interval_drift"
     max_deviation_percent: Annotated[
         int,
@@ -1789,7 +1791,7 @@ class HeartbeatIntervalDriftAssertion(BaseModel):
 
 
 class HeartbeatMaxIntervalAssertion(BaseModel):
-    model_config = ConfigDict(extra="forbid")
+    model_config = ConfigDict(extra="forbid", populate_by_name=True)
     type: Literal["heartbeat_max_interval"] = "heartbeat_max_interval"
     max_seconds: Annotated[
         int,
@@ -1802,7 +1804,7 @@ class HeartbeatMaxIntervalAssertion(BaseModel):
 
 
 class HeartbeatMonitorConfig(BaseModel):
-    model_config = ConfigDict(extra="forbid")
+    model_config = ConfigDict(extra="forbid", populate_by_name=True)
     expected_interval: Annotated[
         int,
         Field(
@@ -1823,7 +1825,7 @@ class HeartbeatMonitorConfig(BaseModel):
 
 
 class HeartbeatPayloadContainsAssertion(BaseModel):
-    model_config = ConfigDict(extra="forbid")
+    model_config = ConfigDict(extra="forbid", populate_by_name=True)
     type: Literal["heartbeat_payload_contains"] = "heartbeat_payload_contains"
     path: Annotated[
         str,
@@ -1838,14 +1840,14 @@ class HeartbeatPayloadContainsAssertion(BaseModel):
 
 
 class HeartbeatPingResponse(BaseModel):
-    model_config = ConfigDict(extra="forbid")
+    model_config = ConfigDict(extra="forbid", populate_by_name=True)
     ok: Annotated[
         bool, Field(description="Always true on a 2xx response", examples=[True])
     ]
 
 
 class HeartbeatReceivedAssertion(BaseModel):
-    model_config = ConfigDict(extra="forbid")
+    model_config = ConfigDict(extra="forbid", populate_by_name=True)
     type: Literal["heartbeat_received"] = "heartbeat_received"
 
 
@@ -1859,7 +1861,7 @@ class Method(StrEnum):
 
 
 class HttpMonitorConfig(BaseModel):
-    model_config = ConfigDict(extra="forbid")
+    model_config = ConfigDict(extra="forbid", populate_by_name=True)
     url: Annotated[
         str, Field(description="Target URL to send requests to", min_length=1)
     ]
@@ -1897,7 +1899,7 @@ class HttpMonitorConfig(BaseModel):
 
 
 class Icmp(BaseModel):
-    model_config = ConfigDict(extra="forbid")
+    model_config = ConfigDict(extra="forbid", populate_by_name=True)
     check_type: Literal["icmp"] = "icmp"
     host: Annotated[str, Field(description="Target host", examples=["1.1.1.1"])]
     packets_sent: Annotated[
@@ -1930,7 +1932,7 @@ class Icmp(BaseModel):
 
 
 class IcmpMonitorConfig(BaseModel):
-    model_config = ConfigDict(extra="forbid")
+    model_config = ConfigDict(extra="forbid", populate_by_name=True)
     host: Annotated[
         str, Field(description="Target hostname or IP address to ping", min_length=1)
     ]
@@ -1949,7 +1951,7 @@ class IcmpMonitorConfig(BaseModel):
 
 
 class IcmpPacketLossAssertion(BaseModel):
-    model_config = ConfigDict(extra="forbid")
+    model_config = ConfigDict(extra="forbid", populate_by_name=True)
     type: Literal["icmp_packet_loss"] = "icmp_packet_loss"
     max_percent: Annotated[
         float,
@@ -1963,12 +1965,12 @@ class IcmpPacketLossAssertion(BaseModel):
 
 
 class IcmpReachableAssertion(BaseModel):
-    model_config = ConfigDict(extra="forbid")
+    model_config = ConfigDict(extra="forbid", populate_by_name=True)
     type: Literal["icmp_reachable"] = "icmp_reachable"
 
 
 class IcmpResponseTimeAssertion(BaseModel):
-    model_config = ConfigDict(extra="forbid")
+    model_config = ConfigDict(extra="forbid", populate_by_name=True)
     type: Literal["icmp_response_time"] = "icmp_response_time"
     max_ms: Annotated[
         int,
@@ -1980,7 +1982,7 @@ class IcmpResponseTimeAssertion(BaseModel):
 
 
 class IcmpResponseTimeWarnAssertion(BaseModel):
-    model_config = ConfigDict(extra="forbid")
+    model_config = ConfigDict(extra="forbid", populate_by_name=True)
     type: Literal["icmp_response_time_warn"] = "icmp_response_time_warn"
     warn_ms: Annotated[
         int,
@@ -2013,7 +2015,7 @@ class ResolutionReason(StrEnum):
 
 
 class IncidentDto(BaseModel):
-    model_config = ConfigDict(extra="forbid")
+    model_config = ConfigDict(extra="forbid", populate_by_name=True)
     id: Annotated[UUID, Field(description="Unique incident identifier")]
     monitor_id: Annotated[
         UUID | None,
@@ -2230,7 +2232,7 @@ class IncidentDto(BaseModel):
 
 
 class IncidentFilterParams(BaseModel):
-    model_config = ConfigDict(extra="forbid")
+    model_config = ConfigDict(extra="forbid", populate_by_name=True)
     status: Annotated[
         Status6 | None,
         Field(
@@ -2311,7 +2313,7 @@ class IncidentFilterParams(BaseModel):
 
 
 class IncidentRef(BaseModel):
-    model_config = ConfigDict(extra="forbid")
+    model_config = ConfigDict(extra="forbid", populate_by_name=True)
     id: Annotated[
         UUID,
         Field(
@@ -2330,7 +2332,7 @@ class IncidentRef(BaseModel):
 
 
 class IncidentsSummaryDto(BaseModel):
-    model_config = ConfigDict(extra="forbid")
+    model_config = ConfigDict(extra="forbid", populate_by_name=True)
     active: int
     resolved_today: Annotated[int, Field(alias="resolvedToday")]
     mttr30d: float | None = None
@@ -2349,7 +2351,7 @@ class CreatedBy(StrEnum):
 
 
 class IncidentUpdateDto(BaseModel):
-    model_config = ConfigDict(extra="forbid")
+    model_config = ConfigDict(extra="forbid", populate_by_name=True)
     id: UUID
     incident_id: Annotated[UUID, Field(alias="incidentId")]
     old_status: Annotated[OldStatus | None, Field(alias="oldStatus")] = None
@@ -2370,7 +2372,7 @@ class TierAvailability(StrEnum):
 
 
 class IntegrationFieldDto(BaseModel):
-    model_config = ConfigDict(extra="forbid")
+    model_config = ConfigDict(extra="forbid", populate_by_name=True)
     key: str
     label: str
     type: str
@@ -2383,7 +2385,7 @@ class IntegrationFieldDto(BaseModel):
 
 
 class InviteDto(BaseModel):
-    model_config = ConfigDict(extra="forbid")
+    model_config = ConfigDict(extra="forbid", populate_by_name=True)
     invite_id: Annotated[
         int, Field(alias="inviteId", description="Unique invite identifier")
     ]
@@ -2416,7 +2418,7 @@ class InviteDto(BaseModel):
 
 
 class JsonPathAssertion(BaseModel):
-    model_config = ConfigDict(extra="forbid")
+    model_config = ConfigDict(extra="forbid", populate_by_name=True)
     type: Literal["json_path"] = "json_path"
     path: Annotated[
         str,
@@ -2437,7 +2439,7 @@ class JsonPathAssertion(BaseModel):
 
 
 class KeyInfo(BaseModel):
-    model_config = ConfigDict(extra="forbid")
+    model_config = ConfigDict(extra="forbid", populate_by_name=True)
     id: Annotated[int, Field(description="Key ID")]
     name: Annotated[str, Field(description="Human-readable key name")]
     created_at: Annotated[
@@ -2461,7 +2463,7 @@ class Status8(StrEnum):
 
 
 class LinkedStatusPageIncidentDto(BaseModel):
-    model_config = ConfigDict(extra="forbid")
+    model_config = ConfigDict(extra="forbid", populate_by_name=True)
     id: UUID
     status_page_id: Annotated[UUID, Field(alias="statusPageId")]
     status_page_name: Annotated[str, Field(alias="statusPageName")]
@@ -2474,7 +2476,7 @@ class LinkedStatusPageIncidentDto(BaseModel):
 
 
 class MaintenanceComponentRef(BaseModel):
-    model_config = ConfigDict(extra="forbid")
+    model_config = ConfigDict(extra="forbid", populate_by_name=True)
     id: Annotated[UUID, Field(description="Component identifier")]
     name: Annotated[str, Field(description="Component name")]
     status: Annotated[
@@ -2483,7 +2485,7 @@ class MaintenanceComponentRef(BaseModel):
 
 
 class MaintenanceUpdateDto(BaseModel):
-    model_config = ConfigDict(extra="forbid")
+    model_config = ConfigDict(extra="forbid", populate_by_name=True)
     id: Annotated[UUID, Field(description="Unique update identifier")]
     status: Annotated[str, Field(description="Status at the time of this update")]
     body: Annotated[str | None, Field(description="Update message from the vendor")] = (
@@ -2496,7 +2498,7 @@ class MaintenanceUpdateDto(BaseModel):
 
 
 class MaintenanceWindowDto(BaseModel):
-    model_config = ConfigDict(extra="forbid")
+    model_config = ConfigDict(extra="forbid", populate_by_name=True)
     id: Annotated[UUID, Field(description="Unique maintenance window identifier")]
     monitor_id: Annotated[
         UUID | None,
@@ -2558,7 +2560,7 @@ class Type2(StrEnum):
 
 
 class MatchRule(BaseModel):
-    model_config = ConfigDict(extra="forbid")
+    model_config = ConfigDict(extra="forbid", populate_by_name=True)
     type: Annotated[
         Type2,
         Field(description="Rule type used to evaluate incidents and status events"),
@@ -2584,12 +2586,12 @@ class MatchRule(BaseModel):
 
 
 class McpConnectsAssertion(BaseModel):
-    model_config = ConfigDict(extra="forbid")
+    model_config = ConfigDict(extra="forbid", populate_by_name=True)
     type: Literal["mcp_connects"] = "mcp_connects"
 
 
 class McpHasCapabilityAssertion(BaseModel):
-    model_config = ConfigDict(extra="forbid")
+    model_config = ConfigDict(extra="forbid", populate_by_name=True)
     type: Literal["mcp_has_capability"] = "mcp_has_capability"
     capability: Annotated[
         str,
@@ -2601,7 +2603,7 @@ class McpHasCapabilityAssertion(BaseModel):
 
 
 class McpMinToolsAssertion(BaseModel):
-    model_config = ConfigDict(extra="forbid")
+    model_config = ConfigDict(extra="forbid", populate_by_name=True)
     type: Literal["mcp_min_tools"] = "mcp_min_tools"
     min: Annotated[
         int, Field(description="Minimum number of tools the server must expose")
@@ -2609,7 +2611,7 @@ class McpMinToolsAssertion(BaseModel):
 
 
 class McpProtocolVersionAssertion(BaseModel):
-    model_config = ConfigDict(extra="forbid")
+    model_config = ConfigDict(extra="forbid", populate_by_name=True)
     type: Literal["mcp_protocol_version"] = "mcp_protocol_version"
     version: Annotated[
         str,
@@ -2621,7 +2623,7 @@ class McpProtocolVersionAssertion(BaseModel):
 
 
 class McpResponseTimeAssertion(BaseModel):
-    model_config = ConfigDict(extra="forbid")
+    model_config = ConfigDict(extra="forbid", populate_by_name=True)
     type: Literal["mcp_response_time"] = "mcp_response_time"
     max_ms: Annotated[
         int,
@@ -2633,7 +2635,7 @@ class McpResponseTimeAssertion(BaseModel):
 
 
 class McpResponseTimeWarnAssertion(BaseModel):
-    model_config = ConfigDict(extra="forbid")
+    model_config = ConfigDict(extra="forbid", populate_by_name=True)
     type: Literal["mcp_response_time_warn"] = "mcp_response_time_warn"
     warn_ms: Annotated[
         int,
@@ -2645,7 +2647,7 @@ class McpResponseTimeWarnAssertion(BaseModel):
 
 
 class McpServer(BaseModel):
-    model_config = ConfigDict(extra="forbid")
+    model_config = ConfigDict(extra="forbid", populate_by_name=True)
     check_type: Literal["mcp_server"] = "mcp_server"
     url: Annotated[str | None, Field(description="MCP server URL")] = None
     protocol_version: Annotated[
@@ -2668,7 +2670,7 @@ class McpServer(BaseModel):
 
 
 class McpServerMonitorConfig(BaseModel):
-    model_config = ConfigDict(extra="forbid")
+    model_config = ConfigDict(extra="forbid", populate_by_name=True)
     command: Annotated[
         str,
         Field(description="Command to execute to start the MCP server", min_length=1),
@@ -2684,7 +2686,7 @@ class McpServerMonitorConfig(BaseModel):
 
 
 class McpToolAvailableAssertion(BaseModel):
-    model_config = ConfigDict(extra="forbid")
+    model_config = ConfigDict(extra="forbid", populate_by_name=True)
     type: Literal["mcp_tool_available"] = "mcp_tool_available"
     tool_name: Annotated[
         str,
@@ -2697,7 +2699,7 @@ class McpToolAvailableAssertion(BaseModel):
 
 
 class McpToolCountChangedAssertion(BaseModel):
-    model_config = ConfigDict(extra="forbid")
+    model_config = ConfigDict(extra="forbid", populate_by_name=True)
     type: Literal["mcp_tool_count_changed"] = "mcp_tool_count_changed"
     expected_count: Annotated[
         int,
@@ -2718,7 +2720,7 @@ class Status9(StrEnum):
 
 
 class MemberDto(BaseModel):
-    model_config = ConfigDict(extra="forbid")
+    model_config = ConfigDict(extra="forbid", populate_by_name=True)
     user_id: Annotated[
         int, Field(alias="userId", description="User identifier of the member")
     ]
@@ -2758,7 +2760,7 @@ class NewRole(StrEnum):
 
 
 class MemberRoleChangedMetadata(BaseModel):
-    model_config = ConfigDict(extra="forbid")
+    model_config = ConfigDict(extra="forbid", populate_by_name=True)
     kind: Literal["member_role_changed"] = "member_role_changed"
     old_role: Annotated[
         OldRole,
@@ -2795,7 +2797,7 @@ class AuthType(StrEnum):
 
 
 class MonitorAuthDto(BaseModel):
-    model_config = ConfigDict(extra="forbid")
+    model_config = ConfigDict(extra="forbid", populate_by_name=True)
     id: UUID
     monitor_id: Annotated[UUID, Field(alias="monitorId")]
     auth_type: Annotated[AuthType, Field(alias="authType")]
@@ -2812,13 +2814,13 @@ class Type3(StrEnum):
 
 
 class MonitorReference(BaseModel):
-    model_config = ConfigDict(extra="forbid")
+    model_config = ConfigDict(extra="forbid", populate_by_name=True)
     id: Annotated[UUID, Field(description="Monitor identifier")]
     name: Annotated[str, Field(description="Monitor name")]
 
 
 class MonitorsSummaryDto(BaseModel):
-    model_config = ConfigDict(extra="forbid")
+    model_config = ConfigDict(extra="forbid", populate_by_name=True)
     total: Annotated[
         int, Field(description="Total number of monitors in the organization")
     ]
@@ -2847,7 +2849,7 @@ class MonitorsSummaryDto(BaseModel):
 
 
 class MonitorTestResultDto(BaseModel):
-    model_config = ConfigDict(extra="forbid")
+    model_config = ConfigDict(extra="forbid", populate_by_name=True)
     passed: bool
     error: str | None = None
     status_code: Annotated[int | None, Field(alias="statusCode")] = None
@@ -2873,7 +2875,7 @@ class ChangedVia(StrEnum):
 
 
 class NewTagRequest(BaseModel):
-    model_config = ConfigDict(extra="forbid")
+    model_config = ConfigDict(extra="forbid", populate_by_name=True)
     name: Annotated[str, Field(description="Tag name", max_length=100, min_length=0)]
     color: Annotated[
         str | None,
@@ -2900,7 +2902,7 @@ class CompletionReason(StrEnum):
 
 
 class NotificationDispatchDto(BaseModel):
-    model_config = ConfigDict(extra="forbid")
+    model_config = ConfigDict(extra="forbid", populate_by_name=True)
     id: Annotated[UUID, Field(description="Unique dispatch record identifier")]
     incident_id: Annotated[
         UUID, Field(alias="incidentId", description="Incident this dispatch is for")
@@ -2982,7 +2984,7 @@ class NotificationDispatchDto(BaseModel):
 
 
 class NotificationDto(BaseModel):
-    model_config = ConfigDict(extra="forbid")
+    model_config = ConfigDict(extra="forbid", populate_by_name=True)
     id: Annotated[int, Field(description="Unique notification identifier")]
     type: Annotated[
         str, Field(description="Notification category (e.g. incident, monitor, team)")
@@ -3016,7 +3018,7 @@ class NotificationDto(BaseModel):
 
 
 class OpsGenieChannelConfig(BaseModel):
-    model_config = ConfigDict(extra="forbid")
+    model_config = ConfigDict(extra="forbid", populate_by_name=True)
     channel_type: Annotated[Literal["opsgenie"], Field(alias="channelType")] = (
         "opsgenie"
     )
@@ -3034,7 +3036,7 @@ class OpsGenieChannelConfig(BaseModel):
 
 
 class OrganizationDto(BaseModel):
-    model_config = ConfigDict(extra="forbid")
+    model_config = ConfigDict(extra="forbid", populate_by_name=True)
     id: Annotated[int, Field(description="Unique organization identifier")]
     name: Annotated[str, Field(description="Organization name")]
     email: Annotated[str, Field(description="Billing and contact email")]
@@ -3050,20 +3052,20 @@ class OrganizationDto(BaseModel):
 
 
 class OrgInfo(BaseModel):
-    model_config = ConfigDict(extra="forbid")
+    model_config = ConfigDict(extra="forbid", populate_by_name=True)
     id: Annotated[int, Field(description="Organization ID")]
     name: Annotated[str, Field(description="Organization name")]
 
 
 class Pageable(BaseModel):
-    model_config = ConfigDict(extra="forbid")
+    model_config = ConfigDict(extra="forbid", populate_by_name=True)
     page: Annotated[int, Field(ge=0)]
     size: Annotated[int, Field(ge=1)]
     sort: list[str]
 
 
 class PagerDutyChannelConfig(BaseModel):
-    model_config = ConfigDict(extra="forbid")
+    model_config = ConfigDict(extra="forbid", populate_by_name=True)
     channel_type: Annotated[Literal["pagerduty"], Field(alias="channelType")] = (
         "pagerduty"
     )
@@ -3084,7 +3086,7 @@ class PagerDutyChannelConfig(BaseModel):
 
 
 class PageSection(BaseModel):
-    model_config = ConfigDict(extra="forbid")
+    model_config = ConfigDict(extra="forbid", populate_by_name=True)
     group_id: Annotated[
         UUID | None,
         Field(alias="groupId", description="Group ID when this section is a group"),
@@ -3111,7 +3113,7 @@ class Tier(StrEnum):
 
 
 class PlanInfo(BaseModel):
-    model_config = ConfigDict(extra="forbid")
+    model_config = ConfigDict(extra="forbid", populate_by_name=True)
     tier: Annotated[Tier, Field(description="Resolved plan tier")]
     subscription_status: Annotated[
         str | None,
@@ -3140,7 +3142,7 @@ class PlanInfo(BaseModel):
 
 
 class PolicySnapshotDto(BaseModel):
-    model_config = ConfigDict(extra="forbid")
+    model_config = ConfigDict(extra="forbid", populate_by_name=True)
     hash_hex: Annotated[
         str,
         Field(
@@ -3178,7 +3180,7 @@ class PolicySnapshotDto(BaseModel):
 
 
 class PollChartBucketDto(BaseModel):
-    model_config = ConfigDict(extra="forbid")
+    model_config = ConfigDict(extra="forbid", populate_by_name=True)
     bucket: Annotated[
         AwareDatetime, Field(description="Start of the time bucket (ISO 8601)")
     ]
@@ -3214,7 +3216,7 @@ class Status11(StrEnum):
 
 
 class PublishStatusPageIncidentRequest(BaseModel):
-    model_config = ConfigDict(extra="forbid")
+    model_config = ConfigDict(extra="forbid", populate_by_name=True)
     title: Annotated[
         str | None,
         Field(
@@ -3252,7 +3254,7 @@ class PublishStatusPageIncidentRequest(BaseModel):
 
 
 class RateLimitInfo(BaseModel):
-    model_config = ConfigDict(extra="forbid")
+    model_config = ConfigDict(extra="forbid", populate_by_name=True)
     requests_per_minute: Annotated[
         int,
         Field(
@@ -3268,7 +3270,7 @@ class RateLimitInfo(BaseModel):
 
 
 class RecoveryPolicy(BaseModel):
-    model_config = ConfigDict(extra="forbid")
+    model_config = ConfigDict(extra="forbid", populate_by_name=True)
     consecutive_successes: Annotated[
         int,
         Field(
@@ -3293,7 +3295,7 @@ class RecoveryPolicy(BaseModel):
 
 
 class RedirectCountAssertion(BaseModel):
-    model_config = ConfigDict(extra="forbid")
+    model_config = ConfigDict(extra="forbid", populate_by_name=True)
     type: Literal["redirect_count"] = "redirect_count"
     max_count: Annotated[
         int,
@@ -3305,7 +3307,7 @@ class RedirectCountAssertion(BaseModel):
 
 
 class RedirectTargetAssertion(BaseModel):
-    model_config = ConfigDict(extra="forbid")
+    model_config = ConfigDict(extra="forbid", populate_by_name=True)
     type: Literal["redirect_target"] = "redirect_target"
     expected: Annotated[
         str,
@@ -3320,7 +3322,7 @@ class RedirectTargetAssertion(BaseModel):
 
 
 class RegexBodyAssertion(BaseModel):
-    model_config = ConfigDict(extra="forbid")
+    model_config = ConfigDict(extra="forbid", populate_by_name=True)
     type: Literal["regex_body"] = "regex_body"
     pattern: Annotated[
         str,
@@ -3331,7 +3333,7 @@ class RegexBodyAssertion(BaseModel):
 
 
 class RegionStatusDto(BaseModel):
-    model_config = ConfigDict(extra="forbid")
+    model_config = ConfigDict(extra="forbid", populate_by_name=True)
     region: Annotated[str, Field(description="Region identifier", examples=["us-east"])]
     passed: Annotated[
         bool,
@@ -3361,7 +3363,7 @@ class RegionStatusDto(BaseModel):
 
 
 class RemoveMonitorTagsRequest(BaseModel):
-    model_config = ConfigDict(extra="forbid")
+    model_config = ConfigDict(extra="forbid", populate_by_name=True)
     tag_ids: Annotated[
         list[UUID],
         Field(
@@ -3373,7 +3375,7 @@ class RemoveMonitorTagsRequest(BaseModel):
 
 
 class ReorderComponentsRequest(BaseModel):
-    model_config = ConfigDict(extra="forbid")
+    model_config = ConfigDict(extra="forbid", populate_by_name=True)
     positions: Annotated[
         list[ComponentPosition],
         Field(
@@ -3384,7 +3386,7 @@ class ReorderComponentsRequest(BaseModel):
 
 
 class ReorderPageLayoutRequest(BaseModel):
-    model_config = ConfigDict(extra="forbid")
+    model_config = ConfigDict(extra="forbid", populate_by_name=True)
     sections: Annotated[
         list[PageSection],
         Field(description="Top-level sections in their new order", min_length=1),
@@ -3399,7 +3401,7 @@ class ReorderPageLayoutRequest(BaseModel):
 
 
 class ResolveIncidentRequest(BaseModel):
-    model_config = ConfigDict(extra="forbid")
+    model_config = ConfigDict(extra="forbid", populate_by_name=True)
     body: Annotated[
         str | None,
         Field(description="Optional resolution message or post-mortem notes"),
@@ -3420,7 +3422,7 @@ class ThresholdStatus(StrEnum):
 
 
 class ResourceGroupHealthDto(BaseModel):
-    model_config = ConfigDict(extra="forbid")
+    model_config = ConfigDict(extra="forbid", populate_by_name=True)
     status: Annotated[
         Status12, Field(description="Worst-of health status across all members")
     ]
@@ -3459,7 +3461,7 @@ class ResourceGroupHealthDto(BaseModel):
 
 
 class ResourceGroupMemberDto(BaseModel):
-    model_config = ConfigDict(extra="forbid")
+    model_config = ConfigDict(extra="forbid", populate_by_name=True)
     id: Annotated[UUID, Field(description="Unique group member record identifier")]
     group_id: Annotated[
         UUID,
@@ -3563,7 +3565,7 @@ class ResourceGroupMemberDto(BaseModel):
 
 
 class ResponseSizeAssertion(BaseModel):
-    model_config = ConfigDict(extra="forbid")
+    model_config = ConfigDict(extra="forbid", populate_by_name=True)
     type: Literal["response_size"] = "response_size"
     max_bytes: Annotated[
         int,
@@ -3575,7 +3577,7 @@ class ResponseSizeAssertion(BaseModel):
 
 
 class ResponseTimeAssertion(BaseModel):
-    model_config = ConfigDict(extra="forbid")
+    model_config = ConfigDict(extra="forbid", populate_by_name=True)
     type: Literal["response_time"] = "response_time"
     threshold_ms: Annotated[
         int,
@@ -3587,7 +3589,7 @@ class ResponseTimeAssertion(BaseModel):
 
 
 class ResponseTimeWarnAssertion(BaseModel):
-    model_config = ConfigDict(extra="forbid")
+    model_config = ConfigDict(extra="forbid", populate_by_name=True)
     type: Literal["response_time_warn"] = "response_time_warn"
     warn_ms: Annotated[
         int,
@@ -3606,7 +3608,7 @@ class CurrentStatus(StrEnum):
 
 
 class ResultSummaryDto(BaseModel):
-    model_config = ConfigDict(extra="forbid")
+    model_config = ConfigDict(extra="forbid", populate_by_name=True)
     current_status: Annotated[
         CurrentStatus,
         Field(
@@ -3643,7 +3645,7 @@ class ResultSummaryDto(BaseModel):
 
 
 class RetryStrategy(BaseModel):
-    model_config = ConfigDict(extra="forbid")
+    model_config = ConfigDict(extra="forbid", populate_by_name=True)
     type: Annotated[
         str,
         Field(description="Retry strategy kind, e.g. fixed interval between attempts"),
@@ -3661,7 +3663,7 @@ class RetryStrategy(BaseModel):
 
 
 class RuleEvaluationDto(BaseModel):
-    model_config = ConfigDict(extra="forbid")
+    model_config = ConfigDict(extra="forbid", populate_by_name=True)
     id: Annotated[UUID, Field(description="Forensic row UUID")]
     occurred_at: Annotated[
         AwareDatetime, Field(alias="occurredAt", description="When the evaluation ran")
@@ -3754,7 +3756,7 @@ class RuleEvaluationDto(BaseModel):
 
 
 class ScheduledMaintenanceDto(BaseModel):
-    model_config = ConfigDict(extra="forbid")
+    model_config = ConfigDict(extra="forbid", populate_by_name=True)
     id: Annotated[UUID, Field(description="Unique maintenance record identifier")]
     external_id: Annotated[
         str,
@@ -3816,7 +3818,7 @@ class ScheduledMaintenanceDto(BaseModel):
 
 
 class SecretDto(BaseModel):
-    model_config = ConfigDict(extra="forbid")
+    model_config = ConfigDict(extra="forbid", populate_by_name=True)
     id: Annotated[UUID, Field(description="Unique secret identifier")]
     key: Annotated[
         str, Field(description="Secret key name, unique within the workspace")
@@ -3854,7 +3856,7 @@ class SecretDto(BaseModel):
 
 
 class SeoMetadataDto(BaseModel):
-    model_config = ConfigDict(extra="forbid")
+    model_config = ConfigDict(extra="forbid", populate_by_name=True)
     short_description: Annotated[
         str | None,
         Field(
@@ -3872,7 +3874,7 @@ class SeoMetadataDto(BaseModel):
 
 
 class ServiceCatalogDto(BaseModel):
-    model_config = ConfigDict(extra="forbid")
+    model_config = ConfigDict(extra="forbid", populate_by_name=True)
     id: UUID
     slug: str
     name: str
@@ -3897,7 +3899,7 @@ class ServiceCatalogDto(BaseModel):
 
 
 class ServiceComponentDto(BaseModel):
-    model_config = ConfigDict(extra="forbid")
+    model_config = ConfigDict(extra="forbid", populate_by_name=True)
     id: UUID
     external_id: Annotated[str, Field(alias="externalId")]
     name: str
@@ -3961,7 +3963,7 @@ class ServiceComponentDto(BaseModel):
 
 
 class ServiceDayDetailDto(BaseModel):
-    model_config = ConfigDict(extra="forbid")
+    model_config = ConfigDict(extra="forbid", populate_by_name=True)
     date: Annotated[
         date_aliased, Field(description="UTC calendar day this rollup covers")
     ]
@@ -4008,7 +4010,7 @@ class ServiceDayDetailDto(BaseModel):
 
 
 class ServiceIncidentDto(BaseModel):
-    model_config = ConfigDict(extra="forbid")
+    model_config = ConfigDict(extra="forbid", populate_by_name=True)
     id: UUID
     service_id: Annotated[UUID, Field(alias="serviceId")]
     service_slug: Annotated[str | None, Field(alias="serviceSlug")] = None
@@ -4028,14 +4030,14 @@ class ServiceIncidentDto(BaseModel):
 
 
 class ServiceIncidentUpdateDto(BaseModel):
-    model_config = ConfigDict(extra="forbid")
+    model_config = ConfigDict(extra="forbid", populate_by_name=True)
     status: str
     body: str | None = None
     display_at: Annotated[AwareDatetime | None, Field(alias="displayAt")] = None
 
 
 class ServiceLiveStatusDto(BaseModel):
-    model_config = ConfigDict(extra="forbid")
+    model_config = ConfigDict(extra="forbid", populate_by_name=True)
     overall_status: Annotated[
         str | None,
         Field(
@@ -4067,7 +4069,7 @@ class ServiceLiveStatusDto(BaseModel):
 
 
 class ServicePollResultDto(BaseModel):
-    model_config = ConfigDict(extra="forbid")
+    model_config = ConfigDict(extra="forbid", populate_by_name=True)
     service_id: Annotated[UUID, Field(alias="serviceId", description="Service ID")]
     timestamp: Annotated[
         AwareDatetime,
@@ -4125,7 +4127,7 @@ class ServicePollResultDto(BaseModel):
 
 
 class ServicePollSummaryDto(BaseModel):
-    model_config = ConfigDict(extra="forbid")
+    model_config = ConfigDict(extra="forbid", populate_by_name=True)
     uptime_percentage: Annotated[
         float | None,
         Field(
@@ -4179,13 +4181,13 @@ class ServicePollSummaryDto(BaseModel):
 
 
 class ServiceStatusDto(BaseModel):
-    model_config = ConfigDict(extra="forbid")
+    model_config = ConfigDict(extra="forbid", populate_by_name=True)
     overall_status: Annotated[str, Field(alias="overallStatus")]
     last_polled_at: Annotated[AwareDatetime | None, Field(alias="lastPolledAt")] = None
 
 
 class ServiceSubscribeRequest(BaseModel):
-    model_config = ConfigDict(extra="forbid")
+    model_config = ConfigDict(extra="forbid", populate_by_name=True)
     component_id: Annotated[
         UUID | None,
         Field(
@@ -4209,7 +4211,7 @@ class AlertSensitivity(StrEnum):
 
 
 class ServiceSubscriptionDto(BaseModel):
-    model_config = ConfigDict(extra="forbid")
+    model_config = ConfigDict(extra="forbid", populate_by_name=True)
     subscription_id: Annotated[
         UUID,
         Field(alias="subscriptionId", description="Unique subscription identifier"),
@@ -4260,7 +4262,7 @@ class ServiceSubscriptionDto(BaseModel):
 
 
 class SetAlertChannelsRequest(BaseModel):
-    model_config = ConfigDict(extra="forbid")
+    model_config = ConfigDict(extra="forbid", populate_by_name=True)
     channel_ids: Annotated[
         list[UUID],
         Field(
@@ -4271,137 +4273,137 @@ class SetAlertChannelsRequest(BaseModel):
 
 
 class SetMonitorAuthRequest(BaseModel):
-    model_config = ConfigDict(extra="forbid")
+    model_config = ConfigDict(extra="forbid", populate_by_name=True)
     config: ApiKeyAuthConfig | BasicAuthConfig | BearerAuthConfig | HeaderAuthConfig
 
 
 class SingleValueResponseAlertChannelDto(BaseModel):
-    model_config = ConfigDict(extra="forbid")
+    model_config = ConfigDict(extra="forbid", populate_by_name=True)
     data: AlertChannelDto
 
 
 class SingleValueResponseAlertDeliveryDto(BaseModel):
-    model_config = ConfigDict(extra="forbid")
+    model_config = ConfigDict(extra="forbid", populate_by_name=True)
     data: AlertDeliveryDto
 
 
 class SingleValueResponseApiKeyCreateResponse(BaseModel):
-    model_config = ConfigDict(extra="forbid")
+    model_config = ConfigDict(extra="forbid", populate_by_name=True)
     data: ApiKeyCreateResponse
 
 
 class SingleValueResponseApiKeyDto(BaseModel):
-    model_config = ConfigDict(extra="forbid")
+    model_config = ConfigDict(extra="forbid", populate_by_name=True)
     data: ApiKeyDto
 
 
 class SingleValueResponseDekRotationResultDto(BaseModel):
-    model_config = ConfigDict(extra="forbid")
+    model_config = ConfigDict(extra="forbid", populate_by_name=True)
     data: DekRotationResultDto
 
 
 class SingleValueResponseDeployLockDto(BaseModel):
-    model_config = ConfigDict(extra="forbid")
+    model_config = ConfigDict(extra="forbid", populate_by_name=True)
     data: DeployLockDto
 
 
 class SingleValueResponseEnvironmentDto(BaseModel):
-    model_config = ConfigDict(extra="forbid")
+    model_config = ConfigDict(extra="forbid", populate_by_name=True)
     data: EnvironmentDto
 
 
 class SingleValueResponseInviteDto(BaseModel):
-    model_config = ConfigDict(extra="forbid")
+    model_config = ConfigDict(extra="forbid", populate_by_name=True)
     data: InviteDto
 
 
 class SingleValueResponseListUUID(BaseModel):
-    model_config = ConfigDict(extra="forbid")
+    model_config = ConfigDict(extra="forbid", populate_by_name=True)
     data: list[UUID]
 
 
 class SingleValueResponseLong(BaseModel):
-    model_config = ConfigDict(extra="forbid")
+    model_config = ConfigDict(extra="forbid", populate_by_name=True)
     data: int
 
 
 class SingleValueResponseMaintenanceWindowDto(BaseModel):
-    model_config = ConfigDict(extra="forbid")
+    model_config = ConfigDict(extra="forbid", populate_by_name=True)
     data: MaintenanceWindowDto
 
 
 class SingleValueResponseMonitorAuthDto(BaseModel):
-    model_config = ConfigDict(extra="forbid")
+    model_config = ConfigDict(extra="forbid", populate_by_name=True)
     data: MonitorAuthDto
 
 
 class SingleValueResponseMonitorTestResultDto(BaseModel):
-    model_config = ConfigDict(extra="forbid")
+    model_config = ConfigDict(extra="forbid", populate_by_name=True)
     data: MonitorTestResultDto
 
 
 class SingleValueResponseNotificationDispatchDto(BaseModel):
-    model_config = ConfigDict(extra="forbid")
+    model_config = ConfigDict(extra="forbid", populate_by_name=True)
     data: NotificationDispatchDto
 
 
 class SingleValueResponseOrganizationDto(BaseModel):
-    model_config = ConfigDict(extra="forbid")
+    model_config = ConfigDict(extra="forbid", populate_by_name=True)
     data: OrganizationDto
 
 
 class SingleValueResponsePolicySnapshotDto(BaseModel):
-    model_config = ConfigDict(extra="forbid")
+    model_config = ConfigDict(extra="forbid", populate_by_name=True)
     data: PolicySnapshotDto
 
 
 class SingleValueResponseResourceGroupHealthDto(BaseModel):
-    model_config = ConfigDict(extra="forbid")
+    model_config = ConfigDict(extra="forbid", populate_by_name=True)
     data: ResourceGroupHealthDto
 
 
 class SingleValueResponseResourceGroupMemberDto(BaseModel):
-    model_config = ConfigDict(extra="forbid")
+    model_config = ConfigDict(extra="forbid", populate_by_name=True)
     data: ResourceGroupMemberDto
 
 
 class SingleValueResponseResultSummaryDto(BaseModel):
-    model_config = ConfigDict(extra="forbid")
+    model_config = ConfigDict(extra="forbid", populate_by_name=True)
     data: ResultSummaryDto
 
 
 class SingleValueResponseSecretDto(BaseModel):
-    model_config = ConfigDict(extra="forbid")
+    model_config = ConfigDict(extra="forbid", populate_by_name=True)
     data: SecretDto
 
 
 class SingleValueResponseServiceDayDetailDto(BaseModel):
-    model_config = ConfigDict(extra="forbid")
+    model_config = ConfigDict(extra="forbid", populate_by_name=True)
     data: ServiceDayDetailDto
 
 
 class SingleValueResponseServiceLiveStatusDto(BaseModel):
-    model_config = ConfigDict(extra="forbid")
+    model_config = ConfigDict(extra="forbid", populate_by_name=True)
     data: ServiceLiveStatusDto
 
 
 class SingleValueResponseServicePollSummaryDto(BaseModel):
-    model_config = ConfigDict(extra="forbid")
+    model_config = ConfigDict(extra="forbid", populate_by_name=True)
     data: ServicePollSummaryDto
 
 
 class SingleValueResponseServiceSubscriptionDto(BaseModel):
-    model_config = ConfigDict(extra="forbid")
+    model_config = ConfigDict(extra="forbid", populate_by_name=True)
     data: ServiceSubscriptionDto
 
 
 class SingleValueResponseString(BaseModel):
-    model_config = ConfigDict(extra="forbid")
+    model_config = ConfigDict(extra="forbid", populate_by_name=True)
     data: str
 
 
 class SlackChannelConfig(BaseModel):
-    model_config = ConfigDict(extra="forbid")
+    model_config = ConfigDict(extra="forbid", populate_by_name=True)
     channel_type: Annotated[Literal["slack"], Field(alias="channelType")] = "slack"
     webhook_url: Annotated[
         str,
@@ -4419,7 +4421,7 @@ class SlackChannelConfig(BaseModel):
 
 
 class SslExpiryAssertion(BaseModel):
-    model_config = ConfigDict(extra="forbid")
+    model_config = ConfigDict(extra="forbid", populate_by_name=True)
     type: Literal["ssl_expiry"] = "ssl_expiry"
     min_days_remaining: Annotated[
         int,
@@ -4436,7 +4438,7 @@ class Source2(StrEnum):
 
 
 class StateTransitionDetails(BaseModel):
-    model_config = ConfigDict(extra="forbid")
+    model_config = ConfigDict(extra="forbid", populate_by_name=True)
     source: Annotated[
         Source2,
         Field(
@@ -4446,7 +4448,7 @@ class StateTransitionDetails(BaseModel):
 
 
 class StatusCodeAssertion(BaseModel):
-    model_config = ConfigDict(extra="forbid")
+    model_config = ConfigDict(extra="forbid", populate_by_name=True)
     type: Literal["status_code"] = "status_code"
     expected: Annotated[
         str,
@@ -4464,7 +4466,7 @@ class StatusCodeAssertion(BaseModel):
 
 
 class StatusPageBranding(BaseModel):
-    model_config = ConfigDict(extra="forbid")
+    model_config = ConfigDict(extra="forbid", populate_by_name=True)
     logo_url: Annotated[
         str | None,
         Field(
@@ -4604,7 +4606,7 @@ class CurrentStatus1(StrEnum):
 
 
 class StatusPageComponentDto(BaseModel):
-    model_config = ConfigDict(extra="forbid")
+    model_config = ConfigDict(extra="forbid", populate_by_name=True)
     id: UUID
     status_page_id: Annotated[UUID, Field(alias="statusPageId")]
     group_id: Annotated[UUID | None, Field(alias="groupId")] = None
@@ -4624,7 +4626,7 @@ class StatusPageComponentDto(BaseModel):
 
 
 class StatusPageComponentGroupDto(BaseModel):
-    model_config = ConfigDict(extra="forbid")
+    model_config = ConfigDict(extra="forbid", populate_by_name=True)
     id: UUID
     status_page_id: Annotated[UUID, Field(alias="statusPageId")]
     name: str
@@ -4653,7 +4655,7 @@ class VerificationMethod(StrEnum):
 
 
 class StatusPageCustomDomainDto(BaseModel):
-    model_config = ConfigDict(extra="forbid")
+    model_config = ConfigDict(extra="forbid", populate_by_name=True)
     id: UUID
     hostname: str
     status: Status14
@@ -4683,7 +4685,7 @@ class OverallStatus(StrEnum):
 
 
 class StatusPageDto(BaseModel):
-    model_config = ConfigDict(extra="forbid")
+    model_config = ConfigDict(extra="forbid", populate_by_name=True)
     id: UUID
     organization_id: Annotated[int, Field(alias="organizationId")]
     workspace_id: Annotated[int, Field(alias="workspaceId")]
@@ -4710,7 +4712,7 @@ class ComponentStatus(StrEnum):
 
 
 class StatusPageIncidentComponentDto(BaseModel):
-    model_config = ConfigDict(extra="forbid")
+    model_config = ConfigDict(extra="forbid", populate_by_name=True)
     status_page_component_id: Annotated[UUID, Field(alias="statusPageComponentId")]
     component_status: Annotated[ComponentStatus, Field(alias="componentStatus")]
     component_name: Annotated[str, Field(alias="componentName")]
@@ -4729,7 +4731,7 @@ class CreatedBy1(StrEnum):
 
 
 class StatusPageIncidentUpdateDto(BaseModel):
-    model_config = ConfigDict(extra="forbid")
+    model_config = ConfigDict(extra="forbid", populate_by_name=True)
     id: UUID
     status: Status15
     body: str
@@ -4740,7 +4742,7 @@ class StatusPageIncidentUpdateDto(BaseModel):
 
 
 class StatusPageSubscriberDto(BaseModel):
-    model_config = ConfigDict(extra="forbid")
+    model_config = ConfigDict(extra="forbid", populate_by_name=True)
     id: UUID
     email: str
     confirmed: bool
@@ -4748,14 +4750,14 @@ class StatusPageSubscriberDto(BaseModel):
 
 
 class Summary(BaseModel):
-    model_config = ConfigDict(extra="forbid")
+    model_config = ConfigDict(extra="forbid", populate_by_name=True)
     id: UUID
     name: Annotated[str, Field(min_length=1)]
     slug: Annotated[str, Field(min_length=1)]
 
 
 class TableValueResultAlertChannelDto(BaseModel):
-    model_config = ConfigDict(extra="forbid")
+    model_config = ConfigDict(extra="forbid", populate_by_name=True)
     data: list[AlertChannelDto]
     has_next: Annotated[bool, Field(alias="hasNext")]
     has_prev: Annotated[bool, Field(alias="hasPrev")]
@@ -4764,7 +4766,7 @@ class TableValueResultAlertChannelDto(BaseModel):
 
 
 class TableValueResultAlertDeliveryDto(BaseModel):
-    model_config = ConfigDict(extra="forbid")
+    model_config = ConfigDict(extra="forbid", populate_by_name=True)
     data: list[AlertDeliveryDto]
     has_next: Annotated[bool, Field(alias="hasNext")]
     has_prev: Annotated[bool, Field(alias="hasPrev")]
@@ -4773,7 +4775,7 @@ class TableValueResultAlertDeliveryDto(BaseModel):
 
 
 class TableValueResultApiKeyDto(BaseModel):
-    model_config = ConfigDict(extra="forbid")
+    model_config = ConfigDict(extra="forbid", populate_by_name=True)
     data: list[ApiKeyDto]
     has_next: Annotated[bool, Field(alias="hasNext")]
     has_prev: Annotated[bool, Field(alias="hasPrev")]
@@ -4782,7 +4784,7 @@ class TableValueResultApiKeyDto(BaseModel):
 
 
 class TableValueResultCategoryDto(BaseModel):
-    model_config = ConfigDict(extra="forbid")
+    model_config = ConfigDict(extra="forbid", populate_by_name=True)
     data: list[CategoryDto]
     has_next: Annotated[bool, Field(alias="hasNext")]
     has_prev: Annotated[bool, Field(alias="hasPrev")]
@@ -4791,7 +4793,7 @@ class TableValueResultCategoryDto(BaseModel):
 
 
 class TableValueResultDeliveryAttemptDto(BaseModel):
-    model_config = ConfigDict(extra="forbid")
+    model_config = ConfigDict(extra="forbid", populate_by_name=True)
     data: list[DeliveryAttemptDto]
     has_next: Annotated[bool, Field(alias="hasNext")]
     has_prev: Annotated[bool, Field(alias="hasPrev")]
@@ -4800,7 +4802,7 @@ class TableValueResultDeliveryAttemptDto(BaseModel):
 
 
 class TableValueResultEnvironmentDto(BaseModel):
-    model_config = ConfigDict(extra="forbid")
+    model_config = ConfigDict(extra="forbid", populate_by_name=True)
     data: list[EnvironmentDto]
     has_next: Annotated[bool, Field(alias="hasNext")]
     has_prev: Annotated[bool, Field(alias="hasPrev")]
@@ -4809,7 +4811,7 @@ class TableValueResultEnvironmentDto(BaseModel):
 
 
 class TableValueResultIncidentDto(BaseModel):
-    model_config = ConfigDict(extra="forbid")
+    model_config = ConfigDict(extra="forbid", populate_by_name=True)
     data: list[IncidentDto]
     has_next: Annotated[bool, Field(alias="hasNext")]
     has_prev: Annotated[bool, Field(alias="hasPrev")]
@@ -4818,7 +4820,7 @@ class TableValueResultIncidentDto(BaseModel):
 
 
 class TableValueResultInviteDto(BaseModel):
-    model_config = ConfigDict(extra="forbid")
+    model_config = ConfigDict(extra="forbid", populate_by_name=True)
     data: list[InviteDto]
     has_next: Annotated[bool, Field(alias="hasNext")]
     has_prev: Annotated[bool, Field(alias="hasPrev")]
@@ -4827,7 +4829,7 @@ class TableValueResultInviteDto(BaseModel):
 
 
 class TableValueResultMaintenanceWindowDto(BaseModel):
-    model_config = ConfigDict(extra="forbid")
+    model_config = ConfigDict(extra="forbid", populate_by_name=True)
     data: list[MaintenanceWindowDto]
     has_next: Annotated[bool, Field(alias="hasNext")]
     has_prev: Annotated[bool, Field(alias="hasPrev")]
@@ -4836,7 +4838,7 @@ class TableValueResultMaintenanceWindowDto(BaseModel):
 
 
 class TableValueResultMemberDto(BaseModel):
-    model_config = ConfigDict(extra="forbid")
+    model_config = ConfigDict(extra="forbid", populate_by_name=True)
     data: list[MemberDto]
     has_next: Annotated[bool, Field(alias="hasNext")]
     has_prev: Annotated[bool, Field(alias="hasPrev")]
@@ -4845,7 +4847,7 @@ class TableValueResultMemberDto(BaseModel):
 
 
 class TableValueResultNotificationDispatchDto(BaseModel):
-    model_config = ConfigDict(extra="forbid")
+    model_config = ConfigDict(extra="forbid", populate_by_name=True)
     data: list[NotificationDispatchDto]
     has_next: Annotated[bool, Field(alias="hasNext")]
     has_prev: Annotated[bool, Field(alias="hasPrev")]
@@ -4854,7 +4856,7 @@ class TableValueResultNotificationDispatchDto(BaseModel):
 
 
 class TableValueResultNotificationDto(BaseModel):
-    model_config = ConfigDict(extra="forbid")
+    model_config = ConfigDict(extra="forbid", populate_by_name=True)
     data: list[NotificationDto]
     has_next: Annotated[bool, Field(alias="hasNext")]
     has_prev: Annotated[bool, Field(alias="hasPrev")]
@@ -4863,7 +4865,7 @@ class TableValueResultNotificationDto(BaseModel):
 
 
 class TableValueResultRuleEvaluationDto(BaseModel):
-    model_config = ConfigDict(extra="forbid")
+    model_config = ConfigDict(extra="forbid", populate_by_name=True)
     data: list[RuleEvaluationDto]
     has_next: Annotated[bool, Field(alias="hasNext")]
     has_prev: Annotated[bool, Field(alias="hasPrev")]
@@ -4872,7 +4874,7 @@ class TableValueResultRuleEvaluationDto(BaseModel):
 
 
 class TableValueResultScheduledMaintenanceDto(BaseModel):
-    model_config = ConfigDict(extra="forbid")
+    model_config = ConfigDict(extra="forbid", populate_by_name=True)
     data: list[ScheduledMaintenanceDto]
     has_next: Annotated[bool, Field(alias="hasNext")]
     has_prev: Annotated[bool, Field(alias="hasPrev")]
@@ -4881,7 +4883,7 @@ class TableValueResultScheduledMaintenanceDto(BaseModel):
 
 
 class TableValueResultSecretDto(BaseModel):
-    model_config = ConfigDict(extra="forbid")
+    model_config = ConfigDict(extra="forbid", populate_by_name=True)
     data: list[SecretDto]
     has_next: Annotated[bool, Field(alias="hasNext")]
     has_prev: Annotated[bool, Field(alias="hasPrev")]
@@ -4890,7 +4892,7 @@ class TableValueResultSecretDto(BaseModel):
 
 
 class TableValueResultServiceComponentDto(BaseModel):
-    model_config = ConfigDict(extra="forbid")
+    model_config = ConfigDict(extra="forbid", populate_by_name=True)
     data: list[ServiceComponentDto]
     has_next: Annotated[bool, Field(alias="hasNext")]
     has_prev: Annotated[bool, Field(alias="hasPrev")]
@@ -4899,7 +4901,7 @@ class TableValueResultServiceComponentDto(BaseModel):
 
 
 class TableValueResultServiceIncidentDto(BaseModel):
-    model_config = ConfigDict(extra="forbid")
+    model_config = ConfigDict(extra="forbid", populate_by_name=True)
     data: list[ServiceIncidentDto]
     has_next: Annotated[bool, Field(alias="hasNext")]
     has_prev: Annotated[bool, Field(alias="hasPrev")]
@@ -4908,7 +4910,7 @@ class TableValueResultServiceIncidentDto(BaseModel):
 
 
 class TableValueResultServiceSubscriptionDto(BaseModel):
-    model_config = ConfigDict(extra="forbid")
+    model_config = ConfigDict(extra="forbid", populate_by_name=True)
     data: list[ServiceSubscriptionDto]
     has_next: Annotated[bool, Field(alias="hasNext")]
     has_prev: Annotated[bool, Field(alias="hasPrev")]
@@ -4917,7 +4919,7 @@ class TableValueResultServiceSubscriptionDto(BaseModel):
 
 
 class TableValueResultStatusPageComponentDto(BaseModel):
-    model_config = ConfigDict(extra="forbid")
+    model_config = ConfigDict(extra="forbid", populate_by_name=True)
     data: list[StatusPageComponentDto]
     has_next: Annotated[bool, Field(alias="hasNext")]
     has_prev: Annotated[bool, Field(alias="hasPrev")]
@@ -4926,7 +4928,7 @@ class TableValueResultStatusPageComponentDto(BaseModel):
 
 
 class TableValueResultStatusPageComponentGroupDto(BaseModel):
-    model_config = ConfigDict(extra="forbid")
+    model_config = ConfigDict(extra="forbid", populate_by_name=True)
     data: list[StatusPageComponentGroupDto]
     has_next: Annotated[bool, Field(alias="hasNext")]
     has_prev: Annotated[bool, Field(alias="hasPrev")]
@@ -4935,7 +4937,7 @@ class TableValueResultStatusPageComponentGroupDto(BaseModel):
 
 
 class TableValueResultStatusPageCustomDomainDto(BaseModel):
-    model_config = ConfigDict(extra="forbid")
+    model_config = ConfigDict(extra="forbid", populate_by_name=True)
     data: list[StatusPageCustomDomainDto]
     has_next: Annotated[bool, Field(alias="hasNext")]
     has_prev: Annotated[bool, Field(alias="hasPrev")]
@@ -4944,7 +4946,7 @@ class TableValueResultStatusPageCustomDomainDto(BaseModel):
 
 
 class TableValueResultStatusPageDto(BaseModel):
-    model_config = ConfigDict(extra="forbid")
+    model_config = ConfigDict(extra="forbid", populate_by_name=True)
     data: list[StatusPageDto]
     has_next: Annotated[bool, Field(alias="hasNext")]
     has_prev: Annotated[bool, Field(alias="hasPrev")]
@@ -4953,7 +4955,7 @@ class TableValueResultStatusPageDto(BaseModel):
 
 
 class TableValueResultStatusPageSubscriberDto(BaseModel):
-    model_config = ConfigDict(extra="forbid")
+    model_config = ConfigDict(extra="forbid", populate_by_name=True)
     data: list[StatusPageSubscriberDto]
     has_next: Annotated[bool, Field(alias="hasNext")]
     has_prev: Annotated[bool, Field(alias="hasPrev")]
@@ -4962,7 +4964,7 @@ class TableValueResultStatusPageSubscriberDto(BaseModel):
 
 
 class TagDto(BaseModel):
-    model_config = ConfigDict(extra="forbid")
+    model_config = ConfigDict(extra="forbid", populate_by_name=True)
     id: Annotated[UUID, Field(description="Unique tag identifier")]
     organization_id: Annotated[
         int,
@@ -4986,7 +4988,7 @@ class TagDto(BaseModel):
 
 
 class Tcp(BaseModel):
-    model_config = ConfigDict(extra="forbid")
+    model_config = ConfigDict(extra="forbid", populate_by_name=True)
     check_type: Literal["tcp"] = "tcp"
     host: Annotated[str, Field(description="Target host", examples=["db.example.com"])]
     port: Annotated[int, Field(description="Target port", examples=[5432])]
@@ -4996,12 +4998,12 @@ class Tcp(BaseModel):
 
 
 class TcpConnectsAssertion(BaseModel):
-    model_config = ConfigDict(extra="forbid")
+    model_config = ConfigDict(extra="forbid", populate_by_name=True)
     type: Literal["tcp_connects"] = "tcp_connects"
 
 
 class TcpMonitorConfig(BaseModel):
-    model_config = ConfigDict(extra="forbid")
+    model_config = ConfigDict(extra="forbid", populate_by_name=True)
     host: Annotated[
         str, Field(description="Target hostname or IP address", min_length=1)
     ]
@@ -5013,7 +5015,7 @@ class TcpMonitorConfig(BaseModel):
 
 
 class TcpResponseTimeAssertion(BaseModel):
-    model_config = ConfigDict(extra="forbid")
+    model_config = ConfigDict(extra="forbid", populate_by_name=True)
     type: Literal["tcp_response_time"] = "tcp_response_time"
     max_ms: Annotated[
         int,
@@ -5025,7 +5027,7 @@ class TcpResponseTimeAssertion(BaseModel):
 
 
 class TcpResponseTimeWarnAssertion(BaseModel):
-    model_config = ConfigDict(extra="forbid")
+    model_config = ConfigDict(extra="forbid", populate_by_name=True)
     type: Literal["tcp_response_time_warn"] = "tcp_response_time_warn"
     warn_ms: Annotated[
         int,
@@ -5037,7 +5039,7 @@ class TcpResponseTimeWarnAssertion(BaseModel):
 
 
 class TeamsChannelConfig(BaseModel):
-    model_config = ConfigDict(extra="forbid")
+    model_config = ConfigDict(extra="forbid", populate_by_name=True)
     channel_type: Annotated[Literal["teams"], Field(alias="channelType")] = "teams"
     webhook_url: Annotated[
         str,
@@ -5050,13 +5052,13 @@ class TeamsChannelConfig(BaseModel):
 
 
 class TestChannelResult(BaseModel):
-    model_config = ConfigDict(extra="forbid")
+    model_config = ConfigDict(extra="forbid", populate_by_name=True)
     success: bool
     message: str
 
 
 class TestMatchResult(BaseModel):
-    model_config = ConfigDict(extra="forbid")
+    model_config = ConfigDict(extra="forbid", populate_by_name=True)
     matched: Annotated[
         bool,
         Field(
@@ -5074,7 +5076,7 @@ class TestMatchResult(BaseModel):
 
 
 class TestNotificationPolicyRequest(BaseModel):
-    model_config = ConfigDict(extra="forbid")
+    model_config = ConfigDict(extra="forbid", populate_by_name=True)
     severity: Annotated[
         str | None,
         Field(
@@ -5132,7 +5134,7 @@ class TestNotificationPolicyRequest(BaseModel):
 
 
 class TestWebhookEndpointRequest(BaseModel):
-    model_config = ConfigDict(extra="forbid")
+    model_config = ConfigDict(extra="forbid", populate_by_name=True)
     event_type: Annotated[
         str | None,
         Field(
@@ -5143,7 +5145,7 @@ class TestWebhookEndpointRequest(BaseModel):
 
 
 class TimingPhasesDto(BaseModel):
-    model_config = ConfigDict(extra="forbid")
+    model_config = ConfigDict(extra="forbid", populate_by_name=True)
     dns_ms: Annotated[
         int | None,
         Field(description="DNS resolution time in milliseconds", examples=[12]),
@@ -5175,7 +5177,7 @@ class TimingPhasesDto(BaseModel):
 
 
 class TlsInfoDto(BaseModel):
-    model_config = ConfigDict(extra="forbid")
+    model_config = ConfigDict(extra="forbid", populate_by_name=True)
     subject_cn: Annotated[
         str | None,
         Field(
@@ -5255,7 +5257,7 @@ class AggregationType(StrEnum):
 
 
 class TriggerRule(BaseModel):
-    model_config = ConfigDict(extra="forbid")
+    model_config = ConfigDict(extra="forbid", populate_by_name=True)
     type: Annotated[
         Type6,
         Field(
@@ -5297,7 +5299,7 @@ class TriggerRule(BaseModel):
 
 
 class UpdateAlertSensitivityRequest(BaseModel):
-    model_config = ConfigDict(extra="forbid")
+    model_config = ConfigDict(extra="forbid", populate_by_name=True)
     alert_sensitivity: Annotated[
         str,
         Field(
@@ -5310,7 +5312,7 @@ class UpdateAlertSensitivityRequest(BaseModel):
 
 
 class UpdateApiKeyRequest(BaseModel):
-    model_config = ConfigDict(extra="forbid")
+    model_config = ConfigDict(extra="forbid", populate_by_name=True)
     name: Annotated[
         str,
         Field(description="New name for this API key", max_length=200, min_length=0),
@@ -5323,8 +5325,8 @@ class Severity8(StrEnum):
 
 
 class UpdateAssertionRequest(BaseModel):
-    model_config = ConfigDict(extra="forbid")
-    config: (
+    model_config = ConfigDict(extra="forbid", populate_by_name=True)
+    config: Annotated[
         BodyContainsAssertion
         | DnsExpectedCnameAssertion
         | DnsExpectedIpsAssertion
@@ -5366,15 +5368,16 @@ class UpdateAssertionRequest(BaseModel):
         | StatusCodeAssertion
         | TcpConnectsAssertion
         | TcpResponseTimeAssertion
-        | TcpResponseTimeWarnAssertion
-    )
+        | TcpResponseTimeWarnAssertion,
+        Field(discriminator="type"),
+    ]
     severity: Annotated[
         Severity8 | None, Field(description="New outcome severity: FAIL or WARN")
     ] = None
 
 
 class UpdateEnvironmentRequest(BaseModel):
-    model_config = ConfigDict(extra="forbid")
+    model_config = ConfigDict(extra="forbid", populate_by_name=True)
     name: Annotated[
         str | None,
         Field(
@@ -5397,7 +5400,7 @@ class UpdateEnvironmentRequest(BaseModel):
 
 
 class UpdateIncidentPolicyRequest(BaseModel):
-    model_config = ConfigDict(extra="forbid")
+    model_config = ConfigDict(extra="forbid", populate_by_name=True)
     trigger_rules: Annotated[
         list[TriggerRule],
         Field(
@@ -5411,7 +5414,7 @@ class UpdateIncidentPolicyRequest(BaseModel):
 
 
 class UpdateMaintenanceWindowRequest(BaseModel):
-    model_config = ConfigDict(extra="forbid")
+    model_config = ConfigDict(extra="forbid", populate_by_name=True)
     monitor_id: Annotated[
         UUID | None,
         Field(
@@ -5448,12 +5451,12 @@ class UpdateMaintenanceWindowRequest(BaseModel):
 
 
 class UpdateMonitorAuthRequest(BaseModel):
-    model_config = ConfigDict(extra="forbid")
+    model_config = ConfigDict(extra="forbid", populate_by_name=True)
     config: ApiKeyAuthConfig | BasicAuthConfig | BearerAuthConfig | HeaderAuthConfig
 
 
 class UpdateOrgDetailsRequest(BaseModel):
-    model_config = ConfigDict(extra="forbid")
+    model_config = ConfigDict(extra="forbid", populate_by_name=True)
     name: Annotated[
         str,
         Field(
@@ -5494,7 +5497,7 @@ class UpdateOrgDetailsRequest(BaseModel):
 
 
 class UpdateResourceGroupRequest(BaseModel):
-    model_config = ConfigDict(extra="forbid")
+    model_config = ConfigDict(extra="forbid", populate_by_name=True)
     name: Annotated[
         str,
         Field(
@@ -5591,7 +5594,7 @@ class UpdateResourceGroupRequest(BaseModel):
 
 
 class UpdateSecretRequest(BaseModel):
-    model_config = ConfigDict(extra="forbid")
+    model_config = ConfigDict(extra="forbid", populate_by_name=True)
     value: Annotated[
         str,
         Field(
@@ -5603,7 +5606,7 @@ class UpdateSecretRequest(BaseModel):
 
 
 class UpdateStatusPageComponentGroupRequest(BaseModel):
-    model_config = ConfigDict(extra="forbid")
+    model_config = ConfigDict(extra="forbid", populate_by_name=True)
     name: Annotated[
         str | None,
         Field(
@@ -5637,7 +5640,7 @@ class UpdateStatusPageComponentGroupRequest(BaseModel):
 
 
 class UpdateStatusPageComponentRequest(BaseModel):
-    model_config = ConfigDict(extra="forbid")
+    model_config = ConfigDict(extra="forbid", populate_by_name=True)
     name: Annotated[
         str | None,
         Field(
@@ -5699,7 +5702,7 @@ class UpdateStatusPageComponentRequest(BaseModel):
 
 
 class UpdateStatusPageIncidentRequest(BaseModel):
-    model_config = ConfigDict(extra="forbid")
+    model_config = ConfigDict(extra="forbid", populate_by_name=True)
     title: Annotated[
         str | None,
         Field(
@@ -5741,7 +5744,7 @@ class UpdateStatusPageIncidentRequest(BaseModel):
 
 
 class UpdateStatusPageRequest(BaseModel):
-    model_config = ConfigDict(extra="forbid")
+    model_config = ConfigDict(extra="forbid", populate_by_name=True)
     name: Annotated[
         str | None,
         Field(
@@ -5774,7 +5777,7 @@ class UpdateStatusPageRequest(BaseModel):
 
 
 class UpdateTagRequest(BaseModel):
-    model_config = ConfigDict(extra="forbid")
+    model_config = ConfigDict(extra="forbid", populate_by_name=True)
     name: Annotated[
         str | None, Field(description="New tag name", max_length=100, min_length=0)
     ] = None
@@ -5788,7 +5791,7 @@ class UpdateTagRequest(BaseModel):
 
 
 class UpdateWebhookEndpointRequest(BaseModel):
-    model_config = ConfigDict(extra="forbid")
+    model_config = ConfigDict(extra="forbid", populate_by_name=True)
     url: Annotated[
         str | None,
         Field(
@@ -5819,14 +5822,14 @@ class UpdateWebhookEndpointRequest(BaseModel):
 
 
 class UpdateWorkspaceRequest(BaseModel):
-    model_config = ConfigDict(extra="forbid")
+    model_config = ConfigDict(extra="forbid", populate_by_name=True)
     name: Annotated[
         str, Field(description="New workspace name", max_length=200, min_length=0)
     ]
 
 
 class UptimeBucketDto(BaseModel):
-    model_config = ConfigDict(extra="forbid")
+    model_config = ConfigDict(extra="forbid", populate_by_name=True)
     timestamp: Annotated[
         AwareDatetime,
         Field(
@@ -5853,7 +5856,7 @@ class UptimeBucketDto(BaseModel):
 
 
 class UptimeDto(BaseModel):
-    model_config = ConfigDict(extra="forbid")
+    model_config = ConfigDict(extra="forbid", populate_by_name=True)
     uptime_percentage: Annotated[
         float | None,
         Field(
@@ -5897,7 +5900,7 @@ class UptimeDto(BaseModel):
 
 
 class WebhookChannelConfig(BaseModel):
-    model_config = ConfigDict(extra="forbid")
+    model_config = ConfigDict(extra="forbid", populate_by_name=True)
     channel_type: Annotated[Literal["webhook"], Field(alias="channelType")] = "webhook"
     url: Annotated[
         str,
@@ -5923,7 +5926,7 @@ class WebhookChannelConfig(BaseModel):
 
 
 class WebhookDeliveryDto(BaseModel):
-    model_config = ConfigDict(extra="forbid")
+    model_config = ConfigDict(extra="forbid", populate_by_name=True)
     id: UUID
     endpoint_id: Annotated[UUID, Field(alias="endpointId")]
     event_id: Annotated[str, Field(alias="eventId")]
@@ -5941,7 +5944,7 @@ class WebhookDeliveryDto(BaseModel):
 
 
 class WebhookEndpointDto(BaseModel):
-    model_config = ConfigDict(extra="forbid")
+    model_config = ConfigDict(extra="forbid", populate_by_name=True)
     id: Annotated[UUID, Field(description="Unique webhook endpoint identifier")]
     url: Annotated[
         str, Field(description="HTTPS endpoint URL that receives event payloads")
@@ -5993,7 +5996,7 @@ class WebhookEndpointDto(BaseModel):
 
 
 class WebhookEventCatalogEntry(BaseModel):
-    model_config = ConfigDict(extra="forbid")
+    model_config = ConfigDict(extra="forbid", populate_by_name=True)
     type: Annotated[
         str,
         Field(description='Dot-notation event type identifier, e.g. "monitor.created"'),
@@ -6010,7 +6013,7 @@ class WebhookEventCatalogEntry(BaseModel):
 
 
 class WebhookEventCatalogResponse(BaseModel):
-    model_config = ConfigDict(extra="forbid")
+    model_config = ConfigDict(extra="forbid", populate_by_name=True)
     data: Annotated[
         list[WebhookEventCatalogEntry],
         Field(description="List of all available webhook event types"),
@@ -6018,13 +6021,13 @@ class WebhookEventCatalogResponse(BaseModel):
 
 
 class WebhookSigningSecretDto(BaseModel):
-    model_config = ConfigDict(extra="forbid")
+    model_config = ConfigDict(extra="forbid", populate_by_name=True)
     configured: bool
     masked_secret: Annotated[str | None, Field(alias="maskedSecret")] = None
 
 
 class WebhookTestResult(BaseModel):
-    model_config = ConfigDict(extra="forbid")
+    model_config = ConfigDict(extra="forbid", populate_by_name=True)
     success: bool
     status_code: Annotated[int | None, Field(alias="statusCode")] = None
     message: str
@@ -6032,7 +6035,7 @@ class WebhookTestResult(BaseModel):
 
 
 class WorkspaceDto(BaseModel):
-    model_config = ConfigDict(extra="forbid")
+    model_config = ConfigDict(extra="forbid", populate_by_name=True)
     id: Annotated[int, Field(description="Unique workspace identifier")]
     created_at: Annotated[
         AwareDatetime,
@@ -6054,7 +6057,7 @@ class WorkspaceDto(BaseModel):
 
 
 class AddMonitorTagsRequest(BaseModel):
-    model_config = ConfigDict(extra="forbid")
+    model_config = ConfigDict(extra="forbid", populate_by_name=True)
     tag_ids: Annotated[
         list[UUID] | None,
         Field(alias="tagIds", description="IDs of existing org tags to attach"),
@@ -6079,7 +6082,7 @@ class AuditMetadata(RootModel[MemberRoleChangedMetadata | None]):
 
 
 class AuthMeResponse(BaseModel):
-    model_config = ConfigDict(extra="forbid")
+    model_config = ConfigDict(extra="forbid", populate_by_name=True)
     key: KeyInfo
     organization: OrgInfo
     plan: PlanInfo
@@ -6087,7 +6090,7 @@ class AuthMeResponse(BaseModel):
 
 
 class BulkMonitorActionRequest(BaseModel):
-    model_config = ConfigDict(extra="forbid")
+    model_config = ConfigDict(extra="forbid", populate_by_name=True)
     monitor_ids: Annotated[
         list[UUID],
         Field(
@@ -6118,7 +6121,7 @@ class BulkMonitorActionRequest(BaseModel):
 
 
 class BulkMonitorActionResult(BaseModel):
-    model_config = ConfigDict(extra="forbid")
+    model_config = ConfigDict(extra="forbid", populate_by_name=True)
     succeeded: Annotated[
         list[UUID], Field(description="IDs of monitors on which the action succeeded")
     ]
@@ -6131,7 +6134,7 @@ class BulkMonitorActionResult(BaseModel):
 
 
 class ComponentUptimeDayDto(BaseModel):
-    model_config = ConfigDict(extra="forbid")
+    model_config = ConfigDict(extra="forbid", populate_by_name=True)
     date: Annotated[
         AwareDatetime,
         Field(
@@ -6173,7 +6176,7 @@ class ComponentUptimeDayDto(BaseModel):
 
 
 class CreateAlertChannelRequest(BaseModel):
-    model_config = ConfigDict(extra="forbid")
+    model_config = ConfigDict(extra="forbid", populate_by_name=True)
     name: Annotated[
         str,
         Field(
@@ -6182,20 +6185,21 @@ class CreateAlertChannelRequest(BaseModel):
             min_length=0,
         ),
     ]
-    config: (
+    config: Annotated[
         DiscordChannelConfig
         | EmailChannelConfig
         | OpsGenieChannelConfig
         | PagerDutyChannelConfig
         | SlackChannelConfig
         | TeamsChannelConfig
-        | WebhookChannelConfig
-    )
+        | WebhookChannelConfig,
+        Field(discriminator="channel_type"),
+    ]
 
 
 class CreateAssertionRequest(BaseModel):
-    model_config = ConfigDict(extra="forbid")
-    config: (
+    model_config = ConfigDict(extra="forbid", populate_by_name=True)
+    config: Annotated[
         BodyContainsAssertion
         | DnsExpectedCnameAssertion
         | DnsExpectedIpsAssertion
@@ -6237,8 +6241,9 @@ class CreateAssertionRequest(BaseModel):
         | StatusCodeAssertion
         | TcpConnectsAssertion
         | TcpResponseTimeAssertion
-        | TcpResponseTimeWarnAssertion
-    )
+        | TcpResponseTimeWarnAssertion,
+        Field(discriminator="type"),
+    ]
     severity: Annotated[
         Severity | None,
         Field(
@@ -6248,7 +6253,7 @@ class CreateAssertionRequest(BaseModel):
 
 
 class CreateMonitorRequest(BaseModel):
-    model_config = ConfigDict(extra="forbid")
+    model_config = ConfigDict(extra="forbid", populate_by_name=True)
     name: Annotated[
         str,
         Field(
@@ -6283,7 +6288,8 @@ class CreateMonitorRequest(BaseModel):
     managed_by: Annotated[
         ManagedBy,
         Field(
-            alias="managedBy", description="Who manages this monitor: DASHBOARD or CLI"
+            alias="managedBy",
+            description="Source that created/owns this monitor: DASHBOARD, CLI, TERRAFORM, MCP, or API. Use the value matching your surface so audit logs, drift detection, and analytics attribute correctly.",
         ),
     ]
     environment_id: Annotated[
@@ -6312,7 +6318,7 @@ class CreateMonitorRequest(BaseModel):
 
 
 class CreateResourceGroupRequest(BaseModel):
-    model_config = ConfigDict(extra="forbid")
+    model_config = ConfigDict(extra="forbid", populate_by_name=True)
     name: Annotated[
         str,
         Field(
@@ -6406,7 +6412,7 @@ class CreateResourceGroupRequest(BaseModel):
 
 
 class CreateStatusPageRequest(BaseModel):
-    model_config = ConfigDict(extra="forbid")
+    model_config = ConfigDict(extra="forbid", populate_by_name=True)
     name: Annotated[
         str,
         Field(
@@ -6452,7 +6458,7 @@ class CreateStatusPageRequest(BaseModel):
 
 
 class CursorPageServiceCatalogDto(BaseModel):
-    model_config = ConfigDict(extra="forbid")
+    model_config = ConfigDict(extra="forbid", populate_by_name=True)
     data: Annotated[list[ServiceCatalogDto], Field(description="Items on this page")]
     next_cursor: Annotated[
         str | None,
@@ -6470,7 +6476,7 @@ class CursorPageServiceCatalogDto(BaseModel):
 
 
 class CursorPageServicePollResultDto(BaseModel):
-    model_config = ConfigDict(extra="forbid")
+    model_config = ConfigDict(extra="forbid", populate_by_name=True)
     data: Annotated[list[ServicePollResultDto], Field(description="Items on this page")]
     next_cursor: Annotated[
         str | None,
@@ -6488,13 +6494,13 @@ class CursorPageServicePollResultDto(BaseModel):
 
 
 class DashboardOverviewDto(BaseModel):
-    model_config = ConfigDict(extra="forbid")
+    model_config = ConfigDict(extra="forbid", populate_by_name=True)
     monitors: MonitorsSummaryDto
     incidents: IncidentsSummaryDto
 
 
 class EscalationChain(BaseModel):
-    model_config = ConfigDict(extra="forbid")
+    model_config = ConfigDict(extra="forbid", populate_by_name=True)
     steps: Annotated[
         list[EscalationStep],
         Field(
@@ -6512,7 +6518,7 @@ class EscalationChain(BaseModel):
 
 
 class GlobalStatusSummaryDto(BaseModel):
-    model_config = ConfigDict(extra="forbid")
+    model_config = ConfigDict(extra="forbid", populate_by_name=True)
     total_services: Annotated[
         int,
         Field(
@@ -6576,7 +6582,7 @@ class GlobalStatusSummaryDto(BaseModel):
 
 
 class Http(BaseModel):
-    model_config = ConfigDict(extra="forbid")
+    model_config = ConfigDict(extra="forbid", populate_by_name=True)
     check_type: Literal["http"] = "http"
     timing: TimingPhasesDto | None = None
     body_truncated: Annotated[
@@ -6589,7 +6595,7 @@ class Http(BaseModel):
 
 
 class IncidentDetailDto(BaseModel):
-    model_config = ConfigDict(extra="forbid")
+    model_config = ConfigDict(extra="forbid", populate_by_name=True)
     incident: IncidentDto
     updates: list[IncidentUpdateDto]
     status_page_incidents: Annotated[
@@ -6598,7 +6604,7 @@ class IncidentDetailDto(BaseModel):
 
 
 class IncidentPolicyDto(BaseModel):
-    model_config = ConfigDict(extra="forbid")
+    model_config = ConfigDict(extra="forbid", populate_by_name=True)
     id: Annotated[UUID, Field(description="Unique incident policy identifier")]
     monitor_id: Annotated[
         UUID, Field(alias="monitorId", description="Monitor this policy is attached to")
@@ -6639,7 +6645,7 @@ class IncidentPolicyDto(BaseModel):
 
 
 class IncidentStateTransitionDto(BaseModel):
-    model_config = ConfigDict(extra="forbid")
+    model_config = ConfigDict(extra="forbid", populate_by_name=True)
     id: Annotated[UUID, Field(description="Forensic row UUID")]
     occurred_at: Annotated[
         AwareDatetime,
@@ -6720,7 +6726,7 @@ class IncidentStateTransitionDto(BaseModel):
 
 
 class IncidentTimelineDto(BaseModel):
-    model_config = ConfigDict(extra="forbid")
+    model_config = ConfigDict(extra="forbid", populate_by_name=True)
     transitions: Annotated[
         list[IncidentStateTransitionDto],
         Field(description="State-machine transitions in chronological order"),
@@ -6738,7 +6744,7 @@ class IncidentTimelineDto(BaseModel):
 
 
 class IntegrationConfigSchemaDto(BaseModel):
-    model_config = ConfigDict(extra="forbid")
+    model_config = ConfigDict(extra="forbid", populate_by_name=True)
     connection_fields: Annotated[
         list[IntegrationFieldDto], Field(alias="connectionFields")
     ]
@@ -6746,7 +6752,7 @@ class IntegrationConfigSchemaDto(BaseModel):
 
 
 class IntegrationDto(BaseModel):
-    model_config = ConfigDict(extra="forbid")
+    model_config = ConfigDict(extra="forbid", populate_by_name=True)
     type: str
     name: str
     description: str
@@ -6759,11 +6765,11 @@ class IntegrationDto(BaseModel):
 
 
 class MonitorAssertionDto(BaseModel):
-    model_config = ConfigDict(extra="forbid")
+    model_config = ConfigDict(extra="forbid", populate_by_name=True)
     id: UUID
     monitor_id: Annotated[UUID, Field(alias="monitorId")]
     assertion_type: Annotated[AssertionType, Field(alias="assertionType")]
-    config: (
+    config: Annotated[
         BodyContainsAssertion
         | DnsExpectedCnameAssertion
         | DnsExpectedIpsAssertion
@@ -6805,13 +6811,16 @@ class MonitorAssertionDto(BaseModel):
         | StatusCodeAssertion
         | TcpConnectsAssertion
         | TcpResponseTimeAssertion
-        | TcpResponseTimeWarnAssertion
-    )
+        | TcpResponseTimeWarnAssertion,
+        Field(discriminator="type"),
+    ]
     severity: Severity6
 
 
 class MonitorDto(BaseModel):
-    model_config = ConfigDict(extra="forbid")
+    """Note: ``currentStatus`` was removed from this DTO. Inspect ``enabled`` and the incident-policy API to derive a live status for a monitor instead."""
+
+    model_config = ConfigDict(extra="forbid", populate_by_name=True)
     id: Annotated[UUID, Field(description="Unique monitor identifier")]
     organization_id: Annotated[
         int,
@@ -6844,7 +6853,10 @@ class MonitorDto(BaseModel):
     ]
     managed_by: Annotated[
         ManagedBy,
-        Field(alias="managedBy", description="Management source: DASHBOARD or CLI"),
+        Field(
+            alias="managedBy",
+            description="Source that created/owns this monitor: DASHBOARD, CLI, TERRAFORM, MCP, or API",
+        ),
     ]
     created_at: Annotated[
         AwareDatetime,
@@ -6887,7 +6899,7 @@ class MonitorDto(BaseModel):
 
 
 class MonitorTestRequest(BaseModel):
-    model_config = ConfigDict(extra="forbid")
+    model_config = ConfigDict(extra="forbid", populate_by_name=True)
     type: Annotated[Type3, Field(description="Monitor protocol type to test")]
     config: (
         DnsMonitorConfig
@@ -6904,7 +6916,7 @@ class MonitorTestRequest(BaseModel):
 
 
 class MonitorVersionDto(BaseModel):
-    model_config = ConfigDict(extra="forbid")
+    model_config = ConfigDict(extra="forbid", populate_by_name=True)
     id: Annotated[UUID, Field(description="Unique version record identifier")]
     monitor_id: Annotated[
         UUID, Field(alias="monitorId", description="Monitor this version belongs to")
@@ -6940,7 +6952,7 @@ class MonitorVersionDto(BaseModel):
 
 
 class NotificationPolicyDto(BaseModel):
-    model_config = ConfigDict(extra="forbid")
+    model_config = ConfigDict(extra="forbid", populate_by_name=True)
     id: Annotated[UUID, Field(description="Unique notification policy identifier")]
     organization_id: Annotated[
         int,
@@ -6976,7 +6988,7 @@ class NotificationPolicyDto(BaseModel):
 
 
 class ResourceGroupDto(BaseModel):
-    model_config = ConfigDict(extra="forbid")
+    model_config = ConfigDict(extra="forbid", populate_by_name=True)
     id: Annotated[UUID, Field(description="Unique resource group identifier")]
     organization_id: Annotated[
         int,
@@ -7076,7 +7088,7 @@ class ResourceGroupDto(BaseModel):
 
 
 class ServiceDetailDto(BaseModel):
-    model_config = ConfigDict(extra="forbid")
+    model_config = ConfigDict(extra="forbid", populate_by_name=True)
     id: UUID
     slug: str
     name: str
@@ -7111,7 +7123,7 @@ class ServiceDetailDto(BaseModel):
 
 
 class ServiceIncidentDetailDto(BaseModel):
-    model_config = ConfigDict(extra="forbid")
+    model_config = ConfigDict(extra="forbid", populate_by_name=True)
     id: UUID
     title: str
     status: str
@@ -7127,7 +7139,7 @@ class ServiceIncidentDetailDto(BaseModel):
 
 
 class ServiceUptimeResponse(BaseModel):
-    model_config = ConfigDict(extra="forbid")
+    model_config = ConfigDict(extra="forbid", populate_by_name=True)
     overall_uptime_pct: Annotated[
         float | None,
         Field(
@@ -7154,147 +7166,147 @@ class ServiceUptimeResponse(BaseModel):
 
 
 class SingleValueResponseAuthMeResponse(BaseModel):
-    model_config = ConfigDict(extra="forbid")
+    model_config = ConfigDict(extra="forbid", populate_by_name=True)
     data: AuthMeResponse
 
 
 class SingleValueResponseBulkMonitorActionResult(BaseModel):
-    model_config = ConfigDict(extra="forbid")
+    model_config = ConfigDict(extra="forbid", populate_by_name=True)
     data: BulkMonitorActionResult
 
 
 class SingleValueResponseDashboardOverviewDto(BaseModel):
-    model_config = ConfigDict(extra="forbid")
+    model_config = ConfigDict(extra="forbid", populate_by_name=True)
     data: DashboardOverviewDto
 
 
 class SingleValueResponseGlobalStatusSummaryDto(BaseModel):
-    model_config = ConfigDict(extra="forbid")
+    model_config = ConfigDict(extra="forbid", populate_by_name=True)
     data: GlobalStatusSummaryDto
 
 
 class SingleValueResponseIncidentDetailDto(BaseModel):
-    model_config = ConfigDict(extra="forbid")
+    model_config = ConfigDict(extra="forbid", populate_by_name=True)
     data: IncidentDetailDto
 
 
 class SingleValueResponseIncidentPolicyDto(BaseModel):
-    model_config = ConfigDict(extra="forbid")
+    model_config = ConfigDict(extra="forbid", populate_by_name=True)
     data: IncidentPolicyDto
 
 
 class SingleValueResponseIncidentTimelineDto(BaseModel):
-    model_config = ConfigDict(extra="forbid")
+    model_config = ConfigDict(extra="forbid", populate_by_name=True)
     data: IncidentTimelineDto
 
 
 class SingleValueResponseMonitorAssertionDto(BaseModel):
-    model_config = ConfigDict(extra="forbid")
+    model_config = ConfigDict(extra="forbid", populate_by_name=True)
     data: MonitorAssertionDto
 
 
 class SingleValueResponseMonitorDto(BaseModel):
-    model_config = ConfigDict(extra="forbid")
+    model_config = ConfigDict(extra="forbid", populate_by_name=True)
     data: MonitorDto
 
 
 class SingleValueResponseMonitorVersionDto(BaseModel):
-    model_config = ConfigDict(extra="forbid")
+    model_config = ConfigDict(extra="forbid", populate_by_name=True)
     data: MonitorVersionDto
 
 
 class SingleValueResponseNotificationPolicyDto(BaseModel):
-    model_config = ConfigDict(extra="forbid")
+    model_config = ConfigDict(extra="forbid", populate_by_name=True)
     data: NotificationPolicyDto
 
 
 class SingleValueResponseResourceGroupDto(BaseModel):
-    model_config = ConfigDict(extra="forbid")
+    model_config = ConfigDict(extra="forbid", populate_by_name=True)
     data: ResourceGroupDto
 
 
 class SingleValueResponseServiceDetailDto(BaseModel):
-    model_config = ConfigDict(extra="forbid")
+    model_config = ConfigDict(extra="forbid", populate_by_name=True)
     data: ServiceDetailDto
 
 
 class SingleValueResponseServiceIncidentDetailDto(BaseModel):
-    model_config = ConfigDict(extra="forbid")
+    model_config = ConfigDict(extra="forbid", populate_by_name=True)
     data: ServiceIncidentDetailDto
 
 
 class SingleValueResponseServiceUptimeResponse(BaseModel):
-    model_config = ConfigDict(extra="forbid")
+    model_config = ConfigDict(extra="forbid", populate_by_name=True)
     data: ServiceUptimeResponse
 
 
 class SingleValueResponseStatusPageComponentDto(BaseModel):
-    model_config = ConfigDict(extra="forbid")
+    model_config = ConfigDict(extra="forbid", populate_by_name=True)
     data: StatusPageComponentDto
 
 
 class SingleValueResponseStatusPageComponentGroupDto(BaseModel):
-    model_config = ConfigDict(extra="forbid")
+    model_config = ConfigDict(extra="forbid", populate_by_name=True)
     data: StatusPageComponentGroupDto
 
 
 class SingleValueResponseStatusPageCustomDomainDto(BaseModel):
-    model_config = ConfigDict(extra="forbid")
+    model_config = ConfigDict(extra="forbid", populate_by_name=True)
     data: StatusPageCustomDomainDto
 
 
 class SingleValueResponseStatusPageDto(BaseModel):
-    model_config = ConfigDict(extra="forbid")
+    model_config = ConfigDict(extra="forbid", populate_by_name=True)
     data: StatusPageDto
 
 
 class SingleValueResponseStatusPageSubscriberDto(BaseModel):
-    model_config = ConfigDict(extra="forbid")
+    model_config = ConfigDict(extra="forbid", populate_by_name=True)
     data: StatusPageSubscriberDto
 
 
 class SingleValueResponseTagDto(BaseModel):
-    model_config = ConfigDict(extra="forbid")
+    model_config = ConfigDict(extra="forbid", populate_by_name=True)
     data: TagDto
 
 
 class SingleValueResponseTestChannelResult(BaseModel):
-    model_config = ConfigDict(extra="forbid")
+    model_config = ConfigDict(extra="forbid", populate_by_name=True)
     data: TestChannelResult
 
 
 class SingleValueResponseTestMatchResult(BaseModel):
-    model_config = ConfigDict(extra="forbid")
+    model_config = ConfigDict(extra="forbid", populate_by_name=True)
     data: TestMatchResult
 
 
 class SingleValueResponseUptimeDto(BaseModel):
-    model_config = ConfigDict(extra="forbid")
+    model_config = ConfigDict(extra="forbid", populate_by_name=True)
     data: UptimeDto
 
 
 class SingleValueResponseWebhookEndpointDto(BaseModel):
-    model_config = ConfigDict(extra="forbid")
+    model_config = ConfigDict(extra="forbid", populate_by_name=True)
     data: WebhookEndpointDto
 
 
 class SingleValueResponseWebhookSigningSecretDto(BaseModel):
-    model_config = ConfigDict(extra="forbid")
+    model_config = ConfigDict(extra="forbid", populate_by_name=True)
     data: WebhookSigningSecretDto
 
 
 class SingleValueResponseWebhookTestResult(BaseModel):
-    model_config = ConfigDict(extra="forbid")
+    model_config = ConfigDict(extra="forbid", populate_by_name=True)
     data: WebhookTestResult
 
 
 class SingleValueResponseWorkspaceDto(BaseModel):
-    model_config = ConfigDict(extra="forbid")
+    model_config = ConfigDict(extra="forbid", populate_by_name=True)
     data: WorkspaceDto
 
 
 class StatusPageIncidentDto(BaseModel):
-    model_config = ConfigDict(extra="forbid")
+    model_config = ConfigDict(extra="forbid", populate_by_name=True)
     id: UUID
     status_page_id: Annotated[UUID, Field(alias="statusPageId")]
     title: Annotated[str, Field(min_length=1)]
@@ -7322,7 +7334,7 @@ class StatusPageIncidentDto(BaseModel):
 
 
 class TableValueResultComponentUptimeDayDto(BaseModel):
-    model_config = ConfigDict(extra="forbid")
+    model_config = ConfigDict(extra="forbid", populate_by_name=True)
     data: list[ComponentUptimeDayDto]
     has_next: Annotated[bool, Field(alias="hasNext")]
     has_prev: Annotated[bool, Field(alias="hasPrev")]
@@ -7331,7 +7343,7 @@ class TableValueResultComponentUptimeDayDto(BaseModel):
 
 
 class TableValueResultIncidentStateTransitionDto(BaseModel):
-    model_config = ConfigDict(extra="forbid")
+    model_config = ConfigDict(extra="forbid", populate_by_name=True)
     data: list[IncidentStateTransitionDto]
     has_next: Annotated[bool, Field(alias="hasNext")]
     has_prev: Annotated[bool, Field(alias="hasPrev")]
@@ -7340,7 +7352,7 @@ class TableValueResultIncidentStateTransitionDto(BaseModel):
 
 
 class TableValueResultIntegrationDto(BaseModel):
-    model_config = ConfigDict(extra="forbid")
+    model_config = ConfigDict(extra="forbid", populate_by_name=True)
     data: list[IntegrationDto]
     has_next: Annotated[bool, Field(alias="hasNext")]
     has_prev: Annotated[bool, Field(alias="hasPrev")]
@@ -7349,7 +7361,7 @@ class TableValueResultIntegrationDto(BaseModel):
 
 
 class TableValueResultMonitorDto(BaseModel):
-    model_config = ConfigDict(extra="forbid")
+    model_config = ConfigDict(extra="forbid", populate_by_name=True)
     data: list[MonitorDto]
     has_next: Annotated[bool, Field(alias="hasNext")]
     has_prev: Annotated[bool, Field(alias="hasPrev")]
@@ -7358,7 +7370,7 @@ class TableValueResultMonitorDto(BaseModel):
 
 
 class TableValueResultMonitorVersionDto(BaseModel):
-    model_config = ConfigDict(extra="forbid")
+    model_config = ConfigDict(extra="forbid", populate_by_name=True)
     data: list[MonitorVersionDto]
     has_next: Annotated[bool, Field(alias="hasNext")]
     has_prev: Annotated[bool, Field(alias="hasPrev")]
@@ -7367,7 +7379,7 @@ class TableValueResultMonitorVersionDto(BaseModel):
 
 
 class TableValueResultNotificationPolicyDto(BaseModel):
-    model_config = ConfigDict(extra="forbid")
+    model_config = ConfigDict(extra="forbid", populate_by_name=True)
     data: list[NotificationPolicyDto]
     has_next: Annotated[bool, Field(alias="hasNext")]
     has_prev: Annotated[bool, Field(alias="hasPrev")]
@@ -7376,7 +7388,7 @@ class TableValueResultNotificationPolicyDto(BaseModel):
 
 
 class TableValueResultResourceGroupDto(BaseModel):
-    model_config = ConfigDict(extra="forbid")
+    model_config = ConfigDict(extra="forbid", populate_by_name=True)
     data: list[ResourceGroupDto]
     has_next: Annotated[bool, Field(alias="hasNext")]
     has_prev: Annotated[bool, Field(alias="hasPrev")]
@@ -7385,7 +7397,7 @@ class TableValueResultResourceGroupDto(BaseModel):
 
 
 class TableValueResultStatusPageIncidentDto(BaseModel):
-    model_config = ConfigDict(extra="forbid")
+    model_config = ConfigDict(extra="forbid", populate_by_name=True)
     data: list[StatusPageIncidentDto]
     has_next: Annotated[bool, Field(alias="hasNext")]
     has_prev: Annotated[bool, Field(alias="hasPrev")]
@@ -7394,7 +7406,7 @@ class TableValueResultStatusPageIncidentDto(BaseModel):
 
 
 class TableValueResultTagDto(BaseModel):
-    model_config = ConfigDict(extra="forbid")
+    model_config = ConfigDict(extra="forbid", populate_by_name=True)
     data: list[TagDto]
     has_next: Annotated[bool, Field(alias="hasNext")]
     has_prev: Annotated[bool, Field(alias="hasPrev")]
@@ -7403,7 +7415,7 @@ class TableValueResultTagDto(BaseModel):
 
 
 class TableValueResultWebhookDeliveryDto(BaseModel):
-    model_config = ConfigDict(extra="forbid")
+    model_config = ConfigDict(extra="forbid", populate_by_name=True)
     data: list[WebhookDeliveryDto]
     has_next: Annotated[bool, Field(alias="hasNext")]
     has_prev: Annotated[bool, Field(alias="hasPrev")]
@@ -7412,7 +7424,7 @@ class TableValueResultWebhookDeliveryDto(BaseModel):
 
 
 class TableValueResultWebhookEndpointDto(BaseModel):
-    model_config = ConfigDict(extra="forbid")
+    model_config = ConfigDict(extra="forbid", populate_by_name=True)
     data: list[WebhookEndpointDto]
     has_next: Annotated[bool, Field(alias="hasNext")]
     has_prev: Annotated[bool, Field(alias="hasPrev")]
@@ -7421,7 +7433,7 @@ class TableValueResultWebhookEndpointDto(BaseModel):
 
 
 class TableValueResultWorkspaceDto(BaseModel):
-    model_config = ConfigDict(extra="forbid")
+    model_config = ConfigDict(extra="forbid", populate_by_name=True)
     data: list[WorkspaceDto]
     has_next: Annotated[bool, Field(alias="hasNext")]
     has_prev: Annotated[bool, Field(alias="hasPrev")]
@@ -7430,20 +7442,21 @@ class TableValueResultWorkspaceDto(BaseModel):
 
 
 class TestAlertChannelRequest(BaseModel):
-    model_config = ConfigDict(extra="forbid")
-    config: (
+    model_config = ConfigDict(extra="forbid", populate_by_name=True)
+    config: Annotated[
         DiscordChannelConfig
         | EmailChannelConfig
         | OpsGenieChannelConfig
         | PagerDutyChannelConfig
         | SlackChannelConfig
         | TeamsChannelConfig
-        | WebhookChannelConfig
-    )
+        | WebhookChannelConfig,
+        Field(discriminator="channel_type"),
+    ]
 
 
 class UpdateAlertChannelRequest(BaseModel):
-    model_config = ConfigDict(extra="forbid")
+    model_config = ConfigDict(extra="forbid", populate_by_name=True)
     name: Annotated[
         str,
         Field(
@@ -7452,19 +7465,20 @@ class UpdateAlertChannelRequest(BaseModel):
             min_length=0,
         ),
     ]
-    config: (
+    config: Annotated[
         DiscordChannelConfig
         | EmailChannelConfig
         | OpsGenieChannelConfig
         | PagerDutyChannelConfig
         | SlackChannelConfig
         | TeamsChannelConfig
-        | WebhookChannelConfig
-    )
+        | WebhookChannelConfig,
+        Field(discriminator="channel_type"),
+    ]
 
 
 class UpdateMonitorRequest(BaseModel):
-    model_config = ConfigDict(extra="forbid")
+    model_config = ConfigDict(extra="forbid", populate_by_name=True)
     name: Annotated[
         str | None,
         Field(
@@ -7500,7 +7514,7 @@ class UpdateMonitorRequest(BaseModel):
         ManagedBy | None,
         Field(
             alias="managedBy",
-            description="New management source; null preserves current",
+            description="New ownership source: DASHBOARD, CLI, TERRAFORM, MCP, or API; null preserves current value",
         ),
     ] = None
     environment_id: Annotated[
@@ -7540,7 +7554,7 @@ class UpdateMonitorRequest(BaseModel):
 
 
 class UpdateNotificationPolicyRequest(BaseModel):
-    model_config = ConfigDict(extra="forbid")
+    model_config = ConfigDict(extra="forbid", populate_by_name=True)
     name: Annotated[
         str | None,
         Field(
@@ -7570,7 +7584,7 @@ class UpdateNotificationPolicyRequest(BaseModel):
 
 
 class AuditEventDto(BaseModel):
-    model_config = ConfigDict(extra="forbid")
+    model_config = ConfigDict(extra="forbid", populate_by_name=True)
     id: Annotated[int, Field(description="Unique audit event identifier")]
     actor_id: Annotated[
         int | None,
@@ -7615,7 +7629,7 @@ class AuditEventDto(BaseModel):
 
 
 class BatchComponentUptimeDto(BaseModel):
-    model_config = ConfigDict(extra="forbid")
+    model_config = ConfigDict(extra="forbid", populate_by_name=True)
     components: Annotated[
         dict[str, list[ComponentUptimeDayDto]],
         Field(
@@ -7625,7 +7639,7 @@ class BatchComponentUptimeDto(BaseModel):
 
 
 class CheckTraceDto(BaseModel):
-    model_config = ConfigDict(extra="forbid")
+    model_config = ConfigDict(extra="forbid", populate_by_name=True)
     check_id: Annotated[
         UUID,
         Field(
@@ -7658,7 +7672,7 @@ class CheckTypeDetailsDto(RootModel[Http | Tcp | Icmp | Dns | McpServer]):
 
 
 class CreateNotificationPolicyRequest(BaseModel):
-    model_config = ConfigDict(extra="forbid")
+    model_config = ConfigDict(extra="forbid", populate_by_name=True)
     name: Annotated[
         str,
         Field(
@@ -7687,22 +7701,22 @@ class CreateNotificationPolicyRequest(BaseModel):
 
 
 class SingleValueResponseBatchComponentUptimeDto(BaseModel):
-    model_config = ConfigDict(extra="forbid")
+    model_config = ConfigDict(extra="forbid", populate_by_name=True)
     data: BatchComponentUptimeDto
 
 
 class SingleValueResponseCheckTraceDto(BaseModel):
-    model_config = ConfigDict(extra="forbid")
+    model_config = ConfigDict(extra="forbid", populate_by_name=True)
     data: CheckTraceDto
 
 
 class SingleValueResponseStatusPageIncidentDto(BaseModel):
-    model_config = ConfigDict(extra="forbid")
+    model_config = ConfigDict(extra="forbid", populate_by_name=True)
     data: StatusPageIncidentDto
 
 
 class TableValueResultAuditEventDto(BaseModel):
-    model_config = ConfigDict(extra="forbid")
+    model_config = ConfigDict(extra="forbid", populate_by_name=True)
     data: list[AuditEventDto]
     has_next: Annotated[bool, Field(alias="hasNext")]
     has_prev: Annotated[bool, Field(alias="hasPrev")]
@@ -7711,7 +7725,7 @@ class TableValueResultAuditEventDto(BaseModel):
 
 
 class CheckResultDetailsDto(BaseModel):
-    model_config = ConfigDict(extra="forbid")
+    model_config = ConfigDict(extra="forbid", populate_by_name=True)
     status_code: Annotated[
         int | None,
         Field(
@@ -7765,7 +7779,7 @@ class CheckResultDetailsDto(BaseModel):
 
 
 class CheckResultDto(BaseModel):
-    model_config = ConfigDict(extra="forbid")
+    model_config = ConfigDict(extra="forbid", populate_by_name=True)
     id: Annotated[UUID, Field(description="Unique identifier of the check result")]
     timestamp: Annotated[
         AwareDatetime,
@@ -7810,7 +7824,7 @@ class CheckResultDto(BaseModel):
 
 
 class CursorPageCheckResultDto(BaseModel):
-    model_config = ConfigDict(extra="forbid")
+    model_config = ConfigDict(extra="forbid", populate_by_name=True)
     data: Annotated[list[CheckResultDto], Field(description="Items on this page")]
     next_cursor: Annotated[
         str | None,

@@ -91,13 +91,24 @@ def fetch_all_pages(
     path: str,
     model_class: type[M],
     page_size: int = DEFAULT_PAGE_SIZE,
+    *,
+    extra_params: dict[str, Any] | None = None,
 ) -> list[M]:
-    """Fetch all pages from an offset-paginated endpoint, validating each item."""
+    """Fetch all pages from an offset-paginated endpoint, validating each item.
+
+    ``extra_params`` is merged into every page request so callers can
+    forward server-side filter kwargs (``enabled``, ``search``, …) that
+    apply uniformly across the whole iteration. Pagination keys
+    (``page``, ``size``) always win over user-supplied ``extra_params``
+    to keep the iterator's invariants intact.
+    """
     all_items: list[M] = []
     page = 0
+    base_params = dict(extra_params) if extra_params else {}
 
     while True:
-        resp = api_get(client, path, params={"page": page, "size": page_size})
+        params = {**base_params, "page": page, "size": page_size}
+        resp = api_get(client, path, params=params)
         envelope = _validate_page(resp)
         all_items.extend(parse_list(model_class, envelope.data, f"GET {path}"))
         if not envelope.hasNext:
@@ -108,10 +119,22 @@ def fetch_all_pages(
 
 
 def fetch_page(
-    client: httpx.Client, path: str, model_class: type[M], page: int, size: int
+    client: httpx.Client,
+    path: str,
+    model_class: type[M],
+    page: int,
+    size: int,
+    *,
+    extra_params: dict[str, Any] | None = None,
 ) -> Page[M]:
-    """Fetch a single page from an offset-paginated endpoint with validation."""
-    resp = api_get(client, path, params={"page": page, "size": size})
+    """Fetch a single page from an offset-paginated endpoint with validation.
+
+    ``extra_params`` is merged into the request so callers can forward
+    server-side filter kwargs alongside manual page control.
+    """
+    base_params = dict(extra_params) if extra_params else {}
+    params = {**base_params, "page": page, "size": size}
+    resp = api_get(client, path, params=params)
     envelope = _validate_page(resp)
     return Page(
         data=parse_list(model_class, envelope.data, f"GET {path}"),

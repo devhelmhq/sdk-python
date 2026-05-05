@@ -1,5 +1,8 @@
 """DevHelm SDK for Python — typed client for monitors, incidents, alerting, and more."""
 
+from importlib.metadata import PackageNotFoundError
+from importlib.metadata import version as _pkg_version
+
 from devhelm._errors import (
     DevhelmApiError,
     DevhelmAuthError,
@@ -133,7 +136,17 @@ from devhelm.types import (
     WebhookTestResult,
 )
 
+try:
+    __version__ = _pkg_version("devhelm")
+except PackageNotFoundError:
+    # Editable / source-tree install without dist-info — fall back to
+    # ``"unknown"`` rather than raising so downstream tooling that relies
+    # on ``devhelm.__version__`` keeps working in local development.
+    __version__ = "unknown"
+
 __all__ = [
+    # Version
+    "__version__",
     # Client
     "Devhelm",
     # Errors

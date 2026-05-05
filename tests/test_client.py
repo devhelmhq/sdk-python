@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import httpx
 import pytest
 
 from devhelm import Devhelm
@@ -160,3 +161,102 @@ class TestClientOptionalTenantArgs:
         config = DevhelmConfig(token="test-token")
         assert config.org_id is None
         assert config.workspace_id is None
+
+
+class TestMonitorsListFilters:
+    """The documented ``GET /api/v1/monitors`` query params (``enabled``,
+    ``type``, ``managedBy``, ``tags``, ``search``, ``environmentId``) must
+    be reachable from ``client.monitors.list(...)`` so users don't have to
+    drop down to ``httpx`` to do server-side filtering. Round-3 DevEx fix
+    P1.Bug7.
+    """
+
+    @staticmethod
+    def _stub_transport(captured: list[httpx.Request]) -> httpx.MockTransport:
+        def handler(request: httpx.Request) -> httpx.Response:
+            captured.append(request)
+            return httpx.Response(
+                200, json={"data": [], "hasNext": False, "hasPrev": False}
+            )
+
+        return httpx.MockTransport(handler)
+
+    def _client_with_transport(self, transport: httpx.MockTransport) -> Monitors:
+        http_client = httpx.Client(
+            transport=transport, base_url="http://localhost:8080"
+        )
+        return Monitors(http_client)
+
+    def test_list_threads_filters_to_query_string(self) -> None:
+        captured: list[httpx.Request] = []
+        monitors = self._client_with_transport(self._stub_transport(captured))
+
+        monitors.list(
+            enabled=True,
+            type="HTTP",
+            managed_by="API",
+            tags="prod,critical",
+            search="checkout",
+            environment_id="11111111-2222-3333-4444-555555555555",
+        )
+
+        assert len(captured) == 1
+        params = captured[0].url.params
+        # snake_case kwargs must be projected onto the camelCase wire names
+        # the API documents in the OpenAPI spec.
+        assert params["enabled"] == "true"
+        assert params["type"] == "HTTP"
+        assert params["managedBy"] == "API"
+        assert params["tags"] == "prod,critical"
+        assert params["search"] == "checkout"
+        assert params["environmentId"] == "11111111-2222-3333-4444-555555555555"
+
+    def test_list_omits_unspecified_filters(self) -> None:
+        captured: list[httpx.Request] = []
+        monitors = self._client_with_transport(self._stub_transport(captured))
+
+        monitors.list()
+
+        assert len(captured) == 1
+        params = captured[0].url.params
+        # No filters → only the pagination keys reach the wire so the API's
+        # default behaviour applies (no ``enabled=null`` etc.).
+        assert "enabled" not in params
+        assert "type" not in params
+        assert "managedBy" not in params
+        assert "tags" not in params
+        assert "search" not in params
+        assert "environmentId" not in params
+        assert params["page"] == "0"
+
+    def test_list_page_threads_filters(self) -> None:
+        captured: list[httpx.Request] = []
+        monitors = self._client_with_transport(self._stub_transport(captured))
+
+        monitors.list_page(2, 50, enabled=False, search="api")
+
+        assert len(captured) == 1
+        params = captured[0].url.params
+        assert params["enabled"] == "false"
+        assert params["search"] == "api"
+        assert params["page"] == "2"
+        assert params["size"] == "50"
+
+
+class TestSdkVersionExposed:
+    """``devhelm.__version__`` must be reachable so users can log it,
+    pin it in error reports, and so wrappers (e.g. the MCP server) can
+    surface the underlying SDK version. Round-3 DevEx fix P1.Bug14.
+    """
+
+    def test_version_attribute_exists(self) -> None:
+        import devhelm
+
+        assert hasattr(devhelm, "__version__")
+        assert isinstance(devhelm.__version__, str)
+        assert devhelm.__version__  # non-empty
+
+    def test_version_listed_in_all(self) -> None:
+        import devhelm
+
+        assert "__version__" in devhelm.__all__
