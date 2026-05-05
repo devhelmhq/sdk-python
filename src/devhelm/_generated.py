@@ -5326,7 +5326,7 @@ class Severity8(StrEnum):
 
 class UpdateAssertionRequest(BaseModel):
     model_config = ConfigDict(extra="forbid", populate_by_name=True)
-    config: (
+    config: Annotated[
         BodyContainsAssertion
         | DnsExpectedCnameAssertion
         | DnsExpectedIpsAssertion
@@ -5368,8 +5368,9 @@ class UpdateAssertionRequest(BaseModel):
         | StatusCodeAssertion
         | TcpConnectsAssertion
         | TcpResponseTimeAssertion
-        | TcpResponseTimeWarnAssertion
-    )
+        | TcpResponseTimeWarnAssertion,
+        Field(discriminator="type"),
+    ]
     severity: Annotated[
         Severity8 | None, Field(description="New outcome severity: FAIL or WARN")
     ] = None
@@ -6184,20 +6185,21 @@ class CreateAlertChannelRequest(BaseModel):
             min_length=0,
         ),
     ]
-    config: (
+    config: Annotated[
         DiscordChannelConfig
         | EmailChannelConfig
         | OpsGenieChannelConfig
         | PagerDutyChannelConfig
         | SlackChannelConfig
         | TeamsChannelConfig
-        | WebhookChannelConfig
-    )
+        | WebhookChannelConfig,
+        Field(discriminator="channel_type"),
+    ]
 
 
 class CreateAssertionRequest(BaseModel):
     model_config = ConfigDict(extra="forbid", populate_by_name=True)
-    config: (
+    config: Annotated[
         BodyContainsAssertion
         | DnsExpectedCnameAssertion
         | DnsExpectedIpsAssertion
@@ -6239,8 +6241,9 @@ class CreateAssertionRequest(BaseModel):
         | StatusCodeAssertion
         | TcpConnectsAssertion
         | TcpResponseTimeAssertion
-        | TcpResponseTimeWarnAssertion
-    )
+        | TcpResponseTimeWarnAssertion,
+        Field(discriminator="type"),
+    ]
     severity: Annotated[
         Severity | None,
         Field(
@@ -6766,7 +6769,7 @@ class MonitorAssertionDto(BaseModel):
     id: UUID
     monitor_id: Annotated[UUID, Field(alias="monitorId")]
     assertion_type: Annotated[AssertionType, Field(alias="assertionType")]
-    config: (
+    config: Annotated[
         BodyContainsAssertion
         | DnsExpectedCnameAssertion
         | DnsExpectedIpsAssertion
@@ -6808,8 +6811,9 @@ class MonitorAssertionDto(BaseModel):
         | StatusCodeAssertion
         | TcpConnectsAssertion
         | TcpResponseTimeAssertion
-        | TcpResponseTimeWarnAssertion
-    )
+        | TcpResponseTimeWarnAssertion,
+        Field(discriminator="type"),
+    ]
     severity: Severity6
 
 
@@ -7437,15 +7441,16 @@ class TableValueResultWorkspaceDto(BaseModel):
 
 class TestAlertChannelRequest(BaseModel):
     model_config = ConfigDict(extra="forbid", populate_by_name=True)
-    config: (
+    config: Annotated[
         DiscordChannelConfig
         | EmailChannelConfig
         | OpsGenieChannelConfig
         | PagerDutyChannelConfig
         | SlackChannelConfig
         | TeamsChannelConfig
-        | WebhookChannelConfig
-    )
+        | WebhookChannelConfig,
+        Field(discriminator="channel_type"),
+    ]
 
 
 class UpdateAlertChannelRequest(BaseModel):
@@ -7458,15 +7463,16 @@ class UpdateAlertChannelRequest(BaseModel):
             min_length=0,
         ),
     ]
-    config: (
+    config: Annotated[
         DiscordChannelConfig
         | EmailChannelConfig
         | OpsGenieChannelConfig
         | PagerDutyChannelConfig
         | SlackChannelConfig
         | TeamsChannelConfig
-        | WebhookChannelConfig
-    )
+        | WebhookChannelConfig,
+        Field(discriminator="channel_type"),
+    ]
 
 
 class UpdateMonitorRequest(BaseModel):
