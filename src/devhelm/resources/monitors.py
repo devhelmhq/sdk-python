@@ -20,6 +20,44 @@ from devhelm._pagination import (
 )
 from devhelm._validation import RequestBody, parse_single, validate_request
 
+# Query-param values are scalar by construction here — every documented
+# filter on ``GET /api/v1/monitors`` is a single bool/string. Spelt as a
+# concrete union (rather than ``Any``) so the resource layer stays
+# ``Any``-free per ``tests/test_typing.py``.
+_ListFilterValue = str | bool
+
+
+def _build_list_filters(
+    enabled: bool | None,
+    type: str | None,
+    managed_by: str | None,
+    tags: str | None,
+    search: str | None,
+    environment_id: str | None,
+) -> dict[str, _ListFilterValue]:
+    """Pack the documented ``GET /api/v1/monitors`` query params into a
+    single dict, dropping anything left at the default ``None`` so the
+    wire request stays minimal and the API's defaults apply.
+
+    Accepts snake_case at the Python boundary and emits the camelCase
+    spelling the API expects (``managed_by`` → ``managedBy``,
+    ``environment_id`` → ``environmentId``).
+    """
+    filters: dict[str, _ListFilterValue] = {}
+    if enabled is not None:
+        filters["enabled"] = enabled
+    if type is not None:
+        filters["type"] = type
+    if managed_by is not None:
+        filters["managedBy"] = managed_by
+    if tags is not None:
+        filters["tags"] = tags
+    if search is not None:
+        filters["search"] = search
+    if environment_id is not None:
+        filters["environmentId"] = environment_id
+    return filters
+
 
 class Monitors:
     """HTTP, DNS, TCP, ICMP, MCP, and Heartbeat monitors."""
@@ -27,13 +65,59 @@ class Monitors:
     def __init__(self, client: httpx.Client) -> None:
         self._client = client
 
-    def list(self) -> list[MonitorDto]:
-        """List all monitors (auto-paginates)."""
-        return fetch_all_pages(self._client, "/api/v1/monitors", MonitorDto)
+    def list(
+        self,
+        *,
+        enabled: bool | None = None,
+        type: str | None = None,
+        managed_by: str | None = None,
+        tags: str | None = None,
+        search: str | None = None,
+        environment_id: str | None = None,
+    ) -> list[MonitorDto]:
+        """List all monitors (auto-paginates).
 
-    def list_page(self, page: int, size: int) -> Page[MonitorDto]:
-        """List monitors with manual page control."""
-        return fetch_page(self._client, "/api/v1/monitors", MonitorDto, page, size)
+        Optional server-side filters mirror the documented
+        ``GET /api/v1/monitors`` query params. ``tags`` is a
+        comma-separated list (``"prod,critical"``); the rest are
+        single-valued.
+        """
+        return fetch_all_pages(
+            self._client,
+            "/api/v1/monitors",
+            MonitorDto,
+            extra_params=_build_list_filters(
+                enabled, type, managed_by, tags, search, environment_id
+            ),
+        )
+
+    def list_page(
+        self,
+        page: int,
+        size: int,
+        *,
+        enabled: bool | None = None,
+        type: str | None = None,
+        managed_by: str | None = None,
+        tags: str | None = None,
+        search: str | None = None,
+        environment_id: str | None = None,
+    ) -> Page[MonitorDto]:
+        """List monitors with manual page control.
+
+        Accepts the same filter kwargs as :meth:`list` so callers using
+        manual pagination get the same server-side filtering.
+        """
+        return fetch_page(
+            self._client,
+            "/api/v1/monitors",
+            MonitorDto,
+            page,
+            size,
+            extra_params=_build_list_filters(
+                enabled, type, managed_by, tags, search, environment_id
+            ),
+        )
 
     def get(self, id: int | str) -> MonitorDto:
         """Get a single monitor by ID."""
