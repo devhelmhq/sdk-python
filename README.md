@@ -31,6 +31,11 @@ monitor = client.monitors.create({
     "config": {"url": "https://api.example.com/health", "method": "GET"},
     "frequencySeconds": 60,
     "regions": ["us-east"],
+    # `managedBy` records who reconciles drift on this resource. Use
+    # "DASHBOARD" (the default for one-off SDK scripts), "CLI" if the
+    # monitor lives in a `devhelm.yml` you re-deploy, or "TERRAFORM"
+    # if it lives in `.tf` you re-apply.
+    "managedBy": "DASHBOARD",
 })
 
 # Get a single monitor
