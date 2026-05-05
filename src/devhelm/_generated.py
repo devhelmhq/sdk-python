@@ -869,6 +869,8 @@ class ManagedBy(StrEnum):
     dashboard = "DASHBOARD"
     cli = "CLI"
     terraform = "TERRAFORM"
+    mcp = "MCP"
+    api = "API"
 
 
 class HealthThresholdType(StrEnum):
@@ -6283,7 +6285,8 @@ class CreateMonitorRequest(BaseModel):
     managed_by: Annotated[
         ManagedBy,
         Field(
-            alias="managedBy", description="Who manages this monitor: DASHBOARD or CLI"
+            alias="managedBy",
+            description="Source that created/owns this monitor: DASHBOARD, CLI, TERRAFORM, MCP, or API. Use the value matching your surface so audit logs, drift detection, and analytics attribute correctly.",
         ),
     ]
     environment_id: Annotated[
@@ -6844,7 +6847,10 @@ class MonitorDto(BaseModel):
     ]
     managed_by: Annotated[
         ManagedBy,
-        Field(alias="managedBy", description="Management source: DASHBOARD or CLI"),
+        Field(
+            alias="managedBy",
+            description="Source that created/owns this monitor: DASHBOARD, CLI, TERRAFORM, MCP, or API",
+        ),
     ]
     created_at: Annotated[
         AwareDatetime,
@@ -7500,7 +7506,7 @@ class UpdateMonitorRequest(BaseModel):
         ManagedBy | None,
         Field(
             alias="managedBy",
-            description="New management source; null preserves current",
+            description="New ownership source: DASHBOARD, CLI, TERRAFORM, MCP, or API; null preserves current value",
         ),
     ] = None
     environment_id: Annotated[
