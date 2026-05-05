@@ -155,6 +155,14 @@ class ChannelType(StrEnum):
     discord = "discord"
 
 
+class ManagedBy(StrEnum):
+    dashboard = "DASHBOARD"
+    cli = "CLI"
+    terraform = "TERRAFORM"
+    mcp = "MCP"
+    api = "API"
+
+
 class AlertChannelDto(BaseModel):
     model_config = ConfigDict(extra="forbid")
     id: Annotated[UUID, Field(description="Unique alert channel identifier")]
@@ -184,6 +192,13 @@ class AlertChannelDto(BaseModel):
         Field(
             alias="configHash",
             description="SHA-256 hash of the channel config; use for change detection",
+        ),
+    ] = None
+    managed_by: Annotated[
+        ManagedBy | None,
+        Field(
+            alias="managedBy",
+            description="Source that created/owns this channel: DASHBOARD, CLI, TERRAFORM, MCP, or API. Null on channels created before this attribution column existed.",
         ),
     ] = None
     last_delivery_at: Annotated[
@@ -863,12 +878,6 @@ class Type(StrEnum):
     tcp = "TCP"
     icmp = "ICMP"
     heartbeat = "HEARTBEAT"
-
-
-class ManagedBy(StrEnum):
-    dashboard = "DASHBOARD"
-    cli = "CLI"
-    terraform = "TERRAFORM"
 
 
 class HealthThresholdType(StrEnum):
@@ -4697,6 +4706,13 @@ class StatusPageDto(BaseModel):
     component_count: Annotated[int | None, Field(alias="componentCount")] = None
     subscriber_count: Annotated[int | None, Field(alias="subscriberCount")] = None
     overall_status: Annotated[OverallStatus | None, Field(alias="overallStatus")] = None
+    managed_by: Annotated[
+        ManagedBy | None,
+        Field(
+            alias="managedBy",
+            description="Source that created/owns this status page: DASHBOARD, CLI, TERRAFORM, MCP, or API. Null on pages created before this attribution column existed.",
+        ),
+    ] = None
     created_at: Annotated[AwareDatetime, Field(alias="createdAt")]
     updated_at: Annotated[AwareDatetime, Field(alias="updatedAt")]
 
@@ -5588,6 +5604,13 @@ class UpdateResourceGroupRequest(BaseModel):
             le=60,
         ),
     ] = None
+    managed_by: Annotated[
+        ManagedBy | None,
+        Field(
+            alias="managedBy",
+            description="New attribution source: DASHBOARD, CLI, TERRAFORM, MCP, or API; null preserves current value.",
+        ),
+    ] = None
 
 
 class UpdateSecretRequest(BaseModel):
@@ -5769,6 +5792,13 @@ class UpdateStatusPageRequest(BaseModel):
         Field(
             alias="incidentMode",
             description="Incident mode: MANUAL, REVIEW, or AUTOMATIC; null preserves current",
+        ),
+    ] = None
+    managed_by: Annotated[
+        ManagedBy | None,
+        Field(
+            alias="managedBy",
+            description="New attribution source: DASHBOARD, CLI, TERRAFORM, MCP, or API; null preserves current value.",
         ),
     ] = None
 
@@ -6191,6 +6221,13 @@ class CreateAlertChannelRequest(BaseModel):
         | TeamsChannelConfig
         | WebhookChannelConfig
     )
+    managed_by: Annotated[
+        ManagedBy | None,
+        Field(
+            alias="managedBy",
+            description="Source creating this channel: DASHBOARD, CLI, TERRAFORM, MCP, or API. Defaults to API when omitted.",
+        ),
+    ] = None
 
 
 class CreateAssertionRequest(BaseModel):
@@ -6283,7 +6320,8 @@ class CreateMonitorRequest(BaseModel):
     managed_by: Annotated[
         ManagedBy,
         Field(
-            alias="managedBy", description="Who manages this monitor: DASHBOARD or CLI"
+            alias="managedBy",
+            description="Source that created/owns this monitor: DASHBOARD, CLI, TERRAFORM, MCP, or API. Use the value matching your surface so audit logs, drift detection, and analytics attribute correctly.",
         ),
     ]
     environment_id: Annotated[
@@ -6403,6 +6441,13 @@ class CreateResourceGroupRequest(BaseModel):
             le=60,
         ),
     ] = None
+    managed_by: Annotated[
+        ManagedBy | None,
+        Field(
+            alias="managedBy",
+            description="Source creating this group: DASHBOARD, CLI, TERRAFORM, MCP, or API. Defaults to API when omitted.",
+        ),
+    ] = None
 
 
 class CreateStatusPageRequest(BaseModel):
@@ -6447,6 +6492,13 @@ class CreateStatusPageRequest(BaseModel):
         Field(
             alias="incidentMode",
             description="Incident mode: MANUAL, REVIEW, or AUTOMATIC (default: AUTOMATIC)",
+        ),
+    ] = None
+    managed_by: Annotated[
+        ManagedBy | None,
+        Field(
+            alias="managedBy",
+            description="Source creating this page: DASHBOARD, CLI, TERRAFORM, MCP, or API. Defaults to API when omitted.",
         ),
     ] = None
 
@@ -6844,7 +6896,10 @@ class MonitorDto(BaseModel):
     ]
     managed_by: Annotated[
         ManagedBy,
-        Field(alias="managedBy", description="Management source: DASHBOARD or CLI"),
+        Field(
+            alias="managedBy",
+            description="Source that created/owns this monitor: DASHBOARD, CLI, TERRAFORM, MCP, or API",
+        ),
     ]
     created_at: Annotated[
         AwareDatetime,
@@ -7061,6 +7116,13 @@ class ResourceGroupDto(BaseModel):
         list[ResourceGroupMemberDto] | None,
         Field(
             description="Member list with individual statuses; populated on detail GET only"
+        ),
+    ] = None
+    managed_by: Annotated[
+        ManagedBy | None,
+        Field(
+            alias="managedBy",
+            description="Source that created/owns this group: DASHBOARD, CLI, TERRAFORM, MCP, or API. Null on groups created before this attribution column existed.",
         ),
     ] = None
     created_at: Annotated[
@@ -7461,6 +7523,13 @@ class UpdateAlertChannelRequest(BaseModel):
         | TeamsChannelConfig
         | WebhookChannelConfig
     )
+    managed_by: Annotated[
+        ManagedBy | None,
+        Field(
+            alias="managedBy",
+            description="New attribution source: DASHBOARD, CLI, TERRAFORM, MCP, or API; null preserves current value.",
+        ),
+    ] = None
 
 
 class UpdateMonitorRequest(BaseModel):
@@ -7500,7 +7569,7 @@ class UpdateMonitorRequest(BaseModel):
         ManagedBy | None,
         Field(
             alias="managedBy",
-            description="New management source; null preserves current",
+            description="New ownership source: DASHBOARD, CLI, TERRAFORM, MCP, or API; null preserves current value",
         ),
     ] = None
     environment_id: Annotated[
