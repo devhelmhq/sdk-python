@@ -13,11 +13,7 @@ pip install devhelm
 ```python
 from devhelm import Devhelm
 
-client = Devhelm(
-    token="your-api-token",
-    org_id="your-org-id",
-    workspace_id="your-workspace-id",
-)
+client = Devhelm(token="your-api-token")
 
 # List all monitors
 monitors = client.monitors.list()
@@ -55,20 +51,20 @@ client.monitors.delete(monitor.id)
 from devhelm import Devhelm
 
 client = Devhelm(
-    token="your-api-token",           # required (or DEVHELM_API_TOKEN env var)
-    org_id="1",                        # required (or DEVHELM_ORG_ID env var)
-    workspace_id="1",                  # required (or DEVHELM_WORKSPACE_ID env var)
+    token="your-api-token",            # required (or DEVHELM_API_TOKEN env var)
+    org_id="1",                        # optional — see notes below
+    workspace_id="1",                  # optional — see notes below
     base_url="https://api.devhelm.io", # optional, defaults to production
 )
 ```
 
 Environment variables are used as fallbacks when constructor arguments are not provided:
 
-| Parameter      | Env Variable            |
-| -------------- | ----------------------- |
-| `token`        | `DEVHELM_API_TOKEN`     |
-| `org_id`       | `DEVHELM_ORG_ID`        |
-| `workspace_id` | `DEVHELM_WORKSPACE_ID`  |
+| Parameter      | Required | Env Variable           | Notes                                                                                                    |
+| -------------- | -------- | ---------------------- | -------------------------------------------------------------------------------------------------------- |
+| `token`        | Yes      | `DEVHELM_API_TOKEN`    | Personal or workspace API token.                                                                         |
+| `org_id`       | No       | `DEVHELM_ORG_ID`       | Auto-resolved if your token is scoped to one org. Required only when the token has access to multiple.   |
+| `workspace_id` | No       | `DEVHELM_WORKSPACE_ID` | Auto-resolved if your token is scoped to one workspace. Required only when the token spans multiple.     |
 
 ## Resources
 
@@ -135,7 +131,7 @@ Every `DevhelmApiError` carries:
 ```python
 from devhelm import Devhelm, DevhelmAuthError, DevhelmError
 
-client = Devhelm(token="bad-token", org_id="1", workspace_id="1")
+client = Devhelm(token="bad-token")
 
 try:
     client.monitors.list()
