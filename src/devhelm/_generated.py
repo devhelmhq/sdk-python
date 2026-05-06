@@ -6321,7 +6321,9 @@ class CreateMonitorRequest(BaseModel):
         int | None,
         Field(
             alias="frequencySeconds",
-            description="Check frequency in seconds (30–86400); null defaults to plan minimum (60s on most paid plans)",
+            description="Check frequency in seconds (10–86400); null defaults to plan minimum (60s on most paid plans)",
+            ge=10,
+            le=86400,
         ),
     ] = None
     enabled: Annotated[
@@ -6329,7 +6331,9 @@ class CreateMonitorRequest(BaseModel):
     ] = None
     regions: Annotated[
         list[str] | None,
-        Field(description="Probe regions to run checks from, e.g. us-east, eu-west"),
+        Field(
+            description="Probe regions to run checks from. Allowed values are deployment-dependent; production: us-east, us-west, eu-west, ap-south."
+        ),
     ] = None
     managed_by: Annotated[
         ManagedBy | None,
@@ -7581,7 +7585,9 @@ class UpdateMonitorRequest(BaseModel):
         int | None,
         Field(
             alias="frequencySeconds",
-            description="New check frequency in seconds (30–86400); null preserves current",
+            description="New check frequency in seconds (10–86400); null preserves current",
+            ge=10,
+            le=86400,
         ),
     ] = None
     enabled: Annotated[
@@ -7589,7 +7595,10 @@ class UpdateMonitorRequest(BaseModel):
         Field(description="Enable or disable the monitor; null preserves current"),
     ] = None
     regions: Annotated[
-        list[str] | None, Field(description="New probe regions; null preserves current")
+        list[str] | None,
+        Field(
+            description="New probe regions; null preserves current. Allowed values are deployment-dependent."
+        ),
     ] = None
     managed_by: Annotated[
         ManagedBy | None,
