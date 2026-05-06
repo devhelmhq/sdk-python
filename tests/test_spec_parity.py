@@ -36,6 +36,7 @@ from devhelm.resources.api_keys import ApiKeys
 from devhelm.resources.deploy_lock import DeployLock
 from devhelm.resources.environments import Environments
 from devhelm.resources.incidents import Incidents
+from devhelm.resources.maintenance_windows import MaintenanceWindows
 from devhelm.resources.monitors import Monitors
 from devhelm.resources.notification_policies import NotificationPolicies
 from devhelm.resources.resource_groups import ResourceGroups
@@ -130,6 +131,7 @@ REQUEST_DTO_NAMES: list[str] = sorted(
         "CreateAlertChannelRequest",
         "CreateApiKeyRequest",
         "CreateEnvironmentRequest",
+        "CreateMaintenanceWindowRequest",
         "CreateManualIncidentRequest",
         "CreateMonitorRequest",
         "CreateNotificationPolicyRequest",
@@ -146,6 +148,7 @@ REQUEST_DTO_NAMES: list[str] = sorted(
         "ResolveIncidentRequest",
         "UpdateAlertChannelRequest",
         "UpdateEnvironmentRequest",
+        "UpdateMaintenanceWindowRequest",
         "UpdateMonitorRequest",
         "UpdateNotificationPolicyRequest",
         "UpdateResourceGroupRequest",
@@ -212,6 +215,13 @@ RESOURCE_BODY_METHODS: list[tuple[type, list[tuple[str, str]]]] = [
     (
         Monitors,
         [("create", "CreateMonitorRequest"), ("update", "UpdateMonitorRequest")],
+    ),
+    (
+        MaintenanceWindows,
+        [
+            ("create", "CreateMaintenanceWindowRequest"),
+            ("update", "UpdateMaintenanceWindowRequest"),
+        ],
     ),
     (
         Incidents,
@@ -356,6 +366,7 @@ def test_resource_method_body_accepts_dict(
 # so we check the leading segments).
 SDK_PATH_PREFIXES: list[str] = [
     "/api/v1/monitors",
+    "/api/v1/maintenance-windows",
     "/api/v1/incidents",
     "/api/v1/alert-channels",
     "/api/v1/notification-policies",
