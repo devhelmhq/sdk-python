@@ -24,6 +24,7 @@ from devhelm.resources.deploy_lock import DeployLock
 from devhelm.resources.environments import Environments
 from devhelm.resources.forensics import Forensics
 from devhelm.resources.incidents import Incidents
+from devhelm.resources.maintenance_windows import MaintenanceWindows
 from devhelm.resources.monitors import Monitors
 from devhelm.resources.notification_policies import NotificationPolicies
 from devhelm.resources.resource_groups import ResourceGroups
@@ -51,6 +52,7 @@ from devhelm.types import (
     CreateAlertChannelRequest,
     CreateApiKeyRequest,
     CreateEnvironmentRequest,
+    CreateMaintenanceWindowRequest,
     CreateManualIncidentRequest,
     CreateMonitorRequest,
     CreateNotificationPolicyRequest,
@@ -77,6 +79,7 @@ from devhelm.types import (
     IncidentTimelineDto,
     IncidentUpdateCreatedBy,
     LinkedIncidentStatus,
+    MaintenanceWindowDto,
     MembershipStatus,
     MemberStatus,
     MonitorAssertionSeverity,
@@ -122,6 +125,7 @@ from devhelm.types import (
     UpdateAlertChannelRequest,
     UpdateAssertionSeverity,
     UpdateEnvironmentRequest,
+    UpdateMaintenanceWindowRequest,
     UpdateMonitorRequest,
     UpdateNotificationPolicyRequest,
     UpdateResourceGroupRequest,
@@ -178,6 +182,7 @@ __all__ = [
     "ApiKeys",
     "Dependencies",
     "DeployLock",
+    "MaintenanceWindows",
     "Status",
     "StatusPages",
     # Response DTOs
@@ -190,6 +195,7 @@ __all__ = [
     "StatusPageSubscriberDto",
     "StatusPageCustomDomainDto",
     "StatusPageBranding",
+    "MaintenanceWindowDto",
     "MonitorDto",
     "IncidentDto",
     "IncidentDetailDto",
@@ -231,6 +237,8 @@ __all__ = [
     "AdminAddSubscriberRequest",
     "ReorderComponentsRequest",
     "ReorderPageLayoutRequest",
+    "CreateMaintenanceWindowRequest",
+    "UpdateMaintenanceWindowRequest",
     "CreateMonitorRequest",
     "UpdateMonitorRequest",
     "CreateManualIncidentRequest",
