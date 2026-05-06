@@ -143,11 +143,19 @@ from devhelm._generated import (
 )
 from devhelm._generated import (
     #
-    # CurrentStatus enums
-    CurrentStatus as MonitorCurrentStatus,  # ResultSummaryDto.current_status
+    # CurrentStatus enums.
+    #
+    # NOTE on suffix stability: datamodel-code-generator names inline enums by
+    # iteration order (CurrentStatus, CurrentStatus1, …). Adding another DTO
+    # with a `currentStatus` field can shift the suffixes. As of mono v0.13+
+    # `CurrentStatus` is shared by `MonitorDto.currentStatus` and
+    # `ResultSummaryDto.currentStatus` (deduped — identical value sets), and
+    # `CurrentStatus2` belongs to `StatusPageComponentDto.currentStatus`
+    # (different value set: OPERATIONAL/DEGRADED_PERFORMANCE/...).
+    CurrentStatus as MonitorCurrentStatus,  # MonitorDto.current_status + ResultSummaryDto.current_status
 )
 from devhelm._generated import (
-    CurrentStatus1 as StatusPageComponentCurrentStatus,  # StatusPageComponentDto.current_status
+    CurrentStatus2 as StatusPageComponentCurrentStatus,  # StatusPageComponentDto.current_status
 )
 from devhelm._generated import (
     #
