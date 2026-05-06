@@ -14,6 +14,7 @@ from devhelm.resources.deploy_lock import DeployLock
 from devhelm.resources.environments import Environments
 from devhelm.resources.forensics import Forensics
 from devhelm.resources.incidents import Incidents
+from devhelm.resources.maintenance_windows import MaintenanceWindows
 from devhelm.resources.monitors import Monitors
 from devhelm.resources.notification_policies import NotificationPolicies
 from devhelm.resources.resource_groups import ResourceGroups
@@ -82,6 +83,16 @@ class TestClientResources:
 
     def test_status_pages(self, client: Devhelm) -> None:
         assert isinstance(client.status_pages, StatusPages)
+
+    def test_maintenance_windows(self, client: Devhelm) -> None:
+        assert isinstance(client.maintenance_windows, MaintenanceWindows)
+        assert callable(client.maintenance_windows.list)
+        assert callable(client.maintenance_windows.list_page)
+        assert callable(client.maintenance_windows.get)
+        assert callable(client.maintenance_windows.create)
+        assert callable(client.maintenance_windows.update)
+        assert callable(client.maintenance_windows.delete)
+        assert callable(client.maintenance_windows.cancel)
 
 
 class TestStatusPagesResource:

@@ -10,6 +10,7 @@ from devhelm.resources.deploy_lock import DeployLock
 from devhelm.resources.environments import Environments
 from devhelm.resources.forensics import Forensics
 from devhelm.resources.incidents import Incidents
+from devhelm.resources.maintenance_windows import MaintenanceWindows
 from devhelm.resources.monitors import Monitors
 from devhelm.resources.notification_policies import NotificationPolicies
 from devhelm.resources.resource_groups import ResourceGroups
@@ -51,6 +52,7 @@ class Devhelm:
     api_keys: ApiKeys
     dependencies: Dependencies
     deploy_lock: DeployLock
+    maintenance_windows: MaintenanceWindows
     status: Status
     status_pages: StatusPages
 
@@ -96,5 +98,6 @@ class Devhelm:
         self.api_keys = ApiKeys(client)
         self.dependencies = Dependencies(client)
         self.deploy_lock = DeployLock(client)
+        self.maintenance_windows = MaintenanceWindows(client)
         self.status = Status(client)
         self.status_pages = StatusPages(client)
