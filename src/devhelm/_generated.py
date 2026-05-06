@@ -155,6 +155,14 @@ class ChannelType(StrEnum):
     discord = "discord"
 
 
+class ManagedBy(StrEnum):
+    dashboard = "DASHBOARD"
+    cli = "CLI"
+    terraform = "TERRAFORM"
+    mcp = "MCP"
+    api = "API"
+
+
 class AlertChannelDto(BaseModel):
     model_config = ConfigDict(extra="forbid", populate_by_name=True)
     id: Annotated[UUID, Field(description="Unique alert channel identifier")]
@@ -184,6 +192,13 @@ class AlertChannelDto(BaseModel):
         Field(
             alias="configHash",
             description="SHA-256 hash of the channel config; use for change detection",
+        ),
+    ] = None
+    managed_by: Annotated[
+        ManagedBy | None,
+        Field(
+            alias="managedBy",
+            description="Source that created/owns this channel: DASHBOARD, CLI, TERRAFORM, MCP, or API. Null on channels created before this attribution column existed.",
         ),
     ] = None
     last_delivery_at: Annotated[
@@ -814,13 +829,18 @@ class CreateMaintenanceWindowRequest(BaseModel):
         str | None,
         Field(
             alias="repeatRule",
-            description="iCal RRULE for recurring windows (max 100 chars); null for one-time",
+            description="Reserved: iCal RRULE for recurring windows (stored but not yet honored)",
             max_length=100,
             min_length=0,
         ),
     ] = None
     reason: Annotated[
-        str | None, Field(description="Human-readable reason for the maintenance")
+        str | None,
+        Field(
+            description="Human-readable reason for the maintenance (max 500 chars)",
+            max_length=500,
+            min_length=0,
+        ),
     ] = None
     suppress_alerts: Annotated[
         bool | None,
@@ -863,14 +883,6 @@ class Type(StrEnum):
     tcp = "TCP"
     icmp = "ICMP"
     heartbeat = "HEARTBEAT"
-
-
-class ManagedBy(StrEnum):
-    dashboard = "DASHBOARD"
-    cli = "CLI"
-    terraform = "TERRAFORM"
-    mcp = "MCP"
-    api = "API"
 
 
 class HealthThresholdType(StrEnum):
@@ -2528,7 +2540,7 @@ class MaintenanceWindowDto(BaseModel):
         str | None,
         Field(
             alias="repeatRule",
-            description="iCal RRULE for recurring windows; null for one-time",
+            description="Reserved: iCal RRULE for recurring windows (stored but not yet honored)",
         ),
     ] = None
     reason: Annotated[
@@ -2811,6 +2823,14 @@ class Type3(StrEnum):
     tcp = "TCP"
     icmp = "ICMP"
     heartbeat = "HEARTBEAT"
+
+
+class CurrentStatus(StrEnum):
+    up = "up"
+    degraded = "degraded"
+    down = "down"
+    paused = "paused"
+    unknown = "unknown"
 
 
 class MonitorReference(BaseModel):
@@ -3598,13 +3618,6 @@ class ResponseTimeWarnAssertion(BaseModel):
             description="HTTP response time in milliseconds that triggers a warning only",
         ),
     ]
-
-
-class CurrentStatus(StrEnum):
-    up = "up"
-    degraded = "degraded"
-    down = "down"
-    unknown = "unknown"
 
 
 class ResultSummaryDto(BaseModel):
@@ -4597,7 +4610,7 @@ class Type5(StrEnum):
     static = "STATIC"
 
 
-class CurrentStatus1(StrEnum):
+class CurrentStatus2(StrEnum):
     operational = "OPERATIONAL"
     degraded_performance = "DEGRADED_PERFORMANCE"
     partial_outage = "PARTIAL_OUTAGE"
@@ -4615,7 +4628,7 @@ class StatusPageComponentDto(BaseModel):
     type: Type5
     monitor_id: Annotated[UUID | None, Field(alias="monitorId")] = None
     resource_group_id: Annotated[UUID | None, Field(alias="resourceGroupId")] = None
-    current_status: Annotated[CurrentStatus1, Field(alias="currentStatus")]
+    current_status: Annotated[CurrentStatus2, Field(alias="currentStatus")]
     show_uptime: Annotated[bool, Field(alias="showUptime")]
     display_order: Annotated[int, Field(alias="displayOrder")]
     page_order: Annotated[int, Field(alias="pageOrder")]
@@ -4699,6 +4712,13 @@ class StatusPageDto(BaseModel):
     component_count: Annotated[int | None, Field(alias="componentCount")] = None
     subscriber_count: Annotated[int | None, Field(alias="subscriberCount")] = None
     overall_status: Annotated[OverallStatus | None, Field(alias="overallStatus")] = None
+    managed_by: Annotated[
+        ManagedBy | None,
+        Field(
+            alias="managedBy",
+            description="Source that created/owns this status page: DASHBOARD, CLI, TERRAFORM, MCP, or API. Null on pages created before this attribution column existed.",
+        ),
+    ] = None
     created_at: Annotated[AwareDatetime, Field(alias="createdAt")]
     updated_at: Annotated[AwareDatetime, Field(alias="updatedAt")]
 
@@ -5419,7 +5439,7 @@ class UpdateMaintenanceWindowRequest(BaseModel):
         UUID | None,
         Field(
             alias="monitorId",
-            description="Monitor to attach this maintenance window to; null preserves current",
+            description="Monitor this window applies to; null switches the window to org-wide",
         ),
     ] = None
     starts_at: Annotated[
@@ -5433,19 +5453,24 @@ class UpdateMaintenanceWindowRequest(BaseModel):
         str | None,
         Field(
             alias="repeatRule",
-            description="Updated iCal RRULE; null clears the repeat rule",
+            description="Reserved: iCal RRULE for recurring windows (stored but not yet honored); null clears it",
             max_length=100,
             min_length=0,
         ),
     ] = None
     reason: Annotated[
-        str | None, Field(description="Updated reason; null clears the existing reason")
+        str | None,
+        Field(
+            description="Updated reason (max 500 chars); null clears the existing reason",
+            max_length=500,
+            min_length=0,
+        ),
     ] = None
     suppress_alerts: Annotated[
         bool | None,
         Field(
             alias="suppressAlerts",
-            description="Whether to suppress alerts; null preserves current",
+            description="Whether to suppress alerts during this window; null defaults to true",
         ),
     ] = None
 
@@ -5589,6 +5614,13 @@ class UpdateResourceGroupRequest(BaseModel):
             description="Recovery cooldown in minutes; null clears",
             ge=0,
             le=60,
+        ),
+    ] = None
+    managed_by: Annotated[
+        ManagedBy | None,
+        Field(
+            alias="managedBy",
+            description="New attribution source: DASHBOARD, CLI, TERRAFORM, MCP, or API; null preserves current value.",
         ),
     ] = None
 
@@ -5772,6 +5804,13 @@ class UpdateStatusPageRequest(BaseModel):
         Field(
             alias="incidentMode",
             description="Incident mode: MANUAL, REVIEW, or AUTOMATIC; null preserves current",
+        ),
+    ] = None
+    managed_by: Annotated[
+        ManagedBy | None,
+        Field(
+            alias="managedBy",
+            description="New attribution source: DASHBOARD, CLI, TERRAFORM, MCP, or API; null preserves current value.",
         ),
     ] = None
 
@@ -6195,6 +6234,13 @@ class CreateAlertChannelRequest(BaseModel):
         | WebhookChannelConfig,
         Field(discriminator="channel_type"),
     ]
+    managed_by: Annotated[
+        ManagedBy | None,
+        Field(
+            alias="managedBy",
+            description="Source creating this channel: DASHBOARD, CLI, TERRAFORM, MCP, or API. Defaults to API when omitted.",
+        ),
+    ] = None
 
 
 class CreateAssertionRequest(BaseModel):
@@ -6286,12 +6332,12 @@ class CreateMonitorRequest(BaseModel):
         Field(description="Probe regions to run checks from, e.g. us-east, eu-west"),
     ] = None
     managed_by: Annotated[
-        ManagedBy,
+        ManagedBy | None,
         Field(
             alias="managedBy",
-            description="Source that created/owns this monitor: DASHBOARD, CLI, TERRAFORM, MCP, or API. Use the value matching your surface so audit logs, drift detection, and analytics attribute correctly.",
+            description="Source that created/owns this monitor: DASHBOARD, CLI, TERRAFORM, MCP, or API. Defaults to API when omitted; set to your surface so audit logs, drift detection, and analytics attribute correctly.",
         ),
-    ]
+    ] = None
     environment_id: Annotated[
         UUID | None,
         Field(
@@ -6409,6 +6455,13 @@ class CreateResourceGroupRequest(BaseModel):
             le=60,
         ),
     ] = None
+    managed_by: Annotated[
+        ManagedBy | None,
+        Field(
+            alias="managedBy",
+            description="Source creating this group: DASHBOARD, CLI, TERRAFORM, MCP, or API. Defaults to API when omitted.",
+        ),
+    ] = None
 
 
 class CreateStatusPageRequest(BaseModel):
@@ -6453,6 +6506,13 @@ class CreateStatusPageRequest(BaseModel):
         Field(
             alias="incidentMode",
             description="Incident mode: MANUAL, REVIEW, or AUTOMATIC (default: AUTOMATIC)",
+        ),
+    ] = None
+    managed_by: Annotated[
+        ManagedBy | None,
+        Field(
+            alias="managedBy",
+            description="Source creating this page: DASHBOARD, CLI, TERRAFORM, MCP, or API. Defaults to API when omitted.",
         ),
     ] = None
 
@@ -6896,6 +6956,13 @@ class MonitorDto(BaseModel):
             description="Alert channel IDs linked to this monitor; populated on single-monitor responses",
         ),
     ] = None
+    current_status: Annotated[
+        CurrentStatus | None,
+        Field(
+            alias="currentStatus",
+            description="Current operational state — UP, DOWN, DEGRADED, PAUSED, or UNKNOWN if no probe data yet",
+        ),
+    ] = None
 
 
 class MonitorTestRequest(BaseModel):
@@ -7073,6 +7140,13 @@ class ResourceGroupDto(BaseModel):
         list[ResourceGroupMemberDto] | None,
         Field(
             description="Member list with individual statuses; populated on detail GET only"
+        ),
+    ] = None
+    managed_by: Annotated[
+        ManagedBy | None,
+        Field(
+            alias="managedBy",
+            description="Source that created/owns this group: DASHBOARD, CLI, TERRAFORM, MCP, or API. Null on groups created before this attribution column existed.",
         ),
     ] = None
     created_at: Annotated[
@@ -7475,6 +7549,13 @@ class UpdateAlertChannelRequest(BaseModel):
         | WebhookChannelConfig,
         Field(discriminator="channel_type"),
     ]
+    managed_by: Annotated[
+        ManagedBy | None,
+        Field(
+            alias="managedBy",
+            description="New attribution source: DASHBOARD, CLI, TERRAFORM, MCP, or API; null preserves current value.",
+        ),
+    ] = None
 
 
 class UpdateMonitorRequest(BaseModel):

@@ -546,15 +546,18 @@ class TestCreateMonitorRequestNegative:
                 {"name": "X", "type": "HTTP", "managedBy": "DASHBOARD"}
             )
 
-    def test_missing_managed_by(self) -> None:
-        with pytest.raises(ValidationError, match="managedBy"):
-            CreateMonitorRequest.model_validate(
-                {
-                    "name": "X",
-                    "type": "HTTP",
-                    "config": {"url": "https://x.com", "method": "GET"},
-                }
-            )
+    def test_managed_by_optional_defaults_server_side(self) -> None:
+        # As of mono v0.13, managedBy is optional on Create requests and
+        # defaults to API server-side. The SDK should accept payloads
+        # without it.
+        req = CreateMonitorRequest.model_validate(
+            {
+                "name": "X",
+                "type": "HTTP",
+                "config": {"url": "https://x.com", "method": "GET"},
+            }
+        )
+        assert req.managed_by is None
 
     def test_invalid_type_enum(self) -> None:
         with pytest.raises(ValidationError):
