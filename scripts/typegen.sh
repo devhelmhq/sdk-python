@@ -81,5 +81,15 @@ uv run python "$SCRIPT_DIR/inject_strict_config.py" "$OUTPUT"
 # child env (e.g. inherited VIRTUAL_ENV from a pytest parent).
 uv run ruff format --quiet "$OUTPUT" || echo "warning: ruff format skipped" >&2
 
+# Emit Literal aliases for every named multi-value enum from the
+# *un-relaxed* spec. Provides ``types.py`` with codegen-stable public
+# enum names (``IncidentStatus``, ``MonitorType`` …) that don't depend
+# on ``datamodel-codegen``'s numbered suffixes. See
+# ``mini/runbooks/api-contract.md`` § 3 and the script docstring.
+echo "=> Emitting enum literal aliases..."
+uv run python "$SCRIPT_DIR/emit_response_enums.py"
+uv run ruff format --quiet "$ROOT_DIR/src/devhelm/_enums.py" \
+  || echo "warning: ruff format on _enums.py skipped" >&2
+
 rm -f "$PREPROCESSED"
 echo "=> Generated: $OUTPUT"

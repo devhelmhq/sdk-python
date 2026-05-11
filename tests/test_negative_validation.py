@@ -458,8 +458,8 @@ class TestMonitorDtoNegative:
             MonitorDto.model_validate(_del(_monitor(), "type"))
 
     def test_invalid_type_enum(self) -> None:
-        with pytest.raises(ValidationError):
-            MonitorDto.model_validate(_monitor(type="BANANA"))
+        # Postel's-Law tolerance: response-DTO unknown enum values must be accepted.
+        MonitorDto.model_validate(_monitor(type="BANANA"))
 
     def test_wrong_frequency_type(self) -> None:
         with pytest.raises(ValidationError):
@@ -486,8 +486,8 @@ class TestMonitorDtoNegative:
             MonitorDto.model_validate(_del(_monitor(), "managedBy"))
 
     def test_invalid_managed_by(self) -> None:
-        with pytest.raises(ValidationError):
-            MonitorDto.model_validate(_monitor(managedBy="MAGIC"))
+        # Postel's-Law tolerance: response-DTO unknown enum values must be accepted.
+        MonitorDto.model_validate(_monitor(managedBy="MAGIC"))
 
     def test_missing_created_at(self) -> None:
         with pytest.raises(ValidationError, match="createdAt"):
@@ -651,24 +651,24 @@ class TestIncidentDtoNegative:
             IncidentDto.model_validate(_del(_incident(), "source"))
 
     def test_invalid_source_enum(self) -> None:
-        with pytest.raises(ValidationError):
-            IncidentDto.model_validate(_incident(source="ALIEN"))
+        # Postel's-Law tolerance: response-DTO unknown enum values must be accepted.
+        IncidentDto.model_validate(_incident(source="ALIEN"))
 
     def test_missing_status(self) -> None:
         with pytest.raises(ValidationError, match="status"):
             IncidentDto.model_validate(_del(_incident(), "status"))
 
     def test_invalid_status_enum(self) -> None:
-        with pytest.raises(ValidationError):
-            IncidentDto.model_validate(_incident(status="OPEN"))
+        # Postel's-Law tolerance: response-DTO unknown enum values must be accepted.
+        IncidentDto.model_validate(_incident(status="OPEN"))
 
     def test_missing_severity(self) -> None:
         with pytest.raises(ValidationError, match="severity"):
             IncidentDto.model_validate(_del(_incident(), "severity"))
 
     def test_invalid_severity_enum(self) -> None:
-        with pytest.raises(ValidationError):
-            IncidentDto.model_validate(_incident(severity="SEV1"))
+        # Postel's-Law tolerance: response-DTO unknown enum values must be accepted.
+        IncidentDto.model_validate(_incident(severity="SEV1"))
 
     def test_wrong_reopen_count_type(self) -> None:
         with pytest.raises(ValidationError):
@@ -763,8 +763,8 @@ class TestAlertChannelDtoNegative:
             AlertChannelDto.model_validate(_del(_alert_channel(), "channelType"))
 
     def test_invalid_channel_type(self) -> None:
-        with pytest.raises(ValidationError):
-            AlertChannelDto.model_validate(_alert_channel(channelType="telegram"))
+        # Postel's-Law tolerance: response-DTO unknown enum values must be accepted.
+        AlertChannelDto.model_validate(_alert_channel(channelType="telegram"))
 
     def test_missing_created_at(self) -> None:
         with pytest.raises(ValidationError, match="createdAt"):
@@ -1631,12 +1631,12 @@ class TestStatusPageDtoNegative:
             StatusPageDto.model_validate(_status_page(slug=""))
 
     def test_invalid_visibility(self) -> None:
-        with pytest.raises(ValidationError):
-            StatusPageDto.model_validate(_status_page(visibility="PRIVATE"))
+        # Postel's-Law tolerance: response-DTO unknown enum values must be accepted.
+        StatusPageDto.model_validate(_status_page(visibility="PRIVATE"))
 
     def test_invalid_incident_mode(self) -> None:
-        with pytest.raises(ValidationError):
-            StatusPageDto.model_validate(_status_page(incidentMode="AUTO_PILOT"))
+        # Postel's-Law tolerance: response-DTO unknown enum values must be accepted.
+        StatusPageDto.model_validate(_status_page(incidentMode="AUTO_PILOT"))
 
     def test_missing_branding(self) -> None:
         with pytest.raises(ValidationError, match="branding"):
@@ -1779,12 +1779,12 @@ class TestStatusPageComponentDtoNegative:
             StatusPageComponentDto.model_validate(_del(_sp_component(), "type"))
 
     def test_invalid_type(self) -> None:
-        with pytest.raises(ValidationError):
-            StatusPageComponentDto.model_validate(_sp_component(type="CUSTOM"))
+        # Postel's-Law tolerance: response-DTO unknown enum values must be accepted.
+        StatusPageComponentDto.model_validate(_sp_component(type="CUSTOM"))
 
     def test_invalid_current_status(self) -> None:
-        with pytest.raises(ValidationError):
-            StatusPageComponentDto.model_validate(_sp_component(currentStatus="BROKEN"))
+        # Postel's-Law tolerance: response-DTO unknown enum values must be accepted.
+        StatusPageComponentDto.model_validate(_sp_component(currentStatus="BROKEN"))
 
     def test_missing_show_uptime(self) -> None:
         with pytest.raises(ValidationError, match="showUptime"):
@@ -1951,12 +1951,12 @@ class TestStatusPageIncidentDtoNegative:
             StatusPageIncidentDto.model_validate(_sp_incident(title=""))
 
     def test_invalid_status(self) -> None:
-        with pytest.raises(ValidationError):
-            StatusPageIncidentDto.model_validate(_sp_incident(status="PENDING"))
+        # Postel's-Law tolerance: response-DTO unknown enum values must be accepted.
+        StatusPageIncidentDto.model_validate(_sp_incident(status="PENDING"))
 
     def test_invalid_impact(self) -> None:
-        with pytest.raises(ValidationError):
-            StatusPageIncidentDto.model_validate(_sp_incident(impact="CATASTROPHIC"))
+        # Postel's-Law tolerance: response-DTO unknown enum values must be accepted.
+        StatusPageIncidentDto.model_validate(_sp_incident(impact="CATASTROPHIC"))
 
     def test_missing_scheduled(self) -> None:
         with pytest.raises(ValidationError, match="scheduled"):
@@ -2083,10 +2083,8 @@ class TestStatusPageIncidentUpdateDtoNegative:
             )
 
     def test_invalid_status(self) -> None:
-        with pytest.raises(ValidationError):
-            StatusPageIncidentUpdateDto.model_validate(
-                _sp_incident_update(status="OOPS")
-            )
+        # Postel's-Law tolerance: response-DTO unknown enum values must be accepted.
+        StatusPageIncidentUpdateDto.model_validate(_sp_incident_update(status="OOPS"))
 
     def test_missing_body(self) -> None:
         with pytest.raises(ValidationError, match="body"):
@@ -2149,14 +2147,14 @@ class TestStatusPageCustomDomainDtoNegative:
             )
 
     def test_invalid_status(self) -> None:
-        with pytest.raises(ValidationError):
-            StatusPageCustomDomainDto.model_validate(_sp_custom_domain(status="MAGIC"))
+        # Postel's-Law tolerance: response-DTO unknown enum values must be accepted.
+        StatusPageCustomDomainDto.model_validate(_sp_custom_domain(status="MAGIC"))
 
     def test_invalid_verification_method(self) -> None:
-        with pytest.raises(ValidationError):
-            StatusPageCustomDomainDto.model_validate(
-                _sp_custom_domain(verificationMethod="HTTP")
-            )
+        # Postel's-Law tolerance: response-DTO unknown enum values must be accepted.
+        StatusPageCustomDomainDto.model_validate(
+            _sp_custom_domain(verificationMethod="HTTP")
+        )
 
     def test_missing_verification_token(self) -> None:
         with pytest.raises(ValidationError, match="verificationToken"):
@@ -2194,10 +2192,10 @@ class TestStatusPageIncidentComponentDtoNegative:
             )
 
     def test_invalid_component_status(self) -> None:
-        with pytest.raises(ValidationError):
-            StatusPageIncidentComponentDto.model_validate(
-                _sp_incident_component(componentStatus="BROKEN")
-            )
+        # Postel's-Law tolerance: response-DTO unknown enum values must be accepted.
+        StatusPageIncidentComponentDto.model_validate(
+            _sp_incident_component(componentStatus="BROKEN")
+        )
 
     def test_missing_component_name(self) -> None:
         with pytest.raises(ValidationError, match="componentName"):
@@ -2650,8 +2648,8 @@ class TestMonitorVersionDtoNegative:
             MonitorVersionDto.model_validate(_del(_monitor_version(), "changedVia"))
 
     def test_invalid_changed_via(self) -> None:
-        with pytest.raises(ValidationError):
-            MonitorVersionDto.model_validate(_monitor_version(changedVia="GITHUB"))
+        # Postel's-Law tolerance: response-DTO unknown enum values must be accepted.
+        MonitorVersionDto.model_validate(_monitor_version(changedVia="GITHUB"))
 
     def test_empty_dict(self) -> None:
         with pytest.raises(ValidationError):

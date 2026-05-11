@@ -528,8 +528,8 @@ class TestStatusPageIncidentDto:
         assert dto.title == "Incident"
 
     def test_invalid_status_raises(self) -> None:
-        with pytest.raises(ValidationError):
-            StatusPageIncidentDto.model_validate(_sp_incident_fixture(status="BANANA"))
+        # Postel's-Law tolerance: response-DTO unknown enum values must be accepted.
+        StatusPageIncidentDto.model_validate(_sp_incident_fixture(status="BANANA"))
 
 
 class TestStatusPageComponentDto:
