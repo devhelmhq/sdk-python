@@ -145,30 +145,12 @@ class AlertChannelDisplayConfig(BaseModel):
     ] = None
 
 
-class ChannelType(StrEnum):
-    email = "email"
-    webhook = "webhook"
-    slack = "slack"
-    pagerduty = "pagerduty"
-    opsgenie = "opsgenie"
-    teams = "teams"
-    discord = "discord"
-
-
-class ManagedBy(StrEnum):
-    dashboard = "DASHBOARD"
-    cli = "CLI"
-    terraform = "TERRAFORM"
-    mcp = "MCP"
-    api = "API"
-
-
 class AlertChannelDto(BaseModel):
     model_config = ConfigDict(extra="forbid", populate_by_name=True)
     id: Annotated[UUID, Field(description="Unique alert channel identifier")]
     name: Annotated[str, Field(description="Human-readable channel name")]
     channel_type: Annotated[
-        ChannelType,
+        str,
         Field(
             alias="channelType",
             description="Channel integration type (e.g. SLACK, PAGERDUTY, EMAIL)",
@@ -195,7 +177,7 @@ class AlertChannelDto(BaseModel):
         ),
     ] = None
     managed_by: Annotated[
-        ManagedBy | None,
+        str | None,
         Field(
             alias="managedBy",
             description="Source that created/owns this channel: DASHBOARD, CLI, TERRAFORM, MCP, or API. Null on channels created before this attribution column existed.",
@@ -215,20 +197,6 @@ class AlertChannelDto(BaseModel):
             description="Outcome of the most recent delivery (SUCCESS, FAILED, etc.)",
         ),
     ] = None
-
-
-class Status1(StrEnum):
-    pending = "PENDING"
-    delivered = "DELIVERED"
-    retry_pending = "RETRY_PENDING"
-    failed = "FAILED"
-    cancelled = "CANCELLED"
-
-
-class EventType(StrEnum):
-    incident_created = "INCIDENT_CREATED"
-    incident_resolved = "INCIDENT_RESOLVED"
-    incident_reopened = "INCIDENT_REOPENED"
 
 
 class AlertDeliveryDto(BaseModel):
@@ -256,9 +224,9 @@ class AlertDeliveryDto(BaseModel):
             description="Alert channel type (e.g. slack, email, webhook)",
         ),
     ]
-    status: Annotated[Status1, Field(description="Current delivery status")]
+    status: Annotated[str, Field(description="Current delivery status")]
     event_type: Annotated[
-        EventType,
+        str,
         Field(
             alias="eventType",
             description="Incident lifecycle event that triggered this delivery",
@@ -395,16 +363,11 @@ class ApiKeyDto(BaseModel):
     ] = None
 
 
-class Severity(StrEnum):
-    fail = "fail"
-    warn = "warn"
-
-
 class AssertionResultDto(BaseModel):
     model_config = ConfigDict(extra="forbid", populate_by_name=True)
     type: Annotated[str, Field(description="Assertion type", examples=["status_code"])]
     passed: Annotated[bool, Field(description="Whether the assertion passed")]
-    severity: Annotated[Severity, Field(description="Assertion severity")]
+    severity: Annotated[str, Field(description="Assertion severity")]
     message: Annotated[
         str | None, Field(description="Human-readable result message")
     ] = None
@@ -416,59 +379,13 @@ class AssertionResultDto(BaseModel):
     ] = None
 
 
-class AssertionType(StrEnum):
-    status_code = "status_code"
-    response_time = "response_time"
-    body_contains = "body_contains"
-    json_path = "json_path"
-    header_value = "header_value"
-    regex_body = "regex_body"
-    dns_resolves = "dns_resolves"
-    dns_response_time = "dns_response_time"
-    dns_expected_ips = "dns_expected_ips"
-    dns_expected_cname = "dns_expected_cname"
-    dns_record_contains = "dns_record_contains"
-    dns_record_equals = "dns_record_equals"
-    dns_txt_contains = "dns_txt_contains"
-    dns_min_answers = "dns_min_answers"
-    dns_max_answers = "dns_max_answers"
-    dns_response_time_warn = "dns_response_time_warn"
-    dns_ttl_low = "dns_ttl_low"
-    dns_ttl_high = "dns_ttl_high"
-    mcp_connects = "mcp_connects"
-    mcp_response_time = "mcp_response_time"
-    mcp_has_capability = "mcp_has_capability"
-    mcp_tool_available = "mcp_tool_available"
-    mcp_min_tools = "mcp_min_tools"
-    mcp_protocol_version = "mcp_protocol_version"
-    mcp_response_time_warn = "mcp_response_time_warn"
-    mcp_tool_count_changed = "mcp_tool_count_changed"
-    ssl_expiry = "ssl_expiry"
-    response_size = "response_size"
-    redirect_count = "redirect_count"
-    redirect_target = "redirect_target"
-    response_time_warn = "response_time_warn"
-    tcp_connects = "tcp_connects"
-    tcp_response_time = "tcp_response_time"
-    tcp_response_time_warn = "tcp_response_time_warn"
-    icmp_reachable = "icmp_reachable"
-    icmp_response_time = "icmp_response_time"
-    icmp_response_time_warn = "icmp_response_time_warn"
-    icmp_packet_loss = "icmp_packet_loss"
-    heartbeat_received = "heartbeat_received"
-    heartbeat_max_interval = "heartbeat_max_interval"
-    heartbeat_interval_drift = "heartbeat_interval_drift"
-    heartbeat_payload_contains = "heartbeat_payload_contains"
-
-
 class AssertionTestResultDto(BaseModel):
     model_config = ConfigDict(extra="forbid", populate_by_name=True)
     assertion_type: Annotated[
-        AssertionType,
-        Field(alias="assertionType", description="Assertion type evaluated"),
+        str, Field(alias="assertionType", description="Assertion type evaluated")
     ]
     passed: Annotated[bool, Field(description="Whether the assertion passed")]
-    severity: Annotated[Severity, Field(description="Assertion severity: FAIL or WARN")]
+    severity: Annotated[str, Field(description="Assertion severity: FAIL or WARN")]
     message: Annotated[str, Field(description="Human-readable result description")]
     expected: Annotated[str | None, Field(description="Expected value")] = None
     actual: Annotated[
@@ -543,7 +460,7 @@ class ChangeRoleRequest(BaseModel):
     ]
 
 
-class Status2(StrEnum):
+class Status1(StrEnum):
     invited = "INVITED"
     active = "ACTIVE"
     suspended = "SUSPENDED"
@@ -555,7 +472,7 @@ class Status2(StrEnum):
 class ChangeStatusRequest(BaseModel):
     model_config = ConfigDict(extra="forbid", populate_by_name=True)
     status: Annotated[
-        Status2, Field(description="New membership status (ACTIVE or SUSPENDED)")
+        Status1, Field(description="New membership status (ACTIVE or SUSPENDED)")
     ]
 
 
@@ -736,6 +653,14 @@ class ConfirmationPolicy(BaseModel):
     ]
 
 
+class ManagedBy(StrEnum):
+    dashboard = "DASHBOARD"
+    cli = "CLI"
+    terraform = "TERRAFORM"
+    mcp = "MCP"
+    api = "API"
+
+
 class CreateApiKeyRequest(BaseModel):
     model_config = ConfigDict(extra="forbid", populate_by_name=True)
     name: Annotated[
@@ -753,6 +678,11 @@ class CreateApiKeyRequest(BaseModel):
             description="Optional expiration timestamp in ISO 8601 format",
         ),
     ] = None
+
+
+class Severity(StrEnum):
+    fail = "fail"
+    warn = "warn"
 
 
 class CreateEnvironmentRequest(BaseModel):
@@ -851,7 +781,7 @@ class CreateMaintenanceWindowRequest(BaseModel):
     ] = None
 
 
-class Severity3(StrEnum):
+class Severity1(StrEnum):
     down = "DOWN"
     degraded = "DEGRADED"
     maintenance = "MAINTENANCE"
@@ -863,7 +793,7 @@ class CreateManualIncidentRequest(BaseModel):
         str, Field(description="Short summary of the incident", min_length=1)
     ]
     severity: Annotated[
-        Severity3,
+        Severity1,
         Field(description="Incident severity: DOWN, DEGRADED, or MAINTENANCE"),
     ]
     monitor_id: Annotated[
@@ -996,7 +926,7 @@ class CreateStatusPageComponentRequest(BaseModel):
     ] = None
 
 
-class Status3(StrEnum):
+class Status2(StrEnum):
     investigating = "INVESTIGATING"
     identified = "IDENTIFIED"
     monitoring = "MONITORING"
@@ -1019,7 +949,7 @@ class CreateStatusPageIncidentRequest(BaseModel):
         ),
     ]
     status: Annotated[
-        Status3 | None, Field(description="Initial status (default: INVESTIGATING)")
+        Status2 | None, Field(description="Initial status (default: INVESTIGATING)")
     ] = None
     impact: Annotated[
         Impact, Field(description="Impact level: NONE, MINOR, MAJOR, or CRITICAL")
@@ -1068,7 +998,7 @@ class CreateStatusPageIncidentRequest(BaseModel):
 class CreateStatusPageIncidentUpdateRequest(BaseModel):
     model_config = ConfigDict(extra="forbid", populate_by_name=True)
     status: Annotated[
-        Status3, Field(description="Incident status at this point in the timeline")
+        Status2, Field(description="Incident status at this point in the timeline")
     ]
     body: Annotated[str, Field(description="Update body in markdown", min_length=1)]
     notify_subscribers: Annotated[
@@ -1166,7 +1096,7 @@ class DayIncident(BaseModel):
     id: Annotated[UUID, Field(description="Status page incident UUID")]
     title: Annotated[str, Field(description="Incident title")]
     status: Annotated[
-        Status3,
+        Status2,
         Field(
             description="Lifecycle status (investigating, identified, monitoring, resolved, …)"
         ),
@@ -2005,27 +1935,6 @@ class IcmpResponseTimeWarnAssertion(BaseModel):
     ]
 
 
-class Source(StrEnum):
-    automatic = "AUTOMATIC"
-    manual = "MANUAL"
-    monitors = "MONITORS"
-    status_data = "STATUS_DATA"
-    resource_group = "RESOURCE_GROUP"
-
-
-class Status6(StrEnum):
-    watching = "WATCHING"
-    triggered = "TRIGGERED"
-    confirmed = "CONFIRMED"
-    resolved = "RESOLVED"
-
-
-class ResolutionReason(StrEnum):
-    manual = "MANUAL"
-    auto_recovered = "AUTO_RECOVERED"
-    auto_resolved = "AUTO_RESOLVED"
-
-
 class IncidentDto(BaseModel):
     model_config = ConfigDict(extra="forbid", populate_by_name=True)
     id: Annotated[UUID, Field(description="Unique incident identifier")]
@@ -2043,13 +1952,13 @@ class IncidentDto(BaseModel):
         ),
     ]
     source: Annotated[
-        Source, Field(description="Incident origin: MONITOR, SERVICE, or MANUAL")
+        str, Field(description="Incident origin: MONITOR, SERVICE, or MANUAL")
     ]
     status: Annotated[
-        Status6, Field(description="Current lifecycle status (OPEN, RESOLVED, etc.)")
+        str, Field(description="Current lifecycle status (OPEN, RESOLVED, etc.)")
     ]
     severity: Annotated[
-        Severity3, Field(description="Severity level: DOWN, DEGRADED, or MAINTENANCE")
+        str, Field(description="Severity level: DOWN, DEGRADED, or MAINTENANCE")
     ]
     title: Annotated[
         str | None,
@@ -2124,7 +2033,7 @@ class IncidentDto(BaseModel):
         str | None, Field(description="Short URL linking to the incident details")
     ] = None
     resolution_reason: Annotated[
-        ResolutionReason | None,
+        str | None,
         Field(
             alias="resolutionReason",
             description="How the incident was resolved (AUTO_RECOVERED, MANUAL, etc.)",
@@ -2243,16 +2152,31 @@ class IncidentDto(BaseModel):
     ] = None
 
 
+class Status5(StrEnum):
+    watching = "WATCHING"
+    triggered = "TRIGGERED"
+    confirmed = "CONFIRMED"
+    resolved = "RESOLVED"
+
+
+class Source(StrEnum):
+    automatic = "AUTOMATIC"
+    manual = "MANUAL"
+    monitors = "MONITORS"
+    status_data = "STATUS_DATA"
+    resource_group = "RESOURCE_GROUP"
+
+
 class IncidentFilterParams(BaseModel):
     model_config = ConfigDict(extra="forbid", populate_by_name=True)
     status: Annotated[
-        Status6 | None,
+        Status5 | None,
         Field(
             description="Filter by incident lifecycle status; null returns every status"
         ),
     ] = None
     severity: Annotated[
-        Severity3 | None,
+        Severity1 | None,
         Field(description="Filter by severity; null returns every severity"),
     ] = None
     source: Annotated[
@@ -2350,37 +2274,16 @@ class IncidentsSummaryDto(BaseModel):
     mttr30d: float | None = None
 
 
-class OldStatus(StrEnum):
-    watching = "WATCHING"
-    triggered = "TRIGGERED"
-    confirmed = "CONFIRMED"
-    resolved = "RESOLVED"
-
-
-class CreatedBy(StrEnum):
-    system = "SYSTEM"
-    user = "USER"
-
-
 class IncidentUpdateDto(BaseModel):
     model_config = ConfigDict(extra="forbid", populate_by_name=True)
     id: UUID
     incident_id: Annotated[UUID, Field(alias="incidentId")]
-    old_status: Annotated[OldStatus | None, Field(alias="oldStatus")] = None
-    new_status: Annotated[NewStatus | None, Field(alias="newStatus")] = None
+    old_status: Annotated[str | None, Field(alias="oldStatus")] = None
+    new_status: Annotated[str | None, Field(alias="newStatus")] = None
     body: str | None = None
-    created_by: Annotated[CreatedBy | None, Field(alias="createdBy")] = None
+    created_by: Annotated[str | None, Field(alias="createdBy")] = None
     notify_subscribers: Annotated[bool, Field(alias="notifySubscribers")]
     created_at: Annotated[AwareDatetime, Field(alias="createdAt")]
-
-
-class TierAvailability(StrEnum):
-    free = "FREE"
-    starter = "STARTER"
-    pro = "PRO"
-    team = "TEAM"
-    business = "BUSINESS"
-    enterprise = "ENTERPRISE"
 
 
 class IntegrationFieldDto(BaseModel):
@@ -2403,7 +2306,7 @@ class InviteDto(BaseModel):
     ]
     email: Annotated[str, Field(description="Email address the invite was sent to")]
     role_offered: Annotated[
-        RoleOffered,
+        str,
         Field(
             alias="roleOffered",
             description="Role that will be assigned to the invitee on acceptance",
@@ -2467,13 +2370,6 @@ class KeyInfo(BaseModel):
     ] = None
 
 
-class Status8(StrEnum):
-    investigating = "INVESTIGATING"
-    identified = "IDENTIFIED"
-    monitoring = "MONITORING"
-    resolved = "RESOLVED"
-
-
 class LinkedStatusPageIncidentDto(BaseModel):
     model_config = ConfigDict(extra="forbid", populate_by_name=True)
     id: UUID
@@ -2481,8 +2377,8 @@ class LinkedStatusPageIncidentDto(BaseModel):
     status_page_name: Annotated[str, Field(alias="statusPageName")]
     status_page_slug: Annotated[str, Field(alias="statusPageSlug")]
     title: str
-    status: Status8
-    impact: Impact
+    status: str
+    impact: str
     scheduled: bool
     published_at: Annotated[AwareDatetime | None, Field(alias="publishedAt")] = None
 
@@ -2722,15 +2618,6 @@ class McpToolCountChangedAssertion(BaseModel):
     ]
 
 
-class Status9(StrEnum):
-    invited = "INVITED"
-    active = "ACTIVE"
-    suspended = "SUSPENDED"
-    left = "LEFT"
-    removed = "REMOVED"
-    declined = "DECLINED"
-
-
 class MemberDto(BaseModel):
     model_config = ConfigDict(extra="forbid", populate_by_name=True)
     user_id: Annotated[
@@ -2741,14 +2628,14 @@ class MemberDto(BaseModel):
         str | None, Field(description="Member display name; null if not set")
     ] = None
     org_role: Annotated[
-        OrgRole,
+        str,
         Field(
             alias="orgRole",
             description="Member role within this organization (OWNER, ADMIN, MEMBER)",
         ),
     ]
     status: Annotated[
-        Status9, Field(description="Membership status (ACTIVE, PENDING, SUSPENDED)")
+        str, Field(description="Membership status (ACTIVE, PENDING, SUSPENDED)")
     ]
     created_at: Annotated[
         AwareDatetime,
@@ -2784,11 +2671,6 @@ class MemberRoleChangedMetadata(BaseModel):
     ]
 
 
-class Severity6(StrEnum):
-    fail = "fail"
-    warn = "warn"
-
-
 class MonitorAuthConfig(
     RootModel[BearerAuthConfig | BasicAuthConfig | HeaderAuthConfig | ApiKeyAuthConfig]
 ):
@@ -2801,36 +2683,12 @@ class MonitorAuthConfig(
     ]
 
 
-class AuthType(StrEnum):
-    bearer = "bearer"
-    basic = "basic"
-    header = "header"
-    api_key = "api_key"
-
-
 class MonitorAuthDto(BaseModel):
     model_config = ConfigDict(extra="forbid", populate_by_name=True)
     id: UUID
     monitor_id: Annotated[UUID, Field(alias="monitorId")]
-    auth_type: Annotated[AuthType, Field(alias="authType")]
+    auth_type: Annotated[str, Field(alias="authType")]
     config: ApiKeyAuthConfig | BasicAuthConfig | BearerAuthConfig | HeaderAuthConfig
-
-
-class Type3(StrEnum):
-    http = "HTTP"
-    dns = "DNS"
-    mcp_server = "MCP_SERVER"
-    tcp = "TCP"
-    icmp = "ICMP"
-    heartbeat = "HEARTBEAT"
-
-
-class CurrentStatus(StrEnum):
-    up = "up"
-    degraded = "degraded"
-    down = "down"
-    paused = "paused"
-    unknown = "unknown"
 
 
 class MonitorReference(BaseModel):
@@ -2868,6 +2726,15 @@ class MonitorsSummaryDto(BaseModel):
     ] = None
 
 
+class Type3(StrEnum):
+    http = "HTTP"
+    dns = "DNS"
+    mcp_server = "MCP_SERVER"
+    tcp = "TCP"
+    icmp = "ICMP"
+    heartbeat = "HEARTBEAT"
+
+
 class MonitorTestResultDto(BaseModel):
     model_config = ConfigDict(extra="forbid", populate_by_name=True)
     passed: bool
@@ -2887,13 +2754,6 @@ class MonitorTestResultDto(BaseModel):
     warnings: list[str] | None = None
 
 
-class ChangedVia(StrEnum):
-    api = "API"
-    dashboard = "DASHBOARD"
-    cli = "CLI"
-    terraform = "TERRAFORM"
-
-
 class NewTagRequest(BaseModel):
     model_config = ConfigDict(extra="forbid", populate_by_name=True)
     name: Annotated[str, Field(description="Tag name", max_length=100, min_length=0)]
@@ -2904,21 +2764,6 @@ class NewTagRequest(BaseModel):
             pattern="^#([0-9A-Fa-f]{3}|[0-9A-Fa-f]{6})$",
         ),
     ] = None
-
-
-class Status10(StrEnum):
-    pending = "PENDING"
-    dispatching = "DISPATCHING"
-    delivered = "DELIVERED"
-    escalating = "ESCALATING"
-    acknowledged = "ACKNOWLEDGED"
-    completed = "COMPLETED"
-
-
-class CompletionReason(StrEnum):
-    exhausted = "EXHAUSTED"
-    resolved = "RESOLVED"
-    no_steps = "NO_STEPS"
 
 
 class NotificationDispatchDto(BaseModel):
@@ -2941,9 +2786,9 @@ class NotificationDispatchDto(BaseModel):
             description="Human-readable name of the matched policy (null if policy has been deleted)",
         ),
     ] = None
-    status: Annotated[Status10, Field(description="Current dispatch state")]
+    status: Annotated[str, Field(description="Current dispatch state")]
     completion_reason: Annotated[
-        CompletionReason | None,
+        str | None,
         Field(
             alias="completionReason",
             description="Why the dispatch reached COMPLETED: EXHAUSTED (all steps ran, no ack), RESOLVED (incident resolved), NO_STEPS (policy had no steps). Null for non-terminal states.",
@@ -3228,7 +3073,7 @@ class PollChartBucketDto(BaseModel):
     ]
 
 
-class Status11(StrEnum):
+class Status6(StrEnum):
     investigating = "INVESTIGATING"
     identified = "IDENTIFIED"
     monitoring = "MONITORING"
@@ -3249,7 +3094,7 @@ class PublishStatusPageIncidentRequest(BaseModel):
         Impact | None, Field(description="Impact level; null keeps draft value")
     ] = None
     status: Annotated[
-        Status11 | None,
+        Status6 | None,
         Field(
             description="Incident status; null keeps draft value (must be an active status)"
         ),
@@ -3428,23 +3273,10 @@ class ResolveIncidentRequest(BaseModel):
     ] = None
 
 
-class Status12(StrEnum):
-    operational = "operational"
-    maintenance = "maintenance"
-    degraded = "degraded"
-    down = "down"
-
-
-class ThresholdStatus(StrEnum):
-    healthy = "healthy"
-    degraded = "degraded"
-    down = "down"
-
-
 class ResourceGroupHealthDto(BaseModel):
     model_config = ConfigDict(extra="forbid", populate_by_name=True)
     status: Annotated[
-        Status12, Field(description="Worst-of health status across all members")
+        str, Field(description="Worst-of health status across all members")
     ]
     total_members: Annotated[
         int,
@@ -3465,7 +3297,7 @@ class ResourceGroupHealthDto(BaseModel):
         ),
     ]
     threshold_status: Annotated[
-        ThresholdStatus | None,
+        str | None,
         Field(
             alias="thresholdStatus",
             description="Computed group health status based on threshold: 'healthy', 'degraded', or 'down'. Null when no health threshold is configured.",
@@ -3522,9 +3354,7 @@ class ResourceGroupMemberDto(BaseModel):
             description="Subscription ID for the service (services only); used to link to the dependency detail page",
         ),
     ] = None
-    status: Annotated[
-        Status12, Field(description="Computed health status for this member")
-    ]
+    status: Annotated[str, Field(description="Computed health status for this member")]
     effective_frequency: Annotated[
         str | None,
         Field(
@@ -3623,7 +3453,7 @@ class ResponseTimeWarnAssertion(BaseModel):
 class ResultSummaryDto(BaseModel):
     model_config = ConfigDict(extra="forbid", populate_by_name=True)
     current_status: Annotated[
-        CurrentStatus,
+        str,
         Field(
             alias="currentStatus",
             description="Derived current status across all regions",
@@ -4217,12 +4047,6 @@ class ServiceSubscribeRequest(BaseModel):
     ] = None
 
 
-class AlertSensitivity(StrEnum):
-    all = "ALL"
-    incidents_only = "INCIDENTS_ONLY"
-    major_only = "MAJOR_ONLY"
-
-
 class ServiceSubscriptionDto(BaseModel):
     model_config = ConfigDict(extra="forbid", populate_by_name=True)
     subscription_id: Annotated[
@@ -4259,10 +4083,11 @@ class ServiceSubscriptionDto(BaseModel):
     ] = None
     component: ServiceComponentDto | None = None
     alert_sensitivity: Annotated[
-        AlertSensitivity,
+        str,
         Field(
             alias="alertSensitivity",
             description="Alert sensitivity: ALL (synthetic + real incidents), INCIDENTS_ONLY (real vendor incidents, default), MAJOR_ONLY (real + DOWN severity)",
+            min_length=1,
         ),
     ]
     subscribed_at: Annotated[
@@ -4445,7 +4270,7 @@ class SslExpiryAssertion(BaseModel):
     ]
 
 
-class Source2(StrEnum):
+class Source1(StrEnum):
     pipeline = "pipeline"
     public_api = "public-api"
 
@@ -4453,7 +4278,7 @@ class Source2(StrEnum):
 class StateTransitionDetails(BaseModel):
     model_config = ConfigDict(extra="forbid", populate_by_name=True)
     source: Annotated[
-        Source2,
+        Source1,
         Field(
             description="Actor that produced this transition (pipeline | public-api)"
         ),
@@ -4604,20 +4429,6 @@ class StatusPageBranding(BaseModel):
     ] = None
 
 
-class Type5(StrEnum):
-    monitor = "MONITOR"
-    group = "GROUP"
-    static = "STATIC"
-
-
-class CurrentStatus2(StrEnum):
-    operational = "OPERATIONAL"
-    degraded_performance = "DEGRADED_PERFORMANCE"
-    partial_outage = "PARTIAL_OUTAGE"
-    major_outage = "MAJOR_OUTAGE"
-    under_maintenance = "UNDER_MAINTENANCE"
-
-
 class StatusPageComponentDto(BaseModel):
     model_config = ConfigDict(extra="forbid", populate_by_name=True)
     id: UUID
@@ -4625,10 +4436,10 @@ class StatusPageComponentDto(BaseModel):
     group_id: Annotated[UUID | None, Field(alias="groupId")] = None
     name: Annotated[str, Field(min_length=1)]
     description: str | None = None
-    type: Type5
+    type: str
     monitor_id: Annotated[UUID | None, Field(alias="monitorId")] = None
     resource_group_id: Annotated[UUID | None, Field(alias="resourceGroupId")] = None
-    current_status: Annotated[CurrentStatus2, Field(alias="currentStatus")]
+    current_status: Annotated[str, Field(alias="currentStatus")]
     show_uptime: Annotated[bool, Field(alias="showUptime")]
     display_order: Annotated[int, Field(alias="displayOrder")]
     page_order: Annotated[int, Field(alias="pageOrder")]
@@ -4652,29 +4463,12 @@ class StatusPageComponentGroupDto(BaseModel):
     updated_at: Annotated[AwareDatetime, Field(alias="updatedAt")]
 
 
-class Status14(StrEnum):
-    pending_verification = "PENDING_VERIFICATION"
-    verification_failed = "VERIFICATION_FAILED"
-    verified = "VERIFIED"
-    ssl_pending = "SSL_PENDING"
-    active = "ACTIVE"
-    failed = "FAILED"
-    removed = "REMOVED"
-
-
-class VerificationMethod(StrEnum):
-    cname = "CNAME"
-    txt = "TXT"
-
-
 class StatusPageCustomDomainDto(BaseModel):
     model_config = ConfigDict(extra="forbid", populate_by_name=True)
     id: UUID
     hostname: str
-    status: Status14
-    verification_method: Annotated[
-        VerificationMethod, Field(alias="verificationMethod")
-    ]
+    status: str
+    verification_method: Annotated[str, Field(alias="verificationMethod")]
     verification_token: Annotated[str, Field(alias="verificationToken")]
     verification_cname_target: Annotated[str, Field(alias="verificationCnameTarget")]
     verified_at: Annotated[AwareDatetime | None, Field(alias="verifiedAt")] = None
@@ -4689,14 +4483,6 @@ class StatusPageCustomDomainDto(BaseModel):
     primary: bool
 
 
-class OverallStatus(StrEnum):
-    operational = "OPERATIONAL"
-    degraded_performance = "DEGRADED_PERFORMANCE"
-    partial_outage = "PARTIAL_OUTAGE"
-    major_outage = "MAJOR_OUTAGE"
-    under_maintenance = "UNDER_MAINTENANCE"
-
-
 class StatusPageDto(BaseModel):
     model_config = ConfigDict(extra="forbid", populate_by_name=True)
     id: UUID
@@ -4706,14 +4492,14 @@ class StatusPageDto(BaseModel):
     slug: Annotated[str, Field(min_length=1)]
     description: str | None = None
     branding: StatusPageBranding
-    visibility: Visibility
+    visibility: str
     enabled: bool
-    incident_mode: Annotated[IncidentMode, Field(alias="incidentMode")]
+    incident_mode: Annotated[str, Field(alias="incidentMode")]
     component_count: Annotated[int | None, Field(alias="componentCount")] = None
     subscriber_count: Annotated[int | None, Field(alias="subscriberCount")] = None
-    overall_status: Annotated[OverallStatus | None, Field(alias="overallStatus")] = None
+    overall_status: Annotated[str | None, Field(alias="overallStatus")] = None
     managed_by: Annotated[
-        ManagedBy | None,
+        str | None,
         Field(
             alias="managedBy",
             description="Source that created/owns this status page: DASHBOARD, CLI, TERRAFORM, MCP, or API. Null on pages created before this attribution column existed.",
@@ -4723,39 +4509,19 @@ class StatusPageDto(BaseModel):
     updated_at: Annotated[AwareDatetime, Field(alias="updatedAt")]
 
 
-class ComponentStatus(StrEnum):
-    operational = "OPERATIONAL"
-    degraded_performance = "DEGRADED_PERFORMANCE"
-    partial_outage = "PARTIAL_OUTAGE"
-    major_outage = "MAJOR_OUTAGE"
-    under_maintenance = "UNDER_MAINTENANCE"
-
-
 class StatusPageIncidentComponentDto(BaseModel):
     model_config = ConfigDict(extra="forbid", populate_by_name=True)
     status_page_component_id: Annotated[UUID, Field(alias="statusPageComponentId")]
-    component_status: Annotated[ComponentStatus, Field(alias="componentStatus")]
+    component_status: Annotated[str, Field(alias="componentStatus")]
     component_name: Annotated[str, Field(alias="componentName")]
-
-
-class Status15(StrEnum):
-    investigating = "INVESTIGATING"
-    identified = "IDENTIFIED"
-    monitoring = "MONITORING"
-    resolved = "RESOLVED"
-
-
-class CreatedBy1(StrEnum):
-    user = "USER"
-    system = "SYSTEM"
 
 
 class StatusPageIncidentUpdateDto(BaseModel):
     model_config = ConfigDict(extra="forbid", populate_by_name=True)
     id: UUID
-    status: Status15
+    status: str
     body: str
-    created_by: Annotated[CreatedBy1 | None, Field(alias="createdBy")] = None
+    created_by: Annotated[str | None, Field(alias="createdBy")] = None
     created_by_user_id: Annotated[int | None, Field(alias="createdByUserId")] = None
     notify_subscribers: Annotated[bool, Field(alias="notifySubscribers")]
     created_at: Annotated[AwareDatetime, Field(alias="createdAt")]
@@ -5253,7 +5019,7 @@ class TlsInfoDto(BaseModel):
     ] = None
 
 
-class Type6(StrEnum):
+class Type4(StrEnum):
     consecutive_failures = "consecutive_failures"
     failures_in_window = "failures_in_window"
     response_time = "response_time"
@@ -5264,7 +5030,7 @@ class Scope(StrEnum):
     any_region = "any_region"
 
 
-class Severity7(StrEnum):
+class Severity3(StrEnum):
     down = "down"
     degraded = "degraded"
 
@@ -5279,7 +5045,7 @@ class AggregationType(StrEnum):
 class TriggerRule(BaseModel):
     model_config = ConfigDict(extra="forbid", populate_by_name=True)
     type: Annotated[
-        Type6,
+        Type4,
         Field(
             description="Condition that opens or escalates an incident from check results"
         ),
@@ -5307,7 +5073,7 @@ class TriggerRule(BaseModel):
         ),
     ] = None
     severity: Annotated[
-        Severity7, Field(description="Incident severity when this rule fires")
+        Severity3, Field(description="Incident severity when this rule fires")
     ]
     aggregation_type: Annotated[
         AggregationType | None,
@@ -5339,7 +5105,7 @@ class UpdateApiKeyRequest(BaseModel):
     ]
 
 
-class Severity8(StrEnum):
+class Severity4(StrEnum):
     fail = "fail"
     warn = "warn"
 
@@ -5392,7 +5158,7 @@ class UpdateAssertionRequest(BaseModel):
         Field(discriminator="type"),
     ]
     severity: Annotated[
-        Severity8 | None, Field(description="New outcome severity: FAIL or WARN")
+        Severity4 | None, Field(description="New outcome severity: FAIL or WARN")
     ] = None
 
 
@@ -5744,7 +5510,7 @@ class UpdateStatusPageIncidentRequest(BaseModel):
         ),
     ] = None
     status: Annotated[
-        Status15 | None, Field(description="New status; null preserves current")
+        Status6 | None, Field(description="New status; null preserves current")
     ] = None
     impact: Annotated[
         Impact | None, Field(description="New impact level; null preserves current")
@@ -6822,7 +6588,7 @@ class IntegrationDto(BaseModel):
     description: str
     logo_url: Annotated[str, Field(alias="logoUrl")]
     auth_type: Annotated[str, Field(alias="authType")]
-    tier_availability: Annotated[TierAvailability, Field(alias="tierAvailability")]
+    tier_availability: Annotated[str, Field(alias="tierAvailability")]
     lifecycle: str
     setup_guide_url: Annotated[str, Field(alias="setupGuideUrl")]
     config_schema: Annotated[IntegrationConfigSchemaDto, Field(alias="configSchema")]
@@ -6832,7 +6598,7 @@ class MonitorAssertionDto(BaseModel):
     model_config = ConfigDict(extra="forbid", populate_by_name=True)
     id: UUID
     monitor_id: Annotated[UUID, Field(alias="monitorId")]
-    assertion_type: Annotated[AssertionType, Field(alias="assertionType")]
+    assertion_type: Annotated[str, Field(alias="assertionType")]
     config: Annotated[
         BodyContainsAssertion
         | DnsExpectedCnameAssertion
@@ -6878,7 +6644,7 @@ class MonitorAssertionDto(BaseModel):
         | TcpResponseTimeWarnAssertion,
         Field(discriminator="type"),
     ]
-    severity: Severity6
+    severity: str
 
 
 class MonitorDto(BaseModel):
@@ -6895,7 +6661,7 @@ class MonitorDto(BaseModel):
     name: Annotated[
         str, Field(description="Human-readable name for this monitor", min_length=1)
     ]
-    type: Type3
+    type: str
     config: (
         DnsMonitorConfig
         | HeartbeatMonitorConfig
@@ -6916,7 +6682,7 @@ class MonitorDto(BaseModel):
         list[str], Field(description="Probe regions where checks are executed")
     ]
     managed_by: Annotated[
-        ManagedBy,
+        str,
         Field(
             alias="managedBy",
             description="Source that created/owns this monitor: DASHBOARD, CLI, TERRAFORM, MCP, or API",
@@ -6961,7 +6727,7 @@ class MonitorDto(BaseModel):
         ),
     ] = None
     current_status: Annotated[
-        CurrentStatus | None,
+        str | None,
         Field(
             alias="currentStatus",
             description="Current operational state — UP, DOWN, DEGRADED, PAUSED, or UNKNOWN if no probe data yet",
@@ -7004,7 +6770,7 @@ class MonitorVersionDto(BaseModel):
         ),
     ] = None
     changed_via: Annotated[
-        ChangedVia,
+        str,
         Field(alias="changedVia", description="Change source (DASHBOARD, CLI, API)"),
     ]
     change_summary: Annotated[
@@ -7108,7 +6874,7 @@ class ResourceGroupDto(BaseModel):
         ),
     ] = None
     health_threshold_type: Annotated[
-        HealthThresholdType | None,
+        str | None,
         Field(
             alias="healthThresholdType",
             description="Health threshold type: COUNT or PERCENTAGE",
@@ -7147,7 +6913,7 @@ class ResourceGroupDto(BaseModel):
         ),
     ] = None
     managed_by: Annotated[
-        ManagedBy | None,
+        str | None,
         Field(
             alias="managedBy",
             description="Source that created/owns this group: DASHBOARD, CLI, TERRAFORM, MCP, or API. Null on groups created before this attribution column existed.",
@@ -7388,8 +7154,8 @@ class StatusPageIncidentDto(BaseModel):
     id: UUID
     status_page_id: Annotated[UUID, Field(alias="statusPageId")]
     title: Annotated[str, Field(min_length=1)]
-    status: Status15
-    impact: Impact
+    status: str
+    impact: str
     scheduled: bool
     scheduled_for: Annotated[AwareDatetime | None, Field(alias="scheduledFor")] = None
     scheduled_until: Annotated[AwareDatetime | None, Field(alias="scheduledUntil")] = (
