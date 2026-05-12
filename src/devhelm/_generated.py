@@ -4042,7 +4042,8 @@ class ServiceSubscribeRequest(BaseModel):
         str | None,
         Field(
             alias="alertSensitivity",
-            description="Alert sensitivity level. Defaults to INCIDENTS_ONLY when not provided.",
+            description="Alert sensitivity: ALL (any status change), INCIDENTS_ONLY (real vendor incidents, page on every one), MAJOR_ONLY (only DOWN-level incidents), AWARENESS (track silently — show on dashboard, never send alerts). Defaults to AWARENESS when not provided — silent tracking is the friendliest first-run choice; switch to one of the paging modes to opt in to alert-channel fan-out.",
+            pattern="ALL|AWARENESS|INCIDENTS_ONLY|MAJOR_ONLY",
         ),
     ] = None
 
@@ -4086,7 +4087,7 @@ class ServiceSubscriptionDto(BaseModel):
         str,
         Field(
             alias="alertSensitivity",
-            description="Alert sensitivity: ALL (synthetic + real incidents), INCIDENTS_ONLY (real vendor incidents, default), MAJOR_ONLY (real + DOWN severity)",
+            description="Alert sensitivity: ALL (synthetic + real incidents, paged), INCIDENTS_ONLY (real vendor incidents, paged), MAJOR_ONLY (real + DOWN severity, paged), AWARENESS (real vendor incidents tracked silently — visible on dashboard, never paged; default for new subscriptions)",
             min_length=1,
         ),
     ]
@@ -5090,9 +5091,9 @@ class UpdateAlertSensitivityRequest(BaseModel):
         str,
         Field(
             alias="alertSensitivity",
-            description="Alert sensitivity: ALL (any status change), INCIDENTS_ONLY (real vendor incidents, default), MAJOR_ONLY (only DOWN-level incidents)",
+            description="Alert sensitivity: ALL (any status change), INCIDENTS_ONLY (real vendor incidents, page on every one), MAJOR_ONLY (only DOWN-level incidents), AWARENESS (track silently — show on dashboard, never send alerts; default for new subscriptions)",
             min_length=1,
-            pattern="ALL|INCIDENTS_ONLY|MAJOR_ONLY",
+            pattern="ALL|AWARENESS|INCIDENTS_ONLY|MAJOR_ONLY",
         ),
     ]
 
