@@ -1570,6 +1570,32 @@ class EnvironmentDto(BaseModel):
     ]
 
 
+class ErrorEntry(BaseModel):
+    model_config = ConfigDict(extra="forbid", populate_by_name=True)
+    code: Annotated[
+        str,
+        Field(
+            description="Stable machine-readable code; see ValidationErrorCode for the registry",
+            examples=["MONITOR_HEARTBEAT_GRACE_EXCEEDS_INTERVAL"],
+            min_length=1,
+        ),
+    ]
+    field: Annotated[
+        str | None,
+        Field(
+            description="JSON-pointer-like path to the offending field, or null for request-wide errors",
+            examples=["config.gracePeriod"],
+        ),
+    ] = None
+    message: Annotated[
+        str,
+        Field(
+            description="Human-readable message; safe to surface to end users",
+            min_length=1,
+        ),
+    ]
+
+
 class ErrorResponse(BaseModel):
     model_config = ConfigDict(extra="forbid", populate_by_name=True)
     status: Annotated[
@@ -1606,6 +1632,12 @@ class ErrorResponse(BaseModel):
             alias="requestId",
             description="Opaque per-request id; same value as the X-Request-Id response header. Use in support tickets.",
             examples=["5b6f7a8c-1234-4d5e-9f0a-1b2c3d4e5f6a"],
+        ),
+    ] = None
+    errors: Annotated[
+        list[ErrorEntry] | None,
+        Field(
+            description="Structured per-field rejections; populated for validation errors, null otherwise"
         ),
     ] = None
 
@@ -3727,6 +3759,13 @@ class ServiceCatalogDto(BaseModel):
     logo_url: Annotated[str | None, Field(alias="logoUrl")] = None
     adapter_type: Annotated[str, Field(alias="adapterType")]
     polling_interval_seconds: Annotated[int, Field(alias="pollingIntervalSeconds")]
+    lifecycle_status: Annotated[
+        str,
+        Field(
+            alias="lifecycleStatus",
+            description="Service lifecycle state: ACTIVE, DEGRADED, DEPRECATED, or RETIRED",
+        ),
+    ]
     enabled: bool
     published: bool
     overall_status: Annotated[str | None, Field(alias="overallStatus")] = None
@@ -4042,7 +4081,8 @@ class ServiceSubscribeRequest(BaseModel):
         str | None,
         Field(
             alias="alertSensitivity",
-            description="Alert sensitivity level. Defaults to INCIDENTS_ONLY when not provided.",
+            description="Alert sensitivity: ALL (any status change), INCIDENTS_ONLY (real vendor incidents, page on every one), MAJOR_ONLY (only DOWN-level incidents), AWARENESS (track silently — show on dashboard, never send alerts). Defaults to AWARENESS when not provided — silent tracking is the friendliest first-run choice; switch to one of the paging modes to opt in to alert-channel fan-out.",
+            pattern="ALL|AWARENESS|INCIDENTS_ONLY|MAJOR_ONLY",
         ),
     ] = None
 
@@ -4086,7 +4126,7 @@ class ServiceSubscriptionDto(BaseModel):
         str,
         Field(
             alias="alertSensitivity",
-            description="Alert sensitivity: ALL (synthetic + real incidents), INCIDENTS_ONLY (real vendor incidents, default), MAJOR_ONLY (real + DOWN severity)",
+            description="Alert sensitivity: ALL (synthetic + real incidents, paged), INCIDENTS_ONLY (real vendor incidents, paged), MAJOR_ONLY (real + DOWN severity, paged), AWARENESS (real vendor incidents tracked silently — visible on dashboard, never paged; default for new subscriptions)",
             min_length=1,
         ),
     ]
@@ -5090,9 +5130,9 @@ class UpdateAlertSensitivityRequest(BaseModel):
         str,
         Field(
             alias="alertSensitivity",
-            description="Alert sensitivity: ALL (any status change), INCIDENTS_ONLY (real vendor incidents, default), MAJOR_ONLY (only DOWN-level incidents)",
+            description="Alert sensitivity: ALL (any status change), INCIDENTS_ONLY (real vendor incidents, page on every one), MAJOR_ONLY (only DOWN-level incidents), AWARENESS (track silently — show on dashboard, never send alerts; default for new subscriptions)",
             min_length=1,
-            pattern="ALL|INCIDENTS_ONLY|MAJOR_ONLY",
+            pattern="ALL|AWARENESS|INCIDENTS_ONLY|MAJOR_ONLY",
         ),
     ]
 
@@ -6942,6 +6982,13 @@ class ServiceDetailDto(BaseModel):
     logo_url: Annotated[str | None, Field(alias="logoUrl")] = None
     adapter_type: Annotated[str, Field(alias="adapterType")]
     polling_interval_seconds: Annotated[int, Field(alias="pollingIntervalSeconds")]
+    lifecycle_status: Annotated[
+        str,
+        Field(
+            alias="lifecycleStatus",
+            description="Service lifecycle state: ACTIVE, DEGRADED, DEPRECATED, or RETIRED",
+        ),
+    ]
     enabled: bool
     created_at: Annotated[AwareDatetime, Field(alias="createdAt")]
     updated_at: Annotated[AwareDatetime, Field(alias="updatedAt")]
