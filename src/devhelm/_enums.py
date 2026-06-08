@@ -33,7 +33,26 @@ AffectedComponentStatus = Literal[
     "UNDER_MAINTENANCE",
 ]
 AlertChannelDtoChannelType = Literal[
-    "email", "webhook", "slack", "pagerduty", "opsgenie", "teams", "discord"
+    "email",
+    "webhook",
+    "slack",
+    "pagerduty",
+    "opsgenie",
+    "teams",
+    "discord",
+    "telegram",
+    "google_chat",
+    "pushover",
+    "mattermost",
+    "splunk_oncall",
+    "pushbullet",
+    "linear",
+    "incident_io",
+    "rootly",
+    "zapier",
+    "datadog",
+    "jira",
+    "gitlab",
 ]
 AlertChannelDtoManagedBy = Literal["DASHBOARD", "CLI", "TERRAFORM", "MCP", "API"]
 AlertDeliveryDtoEventType = Literal[
@@ -140,6 +159,7 @@ CreateWebhookEndpointRequestSubscribedEventsItem = Literal[
     "service.incident_updated",
     "service.incident_resolved",
 ]
+DatadogChannelConfigChannelType = Literal["datadog"]
 DayIncidentImpact = Literal["NONE", "MINOR", "MAJOR", "CRITICAL"]
 DayIncidentStatus = Literal["INVESTIGATING", "IDENTIFIED", "MONITORING", "RESOLVED"]
 DiscordChannelConfigChannelType = Literal["discord"]
@@ -160,6 +180,8 @@ DnsTtlHighAssertionType = Literal["dns_ttl_high"]
 DnsTtlLowAssertionType = Literal["dns_ttl_low"]
 DnsTxtContainsAssertionType = Literal["dns_txt_contains"]
 EmailChannelConfigChannelType = Literal["email"]
+GitLabChannelConfigChannelType = Literal["gitlab"]
+GoogleChatChannelConfigChannelType = Literal["google_chat"]
 HeaderAuthConfigType = Literal["header"]
 HeaderValueAssertionOperator = Literal[
     "equals", "contains", "less_than", "greater_than", "matches", "range"
@@ -187,6 +209,7 @@ IncidentFilterParamsSource = Literal[
     "AUTOMATIC", "MANUAL", "MONITORS", "STATUS_DATA", "RESOURCE_GROUP"
 ]
 IncidentFilterParamsStatus = Literal["WATCHING", "TRIGGERED", "CONFIRMED", "RESOLVED"]
+IncidentIoChannelConfigChannelType = Literal["incident_io"]
 IncidentUpdateDtoCreatedBy = Literal["SYSTEM", "USER"]
 IncidentUpdateDtoNewStatus = Literal["WATCHING", "TRIGGERED", "CONFIRMED", "RESOLVED"]
 IncidentUpdateDtoOldStatus = Literal["WATCHING", "TRIGGERED", "CONFIRMED", "RESOLVED"]
@@ -194,10 +217,12 @@ IntegrationDtoTierAvailability = Literal[
     "FREE", "STARTER", "PRO", "TEAM", "BUSINESS", "ENTERPRISE"
 ]
 InviteDtoRoleOffered = Literal["OWNER", "ADMIN", "MEMBER"]
+JiraChannelConfigChannelType = Literal["jira"]
 JsonPathAssertionOperator = Literal[
     "equals", "contains", "less_than", "greater_than", "matches", "range"
 ]
 JsonPathAssertionType = Literal["json_path"]
+LinearChannelConfigChannelType = Literal["linear"]
 LinkedStatusPageIncidentDtoImpact = Literal["NONE", "MINOR", "MAJOR", "CRITICAL"]
 LinkedStatusPageIncidentDtoStatus = Literal[
     "INVESTIGATING", "IDENTIFIED", "MONITORING", "RESOLVED"
@@ -213,6 +238,7 @@ MatchRuleType = Literal[
     "component_name_in",
     "monitor_tag_in",
 ]
+MattermostChannelConfigChannelType = Literal["mattermost"]
 McpConnectsAssertionType = Literal["mcp_connects"]
 McpHasCapabilityAssertionType = Literal["mcp_has_capability"]
 McpMinToolsAssertionType = Literal["mcp_min_tools"]
@@ -293,6 +319,8 @@ PublishStatusPageIncidentRequestImpact = Literal["NONE", "MINOR", "MAJOR", "CRIT
 PublishStatusPageIncidentRequestStatus = Literal[
     "INVESTIGATING", "IDENTIFIED", "MONITORING", "RESOLVED"
 ]
+PushbulletChannelConfigChannelType = Literal["pushbullet"]
+PushoverChannelConfigChannelType = Literal["pushover"]
 RedirectCountAssertionType = Literal["redirect_count"]
 RedirectTargetAssertionOperator = Literal[
     "equals", "contains", "less_than", "greater_than", "matches", "range"
@@ -308,8 +336,16 @@ ResponseSizeAssertionType = Literal["response_size"]
 ResponseTimeAssertionType = Literal["response_time"]
 ResponseTimeWarnAssertionType = Literal["response_time_warn"]
 ResultSummaryDtoCurrentStatus = Literal["up", "degraded", "down", "paused", "unknown"]
-ServiceSubscriptionDtoAlertSensitivity = Literal["ALL", "INCIDENTS_ONLY", "MAJOR_ONLY"]
+RootlyChannelConfigChannelType = Literal["rootly"]
+ServiceCatalogDtoLifecycleStatus = Literal[
+    "ACTIVE", "DEGRADED", "DEPRECATED", "RETIRED"
+]
+ServiceDetailDtoLifecycleStatus = Literal["ACTIVE", "DEGRADED", "DEPRECATED", "RETIRED"]
+ServiceSubscriptionDtoAlertSensitivity = Literal[
+    "ALL", "AWARENESS", "INCIDENTS_ONLY", "MAJOR_ONLY"
+]
 SlackChannelConfigChannelType = Literal["slack"]
+SplunkOnCallChannelConfigChannelType = Literal["splunk_oncall"]
 SslExpiryAssertionType = Literal["ssl_expiry"]
 StateTransitionDetailsSource = Literal["pipeline", "public-api"]
 StatusCodeAssertionOperator = Literal[
@@ -364,6 +400,7 @@ TcpConnectsAssertionType = Literal["tcp_connects"]
 TcpResponseTimeAssertionType = Literal["tcp_response_time"]
 TcpResponseTimeWarnAssertionType = Literal["tcp_response_time_warn"]
 TeamsChannelConfigChannelType = Literal["teams"]
+TelegramChannelConfigChannelType = Literal["telegram"]
 TriggerRuleAggregationType = Literal["all_exceed", "average", "p95", "max"]
 TriggerRuleScope = Literal["per_region", "any_region"]
 TriggerRuleSeverity = Literal["down", "degraded"]
@@ -400,6 +437,7 @@ UpdateWebhookEndpointRequestSubscribedEventsItem = Literal[
     "service.incident_resolved",
 ]
 WebhookChannelConfigChannelType = Literal["webhook"]
+ZapierChannelConfigChannelType = Literal["zapier"]
 
 __all__ = [
     "AddIncidentUpdateRequestNewStatus",
@@ -435,6 +473,7 @@ __all__ = [
     "CreateStatusPageRequestManagedBy",
     "CreateStatusPageRequestVisibility",
     "CreateWebhookEndpointRequestSubscribedEventsItem",
+    "DatadogChannelConfigChannelType",
     "DayIncidentImpact",
     "DayIncidentStatus",
     "DiscordChannelConfigChannelType",
@@ -453,6 +492,8 @@ __all__ = [
     "DnsTtlLowAssertionType",
     "DnsTxtContainsAssertionType",
     "EmailChannelConfigChannelType",
+    "GitLabChannelConfigChannelType",
+    "GoogleChatChannelConfigChannelType",
     "HeaderAuthConfigType",
     "HeaderValueAssertionOperator",
     "HeaderValueAssertionType",
@@ -474,16 +515,20 @@ __all__ = [
     "IncidentFilterParamsSeverity",
     "IncidentFilterParamsSource",
     "IncidentFilterParamsStatus",
+    "IncidentIoChannelConfigChannelType",
     "IncidentUpdateDtoCreatedBy",
     "IncidentUpdateDtoNewStatus",
     "IncidentUpdateDtoOldStatus",
     "IntegrationDtoTierAvailability",
     "InviteDtoRoleOffered",
+    "JiraChannelConfigChannelType",
     "JsonPathAssertionOperator",
     "JsonPathAssertionType",
+    "LinearChannelConfigChannelType",
     "LinkedStatusPageIncidentDtoImpact",
     "LinkedStatusPageIncidentDtoStatus",
     "MatchRuleType",
+    "MattermostChannelConfigChannelType",
     "McpConnectsAssertionType",
     "McpHasCapabilityAssertionType",
     "McpMinToolsAssertionType",
@@ -513,6 +558,8 @@ __all__ = [
     "PlanInfoTier",
     "PublishStatusPageIncidentRequestImpact",
     "PublishStatusPageIncidentRequestStatus",
+    "PushbulletChannelConfigChannelType",
+    "PushoverChannelConfigChannelType",
     "RedirectCountAssertionType",
     "RedirectTargetAssertionOperator",
     "RedirectTargetAssertionType",
@@ -526,8 +573,12 @@ __all__ = [
     "ResponseTimeAssertionType",
     "ResponseTimeWarnAssertionType",
     "ResultSummaryDtoCurrentStatus",
+    "RootlyChannelConfigChannelType",
+    "ServiceCatalogDtoLifecycleStatus",
+    "ServiceDetailDtoLifecycleStatus",
     "ServiceSubscriptionDtoAlertSensitivity",
     "SlackChannelConfigChannelType",
+    "SplunkOnCallChannelConfigChannelType",
     "SslExpiryAssertionType",
     "StateTransitionDetailsSource",
     "StatusCodeAssertionOperator",
@@ -550,6 +601,7 @@ __all__ = [
     "TcpResponseTimeAssertionType",
     "TcpResponseTimeWarnAssertionType",
     "TeamsChannelConfigChannelType",
+    "TelegramChannelConfigChannelType",
     "TriggerRuleAggregationType",
     "TriggerRuleScope",
     "TriggerRuleSeverity",
@@ -566,4 +618,5 @@ __all__ = [
     "UpdateStatusPageRequestVisibility",
     "UpdateWebhookEndpointRequestSubscribedEventsItem",
     "WebhookChannelConfigChannelType",
+    "ZapierChannelConfigChannelType",
 ]
