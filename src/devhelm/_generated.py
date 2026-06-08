@@ -143,6 +143,36 @@ class AlertChannelDisplayConfig(BaseModel):
             description="Custom HTTP headers for webhook requests",
         ),
     ] = None
+    chat_id: Annotated[
+        str | None, Field(alias="chatId", description="Telegram chat ID")
+    ] = None
+    priority: Annotated[
+        str | None, Field(description="Pushover notification priority override")
+    ] = None
+    channel: Annotated[str | None, Field(description="Mattermost channel override")] = (
+        None
+    )
+    routing_key: Annotated[
+        str | None, Field(alias="routingKey", description="Splunk On-Call routing key")
+    ] = None
+    device_iden: Annotated[
+        str | None,
+        Field(alias="deviceIden", description="Pushbullet target device identifier"),
+    ] = None
+    team_id: Annotated[
+        str | None,
+        Field(alias="teamId", description="Linear team ID for issue creation"),
+    ] = None
+    visibility: Annotated[
+        str | None, Field(description="incident.io incident visibility")
+    ] = None
+    severity: Annotated[
+        str | None, Field(description="Rootly incident severity slug")
+    ] = None
+    site: Annotated[str | None, Field(description="Datadog site region")] = None
+    project_key: Annotated[
+        str | None, Field(alias="projectKey", description="Jira project key")
+    ] = None
 
 
 class AlertChannelDto(BaseModel):
@@ -1091,6 +1121,23 @@ class CreateWorkspaceRequest(BaseModel):
     name: Annotated[str, Field(description="Workspace name", min_length=1)]
 
 
+class DatadogChannelConfig(BaseModel):
+    model_config = ConfigDict(extra="forbid", populate_by_name=True)
+    channel_type: Annotated[Literal["datadog"], Field(alias="channelType")] = "datadog"
+    api_key: Annotated[
+        str, Field(alias="apiKey", description="Datadog API key", min_length=1)
+    ]
+    site: Annotated[
+        str | None,
+        Field(
+            description="Datadog site region (e.g. datadoghq.com, datadoghq.eu, us3.datadoghq.com)"
+        ),
+    ] = None
+    tags: Annotated[
+        str | None, Field(description="Comma-separated tags to attach to events")
+    ] = None
+
+
 class DayIncident(BaseModel):
     model_config = ConfigDict(extra="forbid", populate_by_name=True)
     id: Annotated[UUID, Field(description="Status page incident UUID")]
@@ -1570,6 +1617,32 @@ class EnvironmentDto(BaseModel):
     ]
 
 
+class ErrorEntry(BaseModel):
+    model_config = ConfigDict(extra="forbid", populate_by_name=True)
+    code: Annotated[
+        str,
+        Field(
+            description="Stable machine-readable code; see ValidationErrorCode for the registry",
+            examples=["MONITOR_HEARTBEAT_GRACE_EXCEEDS_INTERVAL"],
+            min_length=1,
+        ),
+    ]
+    field: Annotated[
+        str | None,
+        Field(
+            description="JSON-pointer-like path to the offending field, or null for request-wide errors",
+            examples=["config.gracePeriod"],
+        ),
+    ] = None
+    message: Annotated[
+        str,
+        Field(
+            description="Human-readable message; safe to surface to end users",
+            min_length=1,
+        ),
+    ]
+
+
 class ErrorResponse(BaseModel):
     model_config = ConfigDict(extra="forbid", populate_by_name=True)
     status: Annotated[
@@ -1606,6 +1679,12 @@ class ErrorResponse(BaseModel):
             alias="requestId",
             description="Opaque per-request id; same value as the X-Request-Id response header. Use in support tickets.",
             examples=["5b6f7a8c-1234-4d5e-9f0a-1b2c3d4e5f6a"],
+        ),
+    ] = None
+    errors: Annotated[
+        list[ErrorEntry] | None,
+        Field(
+            description="Structured per-field rejections; populated for validation errors, null otherwise"
         ),
     ] = None
 
@@ -1651,6 +1730,42 @@ class FailureDetail(BaseModel):
         UUID, Field(alias="monitorId", description="Monitor ID that failed")
     ]
     reason: Annotated[str, Field(description="Human-readable reason for the failure")]
+
+
+class GitLabChannelConfig(BaseModel):
+    model_config = ConfigDict(extra="forbid", populate_by_name=True)
+    channel_type: Annotated[Literal["gitlab"], Field(alias="channelType")] = "gitlab"
+    endpoint_url: Annotated[
+        str,
+        Field(
+            alias="endpointUrl",
+            description="GitLab alert integration endpoint URL",
+            min_length=1,
+        ),
+    ]
+    authorization_key: Annotated[
+        str,
+        Field(
+            alias="authorizationKey",
+            description="Authorization key from GitLab alert integration settings",
+            min_length=1,
+        ),
+    ]
+
+
+class GoogleChatChannelConfig(BaseModel):
+    model_config = ConfigDict(extra="forbid", populate_by_name=True)
+    channel_type: Annotated[Literal["google_chat"], Field(alias="channelType")] = (
+        "google_chat"
+    )
+    webhook_url: Annotated[
+        str,
+        Field(
+            alias="webhookUrl",
+            description="Google Chat space webhook URL",
+            min_length=1,
+        ),
+    ]
 
 
 class GroupComponentOrder(BaseModel):
@@ -2248,6 +2363,32 @@ class IncidentFilterParams(BaseModel):
     ]
 
 
+class IncidentIoChannelConfig(BaseModel):
+    model_config = ConfigDict(extra="forbid", populate_by_name=True)
+    channel_type: Annotated[Literal["incident_io"], Field(alias="channelType")] = (
+        "incident_io"
+    )
+    api_key: Annotated[
+        str,
+        Field(
+            alias="apiKey",
+            description="incident.io API key with 'Create incidents' permission",
+            min_length=1,
+        ),
+    ]
+    severity_id: Annotated[
+        str | None,
+        Field(
+            alias="severityId",
+            description="Severity ID for created incidents (from List Severities API)",
+        ),
+    ] = None
+    visibility: Annotated[
+        str | None,
+        Field(description="Incident visibility: public or private (default: public)"),
+    ] = None
+
+
 class IncidentRef(BaseModel):
     model_config = ConfigDict(extra="forbid", populate_by_name=True)
     id: Annotated[
@@ -2332,6 +2473,41 @@ class InviteDto(BaseModel):
     ] = None
 
 
+class JiraChannelConfig(BaseModel):
+    model_config = ConfigDict(extra="forbid", populate_by_name=True)
+    channel_type: Annotated[Literal["jira"], Field(alias="channelType")] = "jira"
+    domain: Annotated[
+        str,
+        Field(
+            description="Atlassian instance domain (e.g. yourteam.atlassian.net)",
+            min_length=1,
+        ),
+    ]
+    email: Annotated[
+        str,
+        Field(
+            description="Atlassian account email for API authentication", min_length=1
+        ),
+    ]
+    api_token: Annotated[
+        str, Field(alias="apiToken", description="Atlassian API token", min_length=1)
+    ]
+    project_key: Annotated[
+        str,
+        Field(
+            alias="projectKey",
+            description="Jira project key where issues are created (e.g. OPS)",
+            min_length=1,
+        ),
+    ]
+    issue_type: Annotated[
+        str | None,
+        Field(
+            alias="issueType", description="Issue type name (e.g. Bug, Task, Incident)"
+        ),
+    ] = None
+
+
 class JsonPathAssertion(BaseModel):
     model_config = ConfigDict(extra="forbid", populate_by_name=True)
     type: Literal["json_path"] = "json_path"
@@ -2367,6 +2543,22 @@ class KeyInfo(BaseModel):
     last_used_at: Annotated[
         AwareDatetime | None,
         Field(alias="lastUsedAt", description="Last time the key was used"),
+    ] = None
+
+
+class LinearChannelConfig(BaseModel):
+    model_config = ConfigDict(extra="forbid", populate_by_name=True)
+    channel_type: Annotated[Literal["linear"], Field(alias="channelType")] = "linear"
+    api_key: Annotated[
+        str, Field(alias="apiKey", description="Linear API key", min_length=1)
+    ]
+    team_id: Annotated[
+        str,
+        Field(alias="teamId", description="Team ID to create issues in", min_length=1),
+    ]
+    label_id: Annotated[
+        str | None,
+        Field(alias="labelId", description="Label ID to attach to created issues"),
     ] = None
 
 
@@ -2490,6 +2682,27 @@ class MatchRule(BaseModel):
     values: Annotated[
         list[str] | None,
         Field(description="Values list for multi-value rules like monitor_type_in"),
+    ] = None
+
+
+class MattermostChannelConfig(BaseModel):
+    model_config = ConfigDict(extra="forbid", populate_by_name=True)
+    channel_type: Annotated[Literal["mattermost"], Field(alias="channelType")] = (
+        "mattermost"
+    )
+    webhook_url: Annotated[
+        str,
+        Field(
+            alias="webhookUrl",
+            description="Mattermost incoming webhook URL",
+            min_length=1,
+        ),
+    ]
+    channel: Annotated[
+        str | None, Field(description="Override channel (if webhook allows)")
+    ] = None
+    icon_url: Annotated[
+        str | None, Field(alias="iconUrl", description="Custom bot icon URL")
     ] = None
 
 
@@ -3118,6 +3331,47 @@ class PublishStatusPageIncidentRequest(BaseModel):
     ] = None
 
 
+class PushbulletChannelConfig(BaseModel):
+    model_config = ConfigDict(extra="forbid", populate_by_name=True)
+    channel_type: Annotated[Literal["pushbullet"], Field(alias="channelType")] = (
+        "pushbullet"
+    )
+    access_token: Annotated[
+        str,
+        Field(alias="accessToken", description="Pushbullet access token", min_length=1),
+    ]
+    device_iden: Annotated[
+        str | None,
+        Field(
+            alias="deviceIden",
+            description="Target device identifier (broadcasts to all if empty)",
+        ),
+    ] = None
+
+
+class PushoverChannelConfig(BaseModel):
+    model_config = ConfigDict(extra="forbid", populate_by_name=True)
+    channel_type: Annotated[Literal["pushover"], Field(alias="channelType")] = (
+        "pushover"
+    )
+    user_key: Annotated[
+        str,
+        Field(alias="userKey", description="Pushover user or group key", min_length=1),
+    ]
+    app_token: Annotated[
+        str,
+        Field(
+            alias="appToken", description="Pushover application API token", min_length=1
+        ),
+    ]
+    priority: Annotated[
+        str | None, Field(description="Notification priority override (-2 to 2)")
+    ] = None
+    sound: Annotated[str | None, Field(description="Notification sound override")] = (
+        None
+    )
+
+
 class RateLimitInfo(BaseModel):
     model_config = ConfigDict(extra="forbid", populate_by_name=True)
     requests_per_minute: Annotated[
@@ -3505,6 +3759,22 @@ class RetryStrategy(BaseModel):
     ]
 
 
+class RootlyChannelConfig(BaseModel):
+    model_config = ConfigDict(extra="forbid", populate_by_name=True)
+    channel_type: Annotated[Literal["rootly"], Field(alias="channelType")] = "rootly"
+    api_key: Annotated[
+        str,
+        Field(
+            alias="apiKey",
+            description="Rootly API token with incident creation permission",
+            min_length=1,
+        ),
+    ]
+    severity: Annotated[
+        str | None, Field(description="Severity slug override (e.g. sev0, sev1)")
+    ] = None
+
+
 class RuleEvaluationDto(BaseModel):
     model_config = ConfigDict(extra="forbid", populate_by_name=True)
     id: Annotated[UUID, Field(description="Forensic row UUID")]
@@ -3727,6 +3997,13 @@ class ServiceCatalogDto(BaseModel):
     logo_url: Annotated[str | None, Field(alias="logoUrl")] = None
     adapter_type: Annotated[str, Field(alias="adapterType")]
     polling_interval_seconds: Annotated[int, Field(alias="pollingIntervalSeconds")]
+    lifecycle_status: Annotated[
+        str,
+        Field(
+            alias="lifecycleStatus",
+            description="Service lifecycle state: ACTIVE, DEGRADED, DEPRECATED, or RETIRED",
+        ),
+    ]
     enabled: bool
     published: bool
     overall_status: Annotated[str | None, Field(alias="overallStatus")] = None
@@ -4042,7 +4319,8 @@ class ServiceSubscribeRequest(BaseModel):
         str | None,
         Field(
             alias="alertSensitivity",
-            description="Alert sensitivity level. Defaults to INCIDENTS_ONLY when not provided.",
+            description="Alert sensitivity: ALL (any status change), INCIDENTS_ONLY (real vendor incidents, page on every one), MAJOR_ONLY (only DOWN-level incidents), AWARENESS (track silently — show on dashboard, never send alerts). Defaults to AWARENESS when not provided — silent tracking is the friendliest first-run choice; switch to one of the paging modes to opt in to alert-channel fan-out.",
+            pattern="ALL|AWARENESS|INCIDENTS_ONLY|MAJOR_ONLY",
         ),
     ] = None
 
@@ -4086,7 +4364,7 @@ class ServiceSubscriptionDto(BaseModel):
         str,
         Field(
             alias="alertSensitivity",
-            description="Alert sensitivity: ALL (synthetic + real incidents), INCIDENTS_ONLY (real vendor incidents, default), MAJOR_ONLY (real + DOWN severity)",
+            description="Alert sensitivity: ALL (synthetic + real incidents, paged), INCIDENTS_ONLY (real vendor incidents, paged), MAJOR_ONLY (real + DOWN severity, paged), AWARENESS (real vendor incidents tracked silently — visible on dashboard, never paged; default for new subscriptions)",
             min_length=1,
         ),
     ]
@@ -4258,6 +4536,25 @@ class SlackChannelConfig(BaseModel):
     ] = None
 
 
+class SplunkOnCallChannelConfig(BaseModel):
+    model_config = ConfigDict(extra="forbid", populate_by_name=True)
+    channel_type: Annotated[Literal["splunk_oncall"], Field(alias="channelType")] = (
+        "splunk_oncall"
+    )
+    api_key: Annotated[
+        str,
+        Field(alias="apiKey", description="Splunk On-Call REST API key", min_length=1),
+    ]
+    routing_key: Annotated[
+        str,
+        Field(
+            alias="routingKey",
+            description="Routing key for alert routing",
+            min_length=1,
+        ),
+    ]
+
+
 class SslExpiryAssertion(BaseModel):
     model_config = ConfigDict(extra="forbid", populate_by_name=True)
     type: Literal["ssl_expiry"] = "ssl_expiry"
@@ -4409,6 +4706,13 @@ class StatusPageBranding(BaseModel):
             description="Whether to hide the 'Powered by DevHelm' footer badge (default: false)",
         ),
     ] = False
+    show_subscribe_button: Annotated[
+        bool | None,
+        Field(
+            alias="showSubscribeButton",
+            description="Whether to show the 'Subscribe' button in the header (default: true)",
+        ),
+    ] = True
     custom_css: Annotated[
         str | None,
         Field(
@@ -4837,6 +5141,29 @@ class TeamsChannelConfig(BaseModel):
     ]
 
 
+class TelegramChannelConfig(BaseModel):
+    model_config = ConfigDict(extra="forbid", populate_by_name=True)
+    channel_type: Annotated[Literal["telegram"], Field(alias="channelType")] = (
+        "telegram"
+    )
+    bot_token: Annotated[
+        str,
+        Field(
+            alias="botToken",
+            description="Telegram bot token from @BotFather",
+            min_length=1,
+        ),
+    ]
+    chat_id: Annotated[
+        str,
+        Field(
+            alias="chatId",
+            description="Chat, group, or channel ID to send alerts to",
+            min_length=1,
+        ),
+    ]
+
+
 class TestChannelResult(BaseModel):
     model_config = ConfigDict(extra="forbid", populate_by_name=True)
     success: bool
@@ -5090,9 +5417,9 @@ class UpdateAlertSensitivityRequest(BaseModel):
         str,
         Field(
             alias="alertSensitivity",
-            description="Alert sensitivity: ALL (any status change), INCIDENTS_ONLY (real vendor incidents, default), MAJOR_ONLY (only DOWN-level incidents)",
+            description="Alert sensitivity: ALL (any status change), INCIDENTS_ONLY (real vendor incidents, page on every one), MAJOR_ONLY (only DOWN-level incidents), AWARENESS (track silently — show on dashboard, never send alerts; default for new subscriptions)",
             min_length=1,
-            pattern="ALL|INCIDENTS_ONLY|MAJOR_ONLY",
+            pattern="ALL|AWARENESS|INCIDENTS_ONLY|MAJOR_ONLY",
         ),
     ]
 
@@ -5861,6 +6188,19 @@ class WorkspaceDto(BaseModel):
     ]
 
 
+class ZapierChannelConfig(BaseModel):
+    model_config = ConfigDict(extra="forbid", populate_by_name=True)
+    channel_type: Annotated[Literal["zapier"], Field(alias="channelType")] = "zapier"
+    webhook_url: Annotated[
+        str,
+        Field(
+            alias="webhookUrl",
+            description="Zapier/n8n/Make catch webhook URL",
+            min_length=1,
+        ),
+    ]
+
+
 class AddMonitorTagsRequest(BaseModel):
     model_config = ConfigDict(extra="forbid", populate_by_name=True)
     tag_ids: Annotated[
@@ -5991,13 +6331,26 @@ class CreateAlertChannelRequest(BaseModel):
         ),
     ]
     config: Annotated[
-        DiscordChannelConfig
+        DatadogChannelConfig
+        | DiscordChannelConfig
         | EmailChannelConfig
+        | GitLabChannelConfig
+        | GoogleChatChannelConfig
+        | IncidentIoChannelConfig
+        | JiraChannelConfig
+        | LinearChannelConfig
+        | MattermostChannelConfig
         | OpsGenieChannelConfig
         | PagerDutyChannelConfig
+        | PushbulletChannelConfig
+        | PushoverChannelConfig
+        | RootlyChannelConfig
         | SlackChannelConfig
+        | SplunkOnCallChannelConfig
         | TeamsChannelConfig
-        | WebhookChannelConfig,
+        | TelegramChannelConfig
+        | WebhookChannelConfig
+        | ZapierChannelConfig,
         Field(discriminator="channel_type"),
     ]
     managed_by: Annotated[
@@ -6942,6 +7295,13 @@ class ServiceDetailDto(BaseModel):
     logo_url: Annotated[str | None, Field(alias="logoUrl")] = None
     adapter_type: Annotated[str, Field(alias="adapterType")]
     polling_interval_seconds: Annotated[int, Field(alias="pollingIntervalSeconds")]
+    lifecycle_status: Annotated[
+        str,
+        Field(
+            alias="lifecycleStatus",
+            description="Service lifecycle state: ACTIVE, DEGRADED, DEPRECATED, or RETIRED",
+        ),
+    ]
     enabled: bool
     created_at: Annotated[AwareDatetime, Field(alias="createdAt")]
     updated_at: Annotated[AwareDatetime, Field(alias="updatedAt")]
@@ -7288,13 +7648,26 @@ class TableValueResultWorkspaceDto(BaseModel):
 class TestAlertChannelRequest(BaseModel):
     model_config = ConfigDict(extra="forbid", populate_by_name=True)
     config: Annotated[
-        DiscordChannelConfig
+        DatadogChannelConfig
+        | DiscordChannelConfig
         | EmailChannelConfig
+        | GitLabChannelConfig
+        | GoogleChatChannelConfig
+        | IncidentIoChannelConfig
+        | JiraChannelConfig
+        | LinearChannelConfig
+        | MattermostChannelConfig
         | OpsGenieChannelConfig
         | PagerDutyChannelConfig
+        | PushbulletChannelConfig
+        | PushoverChannelConfig
+        | RootlyChannelConfig
         | SlackChannelConfig
+        | SplunkOnCallChannelConfig
         | TeamsChannelConfig
-        | WebhookChannelConfig,
+        | TelegramChannelConfig
+        | WebhookChannelConfig
+        | ZapierChannelConfig,
         Field(discriminator="channel_type"),
     ]
 
@@ -7310,13 +7683,26 @@ class UpdateAlertChannelRequest(BaseModel):
         ),
     ]
     config: Annotated[
-        DiscordChannelConfig
+        DatadogChannelConfig
+        | DiscordChannelConfig
         | EmailChannelConfig
+        | GitLabChannelConfig
+        | GoogleChatChannelConfig
+        | IncidentIoChannelConfig
+        | JiraChannelConfig
+        | LinearChannelConfig
+        | MattermostChannelConfig
         | OpsGenieChannelConfig
         | PagerDutyChannelConfig
+        | PushbulletChannelConfig
+        | PushoverChannelConfig
+        | RootlyChannelConfig
         | SlackChannelConfig
+        | SplunkOnCallChannelConfig
         | TeamsChannelConfig
-        | WebhookChannelConfig,
+        | TelegramChannelConfig
+        | WebhookChannelConfig
+        | ZapierChannelConfig,
         Field(discriminator="channel_type"),
     ]
     managed_by: Annotated[
