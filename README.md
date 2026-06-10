@@ -84,6 +84,7 @@ The client exposes the following resource modules:
 | `client.api_keys`       | API key management                |
 | `client.dependencies`   | Service dependency tracking       |
 | `client.deploy_lock`    | Deploy lock for safe deployments  |
+| `client.services`       | Status Data catalog: vendor services, components, incidents, uptime |
 | `client.status`         | Dashboard overview                |
 
 ## Pagination

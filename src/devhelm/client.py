@@ -15,6 +15,7 @@ from devhelm.resources.monitors import Monitors
 from devhelm.resources.notification_policies import NotificationPolicies
 from devhelm.resources.resource_groups import ResourceGroups
 from devhelm.resources.secrets import Secrets
+from devhelm.resources.services import Services
 from devhelm.resources.status import Status
 from devhelm.resources.status_pages import StatusPages
 from devhelm.resources.tags import Tags
@@ -53,6 +54,7 @@ class Devhelm:
     dependencies: Dependencies
     deploy_lock: DeployLock
     maintenance_windows: MaintenanceWindows
+    services: Services
     status: Status
     status_pages: StatusPages
 
@@ -99,5 +101,6 @@ class Devhelm:
         self.dependencies = Dependencies(client)
         self.deploy_lock = DeployLock(client)
         self.maintenance_windows = MaintenanceWindows(client)
+        self.services = Services(client)
         self.status = Status(client)
         self.status_pages = StatusPages(client)

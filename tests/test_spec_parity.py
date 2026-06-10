@@ -146,7 +146,9 @@ REQUEST_DTO_NAMES: list[str] = sorted(
         "CreateWebhookEndpointRequest",
         "ReorderComponentsRequest",
         "ResolveIncidentRequest",
+        "ServiceSubscribeRequest",
         "UpdateAlertChannelRequest",
+        "UpdateAlertSensitivityRequest",
         "UpdateEnvironmentRequest",
         "UpdateMaintenanceWindowRequest",
         "UpdateMonitorRequest",
@@ -379,6 +381,8 @@ SDK_PATH_PREFIXES: list[str] = [
     "/api/v1/deploy/lock",
     "/api/v1/status-pages",
     "/api/v1/service-subscriptions",
+    "/api/v1/services",
+    "/api/v1/categories",
 ]
 
 
