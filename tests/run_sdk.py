@@ -275,9 +275,39 @@ def run(client: Devhelm, resource: str, action: str, rest: list[str]) -> Any:  #
         return client.dependencies.get(rest[0])
     if op == "dependencies.track":
         return client.dependencies.track(rest[0])
+    if op == "dependencies.update-alert-sensitivity":
+        return client.dependencies.update_alert_sensitivity(rest[0], rest[1])
     if op == "dependencies.delete":
         client.dependencies.delete(rest[0])
         return None
+
+    # -- Services (Status Data catalog, read-only) --
+    if op == "services.list":
+        return client.services.list()
+    if op == "services.get":
+        return client.services.get(rest[0])
+    if op == "services.live-status":
+        return client.services.live_status(rest[0])
+    if op == "services.categories":
+        return client.services.categories()
+    if op == "services.summary":
+        return client.services.summary()
+    if op == "services.components":
+        return client.services.components(rest[0])
+    if op == "services.component-uptime":
+        return client.services.component_uptime(rest[0], rest[1])
+    if op == "services.batch-component-uptime":
+        return client.services.batch_component_uptime(rest[0])
+    if op == "services.day":
+        return client.services.day(rest[0], rest[1])
+    if op == "services.incidents":
+        return client.services.incidents(rest[0] if rest else None)
+    if op == "services.incident":
+        return client.services.incident(rest[0], rest[1])
+    if op == "services.uptime":
+        return client.services.uptime(rest[0])
+    if op == "services.maintenances":
+        return client.services.maintenances(rest[0])
 
     # -- Deploy Lock --
     if op == "deploy-lock.acquire":
