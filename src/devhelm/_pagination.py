@@ -151,9 +151,18 @@ def fetch_cursor_page(
     model_class: type[M],
     cursor: str | None = None,
     limit: int | None = None,
+    *,
+    extra_params: dict[str, Any] | None = None,
 ) -> CursorPage[M]:
-    """Fetch a single page from a cursor-paginated endpoint with validation."""
-    params: dict[str, Any] = {}
+    """Fetch a single page from a cursor-paginated endpoint with validation.
+
+    ``extra_params`` is merged into the request so callers can forward
+    server-side filter kwargs (``category``, ``search``, …) alongside the
+    cursor controls. Pagination keys (``cursor``, ``limit``) always win
+    over user-supplied ``extra_params`` to keep the iterator's invariants
+    intact.
+    """
+    params: dict[str, Any] = dict(extra_params) if extra_params else {}
     if cursor:
         params["cursor"] = cursor
     if limit:

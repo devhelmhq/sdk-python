@@ -19,6 +19,7 @@ from devhelm.resources.monitors import Monitors
 from devhelm.resources.notification_policies import NotificationPolicies
 from devhelm.resources.resource_groups import ResourceGroups
 from devhelm.resources.secrets import Secrets
+from devhelm.resources.services import Services
 from devhelm.resources.status import Status
 from devhelm.resources.status_pages import StatusPages
 from devhelm.resources.tags import Tags
@@ -74,6 +75,24 @@ class TestClientResources:
 
     def test_dependencies(self, client: Devhelm) -> None:
         assert isinstance(client.dependencies, Dependencies)
+        assert callable(client.dependencies.track)
+        assert callable(client.dependencies.update_alert_sensitivity)
+
+    def test_services(self, client: Devhelm) -> None:
+        assert isinstance(client.services, Services)
+        assert callable(client.services.list)
+        assert callable(client.services.get)
+        assert callable(client.services.live_status)
+        assert callable(client.services.categories)
+        assert callable(client.services.summary)
+        assert callable(client.services.components)
+        assert callable(client.services.component_uptime)
+        assert callable(client.services.batch_component_uptime)
+        assert callable(client.services.day)
+        assert callable(client.services.incidents)
+        assert callable(client.services.incident)
+        assert callable(client.services.uptime)
+        assert callable(client.services.maintenances)
 
     def test_deploy_lock(self, client: Devhelm) -> None:
         assert isinstance(client.deploy_lock, DeployLock)
