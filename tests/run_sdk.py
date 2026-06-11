@@ -259,6 +259,8 @@ def run(client: Devhelm, resource: str, action: str, rest: list[str]) -> Any:  #
     # -- API Keys --
     if op == "api-keys.list":
         return client.api_keys.list()
+    if op == "api-keys.get":
+        return client.api_keys.get(rest[0])
     if op == "api-keys.create":
         return client.api_keys.create(_parse(CreateApiKeyRequest, rest[0]))
     if op == "api-keys.revoke":
