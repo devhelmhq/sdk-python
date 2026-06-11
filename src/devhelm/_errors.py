@@ -82,6 +82,11 @@ class DevhelmApiError(DevhelmError):
     The optional `request_id` field is the per-request id emitted by the
     API as the `X-Request-Id` response header and embedded in the JSON
     error body. Always include it in support tickets.
+
+    The optional `retry_after` field is the parsed value of the
+    `Retry-After` response header in whole seconds. It's populated on
+    rate-limit (429) responses that include the header so callers can back
+    off for exactly as long as the server asked; ``None`` otherwise.
     """
 
     status: int
@@ -93,6 +98,7 @@ class DevhelmApiError(DevhelmError):
     # narrowing. (Subclasses still inherit the same `str` type.)
     code: str
     request_id: str | None
+    retry_after: int | None
 
     def __init__(
         self,
@@ -103,6 +109,7 @@ class DevhelmApiError(DevhelmError):
         body: dict[str, Any] | str | None = None,
         code: str | None = None,
         request_id: str | None = None,
+        retry_after: int | None = None,
     ) -> None:
         super().__init__(message)
         self.status = status
@@ -113,6 +120,9 @@ class DevhelmApiError(DevhelmError):
         # `err.code` is never ``None`` for callers switching on category.
         self.code = code or "API_ERROR"
         self.request_id = request_id
+        # Parsed from the `Retry-After` response header (seconds). Populated
+        # on 429 / 503 responses that include it; ``None`` otherwise.
+        self.retry_after = retry_after
 
 
 class DevhelmAuthError(DevhelmApiError):
@@ -152,8 +162,28 @@ class DevhelmTransportError(DevhelmError):
             self.__cause__ = cause
 
 
+def _parse_retry_after(value: str | None) -> int | None:
+    """Parse a ``Retry-After`` header value into whole seconds.
+
+    The API emits ``Retry-After`` as an integer number of seconds. We parse
+    defensively: any non-integer value (an HTTP-date form, or garbage from a
+    misbehaving proxy) yields ``None`` rather than raising, so a malformed
+    header can never break error construction.
+    """
+    if value is None:
+        return None
+    try:
+        return int(value)
+    except (TypeError, ValueError):
+        return None
+
+
 def error_from_response(
-    status: int, body: str, *, request_id: str | None = None
+    status: int,
+    body: str,
+    *,
+    request_id: str | None = None,
+    retry_after: str | None = None,
 ) -> DevhelmApiError:
     """Map an HTTP error response to a typed DevhelmApiError subclass.
 
@@ -161,6 +191,11 @@ def error_from_response(
     pulled out at the call site (rather than re-parsed from the body) so the
     SDK still surfaces the id even when the server returns a non-JSON body
     (e.g. an HTML error page from a misconfigured proxy).
+
+    `retry_after` is the raw value of the `Retry-After` response header,
+    pulled out at the call site for the same reason. It's parsed into whole
+    seconds and surfaced as ``err.retry_after`` (e.g. on 429 responses) so
+    callers can back off for exactly as long as the server asked.
     """
     message = f"HTTP {status}"
     detail: str | None = None
@@ -195,6 +230,7 @@ def error_from_response(
         "body": parsed_body,
         "code": code,
         "request_id": resolved_request_id,
+        "retry_after": _parse_retry_after(retry_after),
     }
 
     if status in (401, 403):

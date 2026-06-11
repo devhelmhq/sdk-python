@@ -151,6 +151,33 @@ class TestErrorFromResponse:
         assert err.request_id is None
 
 
+class TestRetryAfter:
+    def test_429_parses_retry_after_header_to_int(self) -> None:
+        err = error_from_response(
+            429, json.dumps({"message": "Slow down"}), retry_after="30"
+        )
+        assert isinstance(err, DevhelmRateLimitError)
+        assert err.retry_after == 30
+        assert isinstance(err.retry_after, int)
+
+    def test_retry_after_absent_is_none(self) -> None:
+        err = error_from_response(429, json.dumps({"message": "Slow down"}))
+        assert err.retry_after is None
+
+    def test_retry_after_non_integer_is_none(self) -> None:
+        # HTTP-date form (or any garbage) must not break error construction.
+        err = error_from_response(
+            429,
+            json.dumps({"message": "Slow down"}),
+            retry_after="Wed, 21 Oct 2026 07:28:00 GMT",
+        )
+        assert err.retry_after is None
+
+    def test_retry_after_default_none_on_constructor(self) -> None:
+        err = DevhelmApiError("boom", status=500)
+        assert err.retry_after is None
+
+
 class TestDevhelmErrorInheritance:
     def test_api_error_is_devhelm_error(self) -> None:
         err = DevhelmApiError("test", status=500)

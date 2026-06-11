@@ -2,11 +2,12 @@
 
 from __future__ import annotations
 
+import httpx
 import pytest
 from pydantic import BaseModel, Field
 
-from devhelm._errors import DevhelmError
-from devhelm._http import DevhelmConfig, build_client, path_param
+from devhelm._errors import DevhelmError, DevhelmRateLimitError
+from devhelm._http import DevhelmConfig, api_get, build_client, path_param
 from devhelm._validation import parse_list, parse_model, parse_single
 
 # ---------- path_param ----------
@@ -118,6 +119,49 @@ class TestSurfaceTelemetry:
         # telemetry only, not for legitimate routing headers.
         assert client.headers["x-phelm-org-id"] == "1"
         client.close()
+
+
+# ---------- Rate-limit Retry-After surfacing ----------
+
+
+class TestRetryAfterFromResponse:
+    """A 429 with a ``Retry-After`` header must surface ``retry_after`` as an
+    integer on the raised :class:`DevhelmRateLimitError` so callers can back
+    off for exactly as long as the server asked.
+    """
+
+    def test_429_retry_after_header_surfaces_as_int(self) -> None:
+        def handler(request: httpx.Request) -> httpx.Response:
+            return httpx.Response(
+                429,
+                headers={"Retry-After": "30"},
+                json={"message": "Slow down", "code": "RATE_LIMITED"},
+            )
+
+        client = httpx.Client(
+            transport=httpx.MockTransport(handler), base_url="http://localhost:8080"
+        )
+        with pytest.raises(DevhelmRateLimitError) as exc_info:
+            api_get(client, "/api/v1/monitors")
+        client.close()
+
+        err = exc_info.value
+        assert err.status == 429
+        assert err.retry_after == 30
+        assert isinstance(err.retry_after, int)
+
+    def test_429_without_header_has_none_retry_after(self) -> None:
+        def handler(request: httpx.Request) -> httpx.Response:
+            return httpx.Response(429, json={"message": "Slow down"})
+
+        client = httpx.Client(
+            transport=httpx.MockTransport(handler), base_url="http://localhost:8080"
+        )
+        with pytest.raises(DevhelmRateLimitError) as exc_info:
+            api_get(client, "/api/v1/monitors")
+        client.close()
+
+        assert exc_info.value.retry_after is None
 
 
 # ---------- Pydantic validation helpers ----------
