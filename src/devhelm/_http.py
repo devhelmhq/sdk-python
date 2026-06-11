@@ -180,6 +180,7 @@ def checked_fetch(response: httpx.Response) -> _JsonResponse:
         response.status_code,
         response.text,
         request_id=response.headers.get("x-request-id"),
+        retry_after=response.headers.get("retry-after"),
     )
 
 

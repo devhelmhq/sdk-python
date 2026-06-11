@@ -3,7 +3,7 @@ from __future__ import annotations
 import httpx
 
 from devhelm._generated import ApiKeyCreateResponse, ApiKeyDto, CreateApiKeyRequest
-from devhelm._http import api_delete, api_post, path_param
+from devhelm._http import api_delete, api_get, api_post, path_param
 from devhelm._pagination import Page, fetch_all_pages, fetch_page
 from devhelm._validation import RequestBody, parse_single, validate_request
 
@@ -21,6 +21,14 @@ class ApiKeys:
     def list_page(self, page: int, size: int) -> Page[ApiKeyDto]:
         """List API keys with manual page control."""
         return fetch_page(self._client, "/api/v1/api-keys", ApiKeyDto, page, size)
+
+    def get(self, id: int | str) -> ApiKeyDto:
+        """Get a single API key by ID."""
+        return parse_single(
+            ApiKeyDto,
+            api_get(self._client, f"/api/v1/api-keys/{path_param(id)}"),
+            f"GET /api/v1/api-keys/{id}",
+        )
 
     def create(self, body: RequestBody[CreateApiKeyRequest]) -> ApiKeyCreateResponse:
         """Create an API key. Returns the key value (shown only once)."""
