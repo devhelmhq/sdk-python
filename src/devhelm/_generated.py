@@ -189,6 +189,10 @@ class AlertChannelDto(BaseModel):
     display_config: Annotated[
         AlertChannelDisplayConfig | None, Field(alias="displayConfig")
     ] = None
+    enabled: Annotated[
+        bool,
+        Field(description="Whether this channel is enabled and will receive alerts"),
+    ]
     created_at: Annotated[
         AwareDatetime,
         Field(alias="createdAt", description="Timestamp when the channel was created"),
@@ -4147,6 +4151,7 @@ class ServiceIncidentDto(BaseModel):
     vendor_created_at: Annotated[
         AwareDatetime | None, Field(alias="vendorCreatedAt")
     ] = None
+    affected_regions: Annotated[list[str] | None, Field(alias="affectedRegions")] = None
 
 
 class ServiceIncidentUpdateDto(BaseModel):
@@ -4385,6 +4390,13 @@ class SetAlertChannelsRequest(BaseModel):
             alias="channelIds",
             description="IDs of alert channels to link (replaces current list)",
         ),
+    ]
+
+
+class SetEnabledRequest(BaseModel):
+    model_config = ConfigDict(extra="forbid", populate_by_name=True)
+    enabled: Annotated[
+        bool, Field(description="Whether the resource should be enabled")
     ]
 
 
@@ -7004,9 +7016,6 @@ class MonitorDto(BaseModel):
     """Note: ``currentStatus`` was removed from this DTO. Inspect ``enabled`` and the incident-policy API to derive a live status for a monitor instead."""
 
     model_config = ConfigDict(extra="ignore", populate_by_name=True)
-    """Note: ``currentStatus`` was removed from this DTO. Inspect ``enabled`` and the incident-policy API to derive a live status for a monitor instead."""
-
-    model_config = ConfigDict(extra="forbid", populate_by_name=True)
     id: Annotated[UUID, Field(description="Unique monitor identifier")]
     organization_id: Annotated[
         int,
@@ -7342,6 +7351,7 @@ class ServiceIncidentDetailDto(BaseModel):
     affected_components: Annotated[
         list[str] | None, Field(alias="affectedComponents")
     ] = None
+    affected_regions: Annotated[list[str] | None, Field(alias="affectedRegions")] = None
     updates: list[ServiceIncidentUpdateDto]
 
 
@@ -7713,6 +7723,12 @@ class UpdateAlertChannelRequest(BaseModel):
         Field(
             alias="managedBy",
             description="New attribution source: DASHBOARD, CLI, TERRAFORM, MCP, or API; null preserves current value.",
+        ),
+    ] = None
+    enabled: Annotated[
+        bool | None,
+        Field(
+            description="Whether this channel is enabled (default: true); null preserves current value"
         ),
     ] = None
 
