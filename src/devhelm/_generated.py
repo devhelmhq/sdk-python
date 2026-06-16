@@ -176,7 +176,7 @@ class AlertChannelDisplayConfig(BaseModel):
 
 
 class AlertChannelDto(BaseModel):
-    model_config = ConfigDict(extra="forbid", populate_by_name=True)
+    model_config = ConfigDict(extra="ignore", populate_by_name=True)
     id: Annotated[UUID, Field(description="Unique alert channel identifier")]
     name: Annotated[str, Field(description="Human-readable channel name")]
     channel_type: Annotated[
@@ -230,7 +230,7 @@ class AlertChannelDto(BaseModel):
 
 
 class AlertDeliveryDto(BaseModel):
-    model_config = ConfigDict(extra="forbid", populate_by_name=True)
+    model_config = ConfigDict(extra="ignore", populate_by_name=True)
     id: UUID
     incident_id: Annotated[
         UUID,
@@ -328,7 +328,7 @@ class ApiKeyAuthConfig(BaseModel):
 
 
 class ApiKeyCreateResponse(BaseModel):
-    model_config = ConfigDict(extra="forbid", populate_by_name=True)
+    model_config = ConfigDict(extra="ignore", populate_by_name=True)
     id: Annotated[int, Field(description="Unique API key identifier")]
     name: Annotated[
         str, Field(description="Human-readable name for this API key", min_length=1)
@@ -354,7 +354,7 @@ class ApiKeyCreateResponse(BaseModel):
 
 
 class ApiKeyDto(BaseModel):
-    model_config = ConfigDict(extra="forbid", populate_by_name=True)
+    model_config = ConfigDict(extra="ignore", populate_by_name=True)
     id: Annotated[int, Field(description="Unique API key identifier")]
     name: Annotated[
         str, Field(description="Human-readable name for this API key", min_length=1)
@@ -394,7 +394,7 @@ class ApiKeyDto(BaseModel):
 
 
 class AssertionResultDto(BaseModel):
-    model_config = ConfigDict(extra="forbid", populate_by_name=True)
+    model_config = ConfigDict(extra="ignore", populate_by_name=True)
     type: Annotated[str, Field(description="Assertion type", examples=["status_code"])]
     passed: Annotated[bool, Field(description="Whether the assertion passed")]
     severity: Annotated[str, Field(description="Assertion severity")]
@@ -410,7 +410,7 @@ class AssertionResultDto(BaseModel):
 
 
 class AssertionTestResultDto(BaseModel):
-    model_config = ConfigDict(extra="forbid", populate_by_name=True)
+    model_config = ConfigDict(extra="ignore", populate_by_name=True)
     assertion_type: Annotated[
         str, Field(alias="assertionType", description="Assertion type evaluated")
     ]
@@ -467,7 +467,7 @@ class Action(StrEnum):
 
 
 class CategoryDto(BaseModel):
-    model_config = ConfigDict(extra="forbid", populate_by_name=True)
+    model_config = ConfigDict(extra="ignore", populate_by_name=True)
     category: Annotated[
         str, Field(description="Category name (e.g. CI/CD, Cloud, Payments)")
     ]
@@ -507,7 +507,7 @@ class ChangeStatusRequest(BaseModel):
 
 
 class ChartBucketDto(BaseModel):
-    model_config = ConfigDict(extra="forbid", populate_by_name=True)
+    model_config = ConfigDict(extra="ignore", populate_by_name=True)
     bucket: Annotated[
         AwareDatetime,
         Field(
@@ -602,7 +602,7 @@ class ComponentPosition(BaseModel):
 
 
 class ComponentsSummaryDto(BaseModel):
-    model_config = ConfigDict(extra="forbid", populate_by_name=True)
+    model_config = ConfigDict(extra="ignore", populate_by_name=True)
     total_count: Annotated[
         int,
         Field(
@@ -627,7 +627,7 @@ class ComponentsSummaryDto(BaseModel):
 
 
 class ComponentStatusDto(BaseModel):
-    model_config = ConfigDict(extra="forbid", populate_by_name=True)
+    model_config = ConfigDict(extra="ignore", populate_by_name=True)
     id: Annotated[str, Field(description="Component UUID")]
     name: Annotated[str, Field(description="Human-readable component name")]
     status: Annotated[
@@ -639,7 +639,7 @@ class ComponentStatusDto(BaseModel):
 
 
 class ComponentUptimeSummaryDto(BaseModel):
-    model_config = ConfigDict(extra="forbid", populate_by_name=True)
+    model_config = ConfigDict(extra="ignore", populate_by_name=True)
     day: Annotated[
         float | None,
         Field(description="Uptime percentage over the last 24 hours", examples=[99.95]),
@@ -1178,7 +1178,7 @@ class DayIncident(BaseModel):
 
 
 class DekRotationResultDto(BaseModel):
-    model_config = ConfigDict(extra="forbid", populate_by_name=True)
+    model_config = ConfigDict(extra="ignore", populate_by_name=True)
     previous_dek_version: Annotated[
         int,
         Field(alias="previousDekVersion", description="DEK version before rotation"),
@@ -1227,7 +1227,7 @@ class DeleteChannelResult(BaseModel):
 
 
 class DeliveryAttemptDto(BaseModel):
-    model_config = ConfigDict(extra="forbid", populate_by_name=True)
+    model_config = ConfigDict(extra="ignore", populate_by_name=True)
     id: UUID
     delivery_id: Annotated[UUID, Field(alias="deliveryId")]
     attempt_number: Annotated[
@@ -1283,7 +1283,7 @@ class DeliveryAttemptDto(BaseModel):
 
 
 class DeployLockDto(BaseModel):
-    model_config = ConfigDict(extra="forbid", populate_by_name=True)
+    model_config = ConfigDict(extra="ignore", populate_by_name=True)
     id: Annotated[UUID, Field(description="Unique lock identifier")]
     locked_by: Annotated[
         str,
@@ -1557,7 +1557,7 @@ class EmailChannelConfig(BaseModel):
 
 
 class EntitlementDto(BaseModel):
-    model_config = ConfigDict(extra="forbid", populate_by_name=True)
+    model_config = ConfigDict(extra="ignore", populate_by_name=True)
     key: Annotated[str, Field(description="Entitlement key")]
     value: Annotated[
         int, Field(description="Effective limit value (overrides applied)")
@@ -1574,7 +1574,7 @@ class EntitlementDto(BaseModel):
 
 
 class EnvironmentDto(BaseModel):
-    model_config = ConfigDict(extra="forbid", populate_by_name=True)
+    model_config = ConfigDict(extra="ignore", populate_by_name=True)
     id: Annotated[UUID, Field(description="Unique environment identifier")]
     org_id: Annotated[
         int,
@@ -1644,7 +1644,7 @@ class ErrorEntry(BaseModel):
 
 
 class ErrorResponse(BaseModel):
-    model_config = ConfigDict(extra="forbid", populate_by_name=True)
+    model_config = ConfigDict(extra="ignore", populate_by_name=True)
     status: Annotated[
         int,
         Field(
@@ -1897,7 +1897,7 @@ class HeartbeatPayloadContainsAssertion(BaseModel):
 
 
 class HeartbeatPingResponse(BaseModel):
-    model_config = ConfigDict(extra="forbid", populate_by_name=True)
+    model_config = ConfigDict(extra="ignore", populate_by_name=True)
     ok: Annotated[
         bool, Field(description="Always true on a 2xx response", examples=[True])
     ]
@@ -2051,7 +2051,7 @@ class IcmpResponseTimeWarnAssertion(BaseModel):
 
 
 class IncidentDto(BaseModel):
-    model_config = ConfigDict(extra="forbid", populate_by_name=True)
+    model_config = ConfigDict(extra="ignore", populate_by_name=True)
     id: Annotated[UUID, Field(description="Unique incident identifier")]
     monitor_id: Annotated[
         UUID | None,
@@ -2409,14 +2409,14 @@ class IncidentRef(BaseModel):
 
 
 class IncidentsSummaryDto(BaseModel):
-    model_config = ConfigDict(extra="forbid", populate_by_name=True)
+    model_config = ConfigDict(extra="ignore", populate_by_name=True)
     active: int
     resolved_today: Annotated[int, Field(alias="resolvedToday")]
     mttr30d: float | None = None
 
 
 class IncidentUpdateDto(BaseModel):
-    model_config = ConfigDict(extra="forbid", populate_by_name=True)
+    model_config = ConfigDict(extra="ignore", populate_by_name=True)
     id: UUID
     incident_id: Annotated[UUID, Field(alias="incidentId")]
     old_status: Annotated[str | None, Field(alias="oldStatus")] = None
@@ -2428,7 +2428,7 @@ class IncidentUpdateDto(BaseModel):
 
 
 class IntegrationFieldDto(BaseModel):
-    model_config = ConfigDict(extra="forbid", populate_by_name=True)
+    model_config = ConfigDict(extra="ignore", populate_by_name=True)
     key: str
     label: str
     type: str
@@ -2441,7 +2441,7 @@ class IntegrationFieldDto(BaseModel):
 
 
 class InviteDto(BaseModel):
-    model_config = ConfigDict(extra="forbid", populate_by_name=True)
+    model_config = ConfigDict(extra="ignore", populate_by_name=True)
     invite_id: Annotated[
         int, Field(alias="inviteId", description="Unique invite identifier")
     ]
@@ -2563,7 +2563,7 @@ class LinearChannelConfig(BaseModel):
 
 
 class LinkedStatusPageIncidentDto(BaseModel):
-    model_config = ConfigDict(extra="forbid", populate_by_name=True)
+    model_config = ConfigDict(extra="ignore", populate_by_name=True)
     id: UUID
     status_page_id: Annotated[UUID, Field(alias="statusPageId")]
     status_page_name: Annotated[str, Field(alias="statusPageName")]
@@ -2585,7 +2585,7 @@ class MaintenanceComponentRef(BaseModel):
 
 
 class MaintenanceUpdateDto(BaseModel):
-    model_config = ConfigDict(extra="forbid", populate_by_name=True)
+    model_config = ConfigDict(extra="ignore", populate_by_name=True)
     id: Annotated[UUID, Field(description="Unique update identifier")]
     status: Annotated[str, Field(description="Status at the time of this update")]
     body: Annotated[str | None, Field(description="Update message from the vendor")] = (
@@ -2598,7 +2598,7 @@ class MaintenanceUpdateDto(BaseModel):
 
 
 class MaintenanceWindowDto(BaseModel):
-    model_config = ConfigDict(extra="forbid", populate_by_name=True)
+    model_config = ConfigDict(extra="ignore", populate_by_name=True)
     id: Annotated[UUID, Field(description="Unique maintenance window identifier")]
     monitor_id: Annotated[
         UUID | None,
@@ -2832,7 +2832,7 @@ class McpToolCountChangedAssertion(BaseModel):
 
 
 class MemberDto(BaseModel):
-    model_config = ConfigDict(extra="forbid", populate_by_name=True)
+    model_config = ConfigDict(extra="ignore", populate_by_name=True)
     user_id: Annotated[
         int, Field(alias="userId", description="User identifier of the member")
     ]
@@ -2897,7 +2897,7 @@ class MonitorAuthConfig(
 
 
 class MonitorAuthDto(BaseModel):
-    model_config = ConfigDict(extra="forbid", populate_by_name=True)
+    model_config = ConfigDict(extra="ignore", populate_by_name=True)
     id: UUID
     monitor_id: Annotated[UUID, Field(alias="monitorId")]
     auth_type: Annotated[str, Field(alias="authType")]
@@ -2911,7 +2911,7 @@ class MonitorReference(BaseModel):
 
 
 class MonitorsSummaryDto(BaseModel):
-    model_config = ConfigDict(extra="forbid", populate_by_name=True)
+    model_config = ConfigDict(extra="ignore", populate_by_name=True)
     total: Annotated[
         int, Field(description="Total number of monitors in the organization")
     ]
@@ -2949,7 +2949,7 @@ class Type3(StrEnum):
 
 
 class MonitorTestResultDto(BaseModel):
-    model_config = ConfigDict(extra="forbid", populate_by_name=True)
+    model_config = ConfigDict(extra="ignore", populate_by_name=True)
     passed: bool
     error: str | None = None
     status_code: Annotated[int | None, Field(alias="statusCode")] = None
@@ -2980,7 +2980,7 @@ class NewTagRequest(BaseModel):
 
 
 class NotificationDispatchDto(BaseModel):
-    model_config = ConfigDict(extra="forbid", populate_by_name=True)
+    model_config = ConfigDict(extra="ignore", populate_by_name=True)
     id: Annotated[UUID, Field(description="Unique dispatch record identifier")]
     incident_id: Annotated[
         UUID, Field(alias="incidentId", description="Incident this dispatch is for")
@@ -3062,7 +3062,7 @@ class NotificationDispatchDto(BaseModel):
 
 
 class NotificationDto(BaseModel):
-    model_config = ConfigDict(extra="forbid", populate_by_name=True)
+    model_config = ConfigDict(extra="ignore", populate_by_name=True)
     id: Annotated[int, Field(description="Unique notification identifier")]
     type: Annotated[
         str, Field(description="Notification category (e.g. incident, monitor, team)")
@@ -3114,7 +3114,7 @@ class OpsGenieChannelConfig(BaseModel):
 
 
 class OrganizationDto(BaseModel):
-    model_config = ConfigDict(extra="forbid", populate_by_name=True)
+    model_config = ConfigDict(extra="ignore", populate_by_name=True)
     id: Annotated[int, Field(description="Unique organization identifier")]
     name: Annotated[str, Field(description="Organization name")]
     email: Annotated[str, Field(description="Billing and contact email")]
@@ -3220,7 +3220,7 @@ class PlanInfo(BaseModel):
 
 
 class PolicySnapshotDto(BaseModel):
-    model_config = ConfigDict(extra="forbid", populate_by_name=True)
+    model_config = ConfigDict(extra="ignore", populate_by_name=True)
     hash_hex: Annotated[
         str,
         Field(
@@ -3258,7 +3258,7 @@ class PolicySnapshotDto(BaseModel):
 
 
 class PollChartBucketDto(BaseModel):
-    model_config = ConfigDict(extra="forbid", populate_by_name=True)
+    model_config = ConfigDict(extra="ignore", populate_by_name=True)
     bucket: Annotated[
         AwareDatetime, Field(description="Start of the time bucket (ISO 8601)")
     ]
@@ -3452,7 +3452,7 @@ class RegexBodyAssertion(BaseModel):
 
 
 class RegionStatusDto(BaseModel):
-    model_config = ConfigDict(extra="forbid", populate_by_name=True)
+    model_config = ConfigDict(extra="ignore", populate_by_name=True)
     region: Annotated[str, Field(description="Region identifier", examples=["us-east"])]
     passed: Annotated[
         bool,
@@ -3528,7 +3528,7 @@ class ResolveIncidentRequest(BaseModel):
 
 
 class ResourceGroupHealthDto(BaseModel):
-    model_config = ConfigDict(extra="forbid", populate_by_name=True)
+    model_config = ConfigDict(extra="ignore", populate_by_name=True)
     status: Annotated[
         str, Field(description="Worst-of health status across all members")
     ]
@@ -3567,7 +3567,7 @@ class ResourceGroupHealthDto(BaseModel):
 
 
 class ResourceGroupMemberDto(BaseModel):
-    model_config = ConfigDict(extra="forbid", populate_by_name=True)
+    model_config = ConfigDict(extra="ignore", populate_by_name=True)
     id: Annotated[UUID, Field(description="Unique group member record identifier")]
     group_id: Annotated[
         UUID,
@@ -3705,7 +3705,7 @@ class ResponseTimeWarnAssertion(BaseModel):
 
 
 class ResultSummaryDto(BaseModel):
-    model_config = ConfigDict(extra="forbid", populate_by_name=True)
+    model_config = ConfigDict(extra="ignore", populate_by_name=True)
     current_status: Annotated[
         str,
         Field(
@@ -3776,7 +3776,7 @@ class RootlyChannelConfig(BaseModel):
 
 
 class RuleEvaluationDto(BaseModel):
-    model_config = ConfigDict(extra="forbid", populate_by_name=True)
+    model_config = ConfigDict(extra="ignore", populate_by_name=True)
     id: Annotated[UUID, Field(description="Forensic row UUID")]
     occurred_at: Annotated[
         AwareDatetime, Field(alias="occurredAt", description="When the evaluation ran")
@@ -3869,7 +3869,7 @@ class RuleEvaluationDto(BaseModel):
 
 
 class ScheduledMaintenanceDto(BaseModel):
-    model_config = ConfigDict(extra="forbid", populate_by_name=True)
+    model_config = ConfigDict(extra="ignore", populate_by_name=True)
     id: Annotated[UUID, Field(description="Unique maintenance record identifier")]
     external_id: Annotated[
         str,
@@ -3931,7 +3931,7 @@ class ScheduledMaintenanceDto(BaseModel):
 
 
 class SecretDto(BaseModel):
-    model_config = ConfigDict(extra="forbid", populate_by_name=True)
+    model_config = ConfigDict(extra="ignore", populate_by_name=True)
     id: Annotated[UUID, Field(description="Unique secret identifier")]
     key: Annotated[
         str, Field(description="Secret key name, unique within the workspace")
@@ -3969,7 +3969,7 @@ class SecretDto(BaseModel):
 
 
 class SeoMetadataDto(BaseModel):
-    model_config = ConfigDict(extra="forbid", populate_by_name=True)
+    model_config = ConfigDict(extra="ignore", populate_by_name=True)
     short_description: Annotated[
         str | None,
         Field(
@@ -3987,7 +3987,7 @@ class SeoMetadataDto(BaseModel):
 
 
 class ServiceCatalogDto(BaseModel):
-    model_config = ConfigDict(extra="forbid", populate_by_name=True)
+    model_config = ConfigDict(extra="ignore", populate_by_name=True)
     id: UUID
     slug: str
     name: str
@@ -4019,7 +4019,7 @@ class ServiceCatalogDto(BaseModel):
 
 
 class ServiceComponentDto(BaseModel):
-    model_config = ConfigDict(extra="forbid", populate_by_name=True)
+    model_config = ConfigDict(extra="ignore", populate_by_name=True)
     id: UUID
     external_id: Annotated[str, Field(alias="externalId")]
     name: str
@@ -4083,7 +4083,7 @@ class ServiceComponentDto(BaseModel):
 
 
 class ServiceDayDetailDto(BaseModel):
-    model_config = ConfigDict(extra="forbid", populate_by_name=True)
+    model_config = ConfigDict(extra="ignore", populate_by_name=True)
     date: Annotated[
         date_aliased, Field(description="UTC calendar day this rollup covers")
     ]
@@ -4130,7 +4130,7 @@ class ServiceDayDetailDto(BaseModel):
 
 
 class ServiceIncidentDto(BaseModel):
-    model_config = ConfigDict(extra="forbid", populate_by_name=True)
+    model_config = ConfigDict(extra="ignore", populate_by_name=True)
     id: UUID
     service_id: Annotated[UUID, Field(alias="serviceId")]
     service_slug: Annotated[str | None, Field(alias="serviceSlug")] = None
@@ -4150,14 +4150,14 @@ class ServiceIncidentDto(BaseModel):
 
 
 class ServiceIncidentUpdateDto(BaseModel):
-    model_config = ConfigDict(extra="forbid", populate_by_name=True)
+    model_config = ConfigDict(extra="ignore", populate_by_name=True)
     status: str
     body: str | None = None
     display_at: Annotated[AwareDatetime | None, Field(alias="displayAt")] = None
 
 
 class ServiceLiveStatusDto(BaseModel):
-    model_config = ConfigDict(extra="forbid", populate_by_name=True)
+    model_config = ConfigDict(extra="ignore", populate_by_name=True)
     overall_status: Annotated[
         str | None,
         Field(
@@ -4189,7 +4189,7 @@ class ServiceLiveStatusDto(BaseModel):
 
 
 class ServicePollResultDto(BaseModel):
-    model_config = ConfigDict(extra="forbid", populate_by_name=True)
+    model_config = ConfigDict(extra="ignore", populate_by_name=True)
     service_id: Annotated[UUID, Field(alias="serviceId", description="Service ID")]
     timestamp: Annotated[
         AwareDatetime,
@@ -4247,7 +4247,7 @@ class ServicePollResultDto(BaseModel):
 
 
 class ServicePollSummaryDto(BaseModel):
-    model_config = ConfigDict(extra="forbid", populate_by_name=True)
+    model_config = ConfigDict(extra="ignore", populate_by_name=True)
     uptime_percentage: Annotated[
         float | None,
         Field(
@@ -4301,7 +4301,7 @@ class ServicePollSummaryDto(BaseModel):
 
 
 class ServiceStatusDto(BaseModel):
-    model_config = ConfigDict(extra="forbid", populate_by_name=True)
+    model_config = ConfigDict(extra="ignore", populate_by_name=True)
     overall_status: Annotated[str, Field(alias="overallStatus")]
     last_polled_at: Annotated[AwareDatetime | None, Field(alias="lastPolledAt")] = None
 
@@ -4326,7 +4326,7 @@ class ServiceSubscribeRequest(BaseModel):
 
 
 class ServiceSubscriptionDto(BaseModel):
-    model_config = ConfigDict(extra="forbid", populate_by_name=True)
+    model_config = ConfigDict(extra="ignore", populate_by_name=True)
     subscription_id: Annotated[
         UUID,
         Field(alias="subscriptionId", description="Unique subscription identifier"),
@@ -4394,127 +4394,127 @@ class SetMonitorAuthRequest(BaseModel):
 
 
 class SingleValueResponseAlertChannelDto(BaseModel):
-    model_config = ConfigDict(extra="forbid", populate_by_name=True)
+    model_config = ConfigDict(extra="ignore", populate_by_name=True)
     data: AlertChannelDto
 
 
 class SingleValueResponseAlertDeliveryDto(BaseModel):
-    model_config = ConfigDict(extra="forbid", populate_by_name=True)
+    model_config = ConfigDict(extra="ignore", populate_by_name=True)
     data: AlertDeliveryDto
 
 
 class SingleValueResponseApiKeyCreateResponse(BaseModel):
-    model_config = ConfigDict(extra="forbid", populate_by_name=True)
+    model_config = ConfigDict(extra="ignore", populate_by_name=True)
     data: ApiKeyCreateResponse
 
 
 class SingleValueResponseApiKeyDto(BaseModel):
-    model_config = ConfigDict(extra="forbid", populate_by_name=True)
+    model_config = ConfigDict(extra="ignore", populate_by_name=True)
     data: ApiKeyDto
 
 
 class SingleValueResponseDekRotationResultDto(BaseModel):
-    model_config = ConfigDict(extra="forbid", populate_by_name=True)
+    model_config = ConfigDict(extra="ignore", populate_by_name=True)
     data: DekRotationResultDto
 
 
 class SingleValueResponseDeployLockDto(BaseModel):
-    model_config = ConfigDict(extra="forbid", populate_by_name=True)
+    model_config = ConfigDict(extra="ignore", populate_by_name=True)
     data: DeployLockDto
 
 
 class SingleValueResponseEnvironmentDto(BaseModel):
-    model_config = ConfigDict(extra="forbid", populate_by_name=True)
+    model_config = ConfigDict(extra="ignore", populate_by_name=True)
     data: EnvironmentDto
 
 
 class SingleValueResponseInviteDto(BaseModel):
-    model_config = ConfigDict(extra="forbid", populate_by_name=True)
+    model_config = ConfigDict(extra="ignore", populate_by_name=True)
     data: InviteDto
 
 
 class SingleValueResponseListUUID(BaseModel):
-    model_config = ConfigDict(extra="forbid", populate_by_name=True)
+    model_config = ConfigDict(extra="ignore", populate_by_name=True)
     data: list[UUID]
 
 
 class SingleValueResponseLong(BaseModel):
-    model_config = ConfigDict(extra="forbid", populate_by_name=True)
+    model_config = ConfigDict(extra="ignore", populate_by_name=True)
     data: int
 
 
 class SingleValueResponseMaintenanceWindowDto(BaseModel):
-    model_config = ConfigDict(extra="forbid", populate_by_name=True)
+    model_config = ConfigDict(extra="ignore", populate_by_name=True)
     data: MaintenanceWindowDto
 
 
 class SingleValueResponseMonitorAuthDto(BaseModel):
-    model_config = ConfigDict(extra="forbid", populate_by_name=True)
+    model_config = ConfigDict(extra="ignore", populate_by_name=True)
     data: MonitorAuthDto
 
 
 class SingleValueResponseMonitorTestResultDto(BaseModel):
-    model_config = ConfigDict(extra="forbid", populate_by_name=True)
+    model_config = ConfigDict(extra="ignore", populate_by_name=True)
     data: MonitorTestResultDto
 
 
 class SingleValueResponseNotificationDispatchDto(BaseModel):
-    model_config = ConfigDict(extra="forbid", populate_by_name=True)
+    model_config = ConfigDict(extra="ignore", populate_by_name=True)
     data: NotificationDispatchDto
 
 
 class SingleValueResponseOrganizationDto(BaseModel):
-    model_config = ConfigDict(extra="forbid", populate_by_name=True)
+    model_config = ConfigDict(extra="ignore", populate_by_name=True)
     data: OrganizationDto
 
 
 class SingleValueResponsePolicySnapshotDto(BaseModel):
-    model_config = ConfigDict(extra="forbid", populate_by_name=True)
+    model_config = ConfigDict(extra="ignore", populate_by_name=True)
     data: PolicySnapshotDto
 
 
 class SingleValueResponseResourceGroupHealthDto(BaseModel):
-    model_config = ConfigDict(extra="forbid", populate_by_name=True)
+    model_config = ConfigDict(extra="ignore", populate_by_name=True)
     data: ResourceGroupHealthDto
 
 
 class SingleValueResponseResourceGroupMemberDto(BaseModel):
-    model_config = ConfigDict(extra="forbid", populate_by_name=True)
+    model_config = ConfigDict(extra="ignore", populate_by_name=True)
     data: ResourceGroupMemberDto
 
 
 class SingleValueResponseResultSummaryDto(BaseModel):
-    model_config = ConfigDict(extra="forbid", populate_by_name=True)
+    model_config = ConfigDict(extra="ignore", populate_by_name=True)
     data: ResultSummaryDto
 
 
 class SingleValueResponseSecretDto(BaseModel):
-    model_config = ConfigDict(extra="forbid", populate_by_name=True)
+    model_config = ConfigDict(extra="ignore", populate_by_name=True)
     data: SecretDto
 
 
 class SingleValueResponseServiceDayDetailDto(BaseModel):
-    model_config = ConfigDict(extra="forbid", populate_by_name=True)
+    model_config = ConfigDict(extra="ignore", populate_by_name=True)
     data: ServiceDayDetailDto
 
 
 class SingleValueResponseServiceLiveStatusDto(BaseModel):
-    model_config = ConfigDict(extra="forbid", populate_by_name=True)
+    model_config = ConfigDict(extra="ignore", populate_by_name=True)
     data: ServiceLiveStatusDto
 
 
 class SingleValueResponseServicePollSummaryDto(BaseModel):
-    model_config = ConfigDict(extra="forbid", populate_by_name=True)
+    model_config = ConfigDict(extra="ignore", populate_by_name=True)
     data: ServicePollSummaryDto
 
 
 class SingleValueResponseServiceSubscriptionDto(BaseModel):
-    model_config = ConfigDict(extra="forbid", populate_by_name=True)
+    model_config = ConfigDict(extra="ignore", populate_by_name=True)
     data: ServiceSubscriptionDto
 
 
 class SingleValueResponseString(BaseModel):
-    model_config = ConfigDict(extra="forbid", populate_by_name=True)
+    model_config = ConfigDict(extra="ignore", populate_by_name=True)
     data: str
 
 
@@ -4734,7 +4734,7 @@ class StatusPageBranding(BaseModel):
 
 
 class StatusPageComponentDto(BaseModel):
-    model_config = ConfigDict(extra="forbid", populate_by_name=True)
+    model_config = ConfigDict(extra="ignore", populate_by_name=True)
     id: UUID
     status_page_id: Annotated[UUID, Field(alias="statusPageId")]
     group_id: Annotated[UUID | None, Field(alias="groupId")] = None
@@ -4754,7 +4754,7 @@ class StatusPageComponentDto(BaseModel):
 
 
 class StatusPageComponentGroupDto(BaseModel):
-    model_config = ConfigDict(extra="forbid", populate_by_name=True)
+    model_config = ConfigDict(extra="ignore", populate_by_name=True)
     id: UUID
     status_page_id: Annotated[UUID, Field(alias="statusPageId")]
     name: str
@@ -4768,7 +4768,7 @@ class StatusPageComponentGroupDto(BaseModel):
 
 
 class StatusPageCustomDomainDto(BaseModel):
-    model_config = ConfigDict(extra="forbid", populate_by_name=True)
+    model_config = ConfigDict(extra="ignore", populate_by_name=True)
     id: UUID
     hostname: str
     status: str
@@ -4788,7 +4788,7 @@ class StatusPageCustomDomainDto(BaseModel):
 
 
 class StatusPageDto(BaseModel):
-    model_config = ConfigDict(extra="forbid", populate_by_name=True)
+    model_config = ConfigDict(extra="ignore", populate_by_name=True)
     id: UUID
     organization_id: Annotated[int, Field(alias="organizationId")]
     workspace_id: Annotated[int, Field(alias="workspaceId")]
@@ -4814,14 +4814,14 @@ class StatusPageDto(BaseModel):
 
 
 class StatusPageIncidentComponentDto(BaseModel):
-    model_config = ConfigDict(extra="forbid", populate_by_name=True)
+    model_config = ConfigDict(extra="ignore", populate_by_name=True)
     status_page_component_id: Annotated[UUID, Field(alias="statusPageComponentId")]
     component_status: Annotated[str, Field(alias="componentStatus")]
     component_name: Annotated[str, Field(alias="componentName")]
 
 
 class StatusPageIncidentUpdateDto(BaseModel):
-    model_config = ConfigDict(extra="forbid", populate_by_name=True)
+    model_config = ConfigDict(extra="ignore", populate_by_name=True)
     id: UUID
     status: str
     body: str
@@ -4832,7 +4832,7 @@ class StatusPageIncidentUpdateDto(BaseModel):
 
 
 class StatusPageSubscriberDto(BaseModel):
-    model_config = ConfigDict(extra="forbid", populate_by_name=True)
+    model_config = ConfigDict(extra="ignore", populate_by_name=True)
     id: UUID
     email: str
     confirmed: bool
@@ -4847,7 +4847,7 @@ class Summary(BaseModel):
 
 
 class TableValueResultAlertChannelDto(BaseModel):
-    model_config = ConfigDict(extra="forbid", populate_by_name=True)
+    model_config = ConfigDict(extra="ignore", populate_by_name=True)
     data: list[AlertChannelDto]
     has_next: Annotated[bool, Field(alias="hasNext")]
     has_prev: Annotated[bool, Field(alias="hasPrev")]
@@ -4856,7 +4856,7 @@ class TableValueResultAlertChannelDto(BaseModel):
 
 
 class TableValueResultAlertDeliveryDto(BaseModel):
-    model_config = ConfigDict(extra="forbid", populate_by_name=True)
+    model_config = ConfigDict(extra="ignore", populate_by_name=True)
     data: list[AlertDeliveryDto]
     has_next: Annotated[bool, Field(alias="hasNext")]
     has_prev: Annotated[bool, Field(alias="hasPrev")]
@@ -4865,7 +4865,7 @@ class TableValueResultAlertDeliveryDto(BaseModel):
 
 
 class TableValueResultApiKeyDto(BaseModel):
-    model_config = ConfigDict(extra="forbid", populate_by_name=True)
+    model_config = ConfigDict(extra="ignore", populate_by_name=True)
     data: list[ApiKeyDto]
     has_next: Annotated[bool, Field(alias="hasNext")]
     has_prev: Annotated[bool, Field(alias="hasPrev")]
@@ -4874,7 +4874,7 @@ class TableValueResultApiKeyDto(BaseModel):
 
 
 class TableValueResultCategoryDto(BaseModel):
-    model_config = ConfigDict(extra="forbid", populate_by_name=True)
+    model_config = ConfigDict(extra="ignore", populate_by_name=True)
     data: list[CategoryDto]
     has_next: Annotated[bool, Field(alias="hasNext")]
     has_prev: Annotated[bool, Field(alias="hasPrev")]
@@ -4883,7 +4883,7 @@ class TableValueResultCategoryDto(BaseModel):
 
 
 class TableValueResultDeliveryAttemptDto(BaseModel):
-    model_config = ConfigDict(extra="forbid", populate_by_name=True)
+    model_config = ConfigDict(extra="ignore", populate_by_name=True)
     data: list[DeliveryAttemptDto]
     has_next: Annotated[bool, Field(alias="hasNext")]
     has_prev: Annotated[bool, Field(alias="hasPrev")]
@@ -4892,7 +4892,7 @@ class TableValueResultDeliveryAttemptDto(BaseModel):
 
 
 class TableValueResultEnvironmentDto(BaseModel):
-    model_config = ConfigDict(extra="forbid", populate_by_name=True)
+    model_config = ConfigDict(extra="ignore", populate_by_name=True)
     data: list[EnvironmentDto]
     has_next: Annotated[bool, Field(alias="hasNext")]
     has_prev: Annotated[bool, Field(alias="hasPrev")]
@@ -4901,7 +4901,7 @@ class TableValueResultEnvironmentDto(BaseModel):
 
 
 class TableValueResultIncidentDto(BaseModel):
-    model_config = ConfigDict(extra="forbid", populate_by_name=True)
+    model_config = ConfigDict(extra="ignore", populate_by_name=True)
     data: list[IncidentDto]
     has_next: Annotated[bool, Field(alias="hasNext")]
     has_prev: Annotated[bool, Field(alias="hasPrev")]
@@ -4910,7 +4910,7 @@ class TableValueResultIncidentDto(BaseModel):
 
 
 class TableValueResultInviteDto(BaseModel):
-    model_config = ConfigDict(extra="forbid", populate_by_name=True)
+    model_config = ConfigDict(extra="ignore", populate_by_name=True)
     data: list[InviteDto]
     has_next: Annotated[bool, Field(alias="hasNext")]
     has_prev: Annotated[bool, Field(alias="hasPrev")]
@@ -4919,7 +4919,7 @@ class TableValueResultInviteDto(BaseModel):
 
 
 class TableValueResultMaintenanceWindowDto(BaseModel):
-    model_config = ConfigDict(extra="forbid", populate_by_name=True)
+    model_config = ConfigDict(extra="ignore", populate_by_name=True)
     data: list[MaintenanceWindowDto]
     has_next: Annotated[bool, Field(alias="hasNext")]
     has_prev: Annotated[bool, Field(alias="hasPrev")]
@@ -4928,7 +4928,7 @@ class TableValueResultMaintenanceWindowDto(BaseModel):
 
 
 class TableValueResultMemberDto(BaseModel):
-    model_config = ConfigDict(extra="forbid", populate_by_name=True)
+    model_config = ConfigDict(extra="ignore", populate_by_name=True)
     data: list[MemberDto]
     has_next: Annotated[bool, Field(alias="hasNext")]
     has_prev: Annotated[bool, Field(alias="hasPrev")]
@@ -4937,7 +4937,7 @@ class TableValueResultMemberDto(BaseModel):
 
 
 class TableValueResultNotificationDispatchDto(BaseModel):
-    model_config = ConfigDict(extra="forbid", populate_by_name=True)
+    model_config = ConfigDict(extra="ignore", populate_by_name=True)
     data: list[NotificationDispatchDto]
     has_next: Annotated[bool, Field(alias="hasNext")]
     has_prev: Annotated[bool, Field(alias="hasPrev")]
@@ -4946,7 +4946,7 @@ class TableValueResultNotificationDispatchDto(BaseModel):
 
 
 class TableValueResultNotificationDto(BaseModel):
-    model_config = ConfigDict(extra="forbid", populate_by_name=True)
+    model_config = ConfigDict(extra="ignore", populate_by_name=True)
     data: list[NotificationDto]
     has_next: Annotated[bool, Field(alias="hasNext")]
     has_prev: Annotated[bool, Field(alias="hasPrev")]
@@ -4955,7 +4955,7 @@ class TableValueResultNotificationDto(BaseModel):
 
 
 class TableValueResultRuleEvaluationDto(BaseModel):
-    model_config = ConfigDict(extra="forbid", populate_by_name=True)
+    model_config = ConfigDict(extra="ignore", populate_by_name=True)
     data: list[RuleEvaluationDto]
     has_next: Annotated[bool, Field(alias="hasNext")]
     has_prev: Annotated[bool, Field(alias="hasPrev")]
@@ -4964,7 +4964,7 @@ class TableValueResultRuleEvaluationDto(BaseModel):
 
 
 class TableValueResultScheduledMaintenanceDto(BaseModel):
-    model_config = ConfigDict(extra="forbid", populate_by_name=True)
+    model_config = ConfigDict(extra="ignore", populate_by_name=True)
     data: list[ScheduledMaintenanceDto]
     has_next: Annotated[bool, Field(alias="hasNext")]
     has_prev: Annotated[bool, Field(alias="hasPrev")]
@@ -4973,7 +4973,7 @@ class TableValueResultScheduledMaintenanceDto(BaseModel):
 
 
 class TableValueResultSecretDto(BaseModel):
-    model_config = ConfigDict(extra="forbid", populate_by_name=True)
+    model_config = ConfigDict(extra="ignore", populate_by_name=True)
     data: list[SecretDto]
     has_next: Annotated[bool, Field(alias="hasNext")]
     has_prev: Annotated[bool, Field(alias="hasPrev")]
@@ -4982,7 +4982,7 @@ class TableValueResultSecretDto(BaseModel):
 
 
 class TableValueResultServiceComponentDto(BaseModel):
-    model_config = ConfigDict(extra="forbid", populate_by_name=True)
+    model_config = ConfigDict(extra="ignore", populate_by_name=True)
     data: list[ServiceComponentDto]
     has_next: Annotated[bool, Field(alias="hasNext")]
     has_prev: Annotated[bool, Field(alias="hasPrev")]
@@ -4991,7 +4991,7 @@ class TableValueResultServiceComponentDto(BaseModel):
 
 
 class TableValueResultServiceIncidentDto(BaseModel):
-    model_config = ConfigDict(extra="forbid", populate_by_name=True)
+    model_config = ConfigDict(extra="ignore", populate_by_name=True)
     data: list[ServiceIncidentDto]
     has_next: Annotated[bool, Field(alias="hasNext")]
     has_prev: Annotated[bool, Field(alias="hasPrev")]
@@ -5000,7 +5000,7 @@ class TableValueResultServiceIncidentDto(BaseModel):
 
 
 class TableValueResultServiceSubscriptionDto(BaseModel):
-    model_config = ConfigDict(extra="forbid", populate_by_name=True)
+    model_config = ConfigDict(extra="ignore", populate_by_name=True)
     data: list[ServiceSubscriptionDto]
     has_next: Annotated[bool, Field(alias="hasNext")]
     has_prev: Annotated[bool, Field(alias="hasPrev")]
@@ -5009,7 +5009,7 @@ class TableValueResultServiceSubscriptionDto(BaseModel):
 
 
 class TableValueResultStatusPageComponentDto(BaseModel):
-    model_config = ConfigDict(extra="forbid", populate_by_name=True)
+    model_config = ConfigDict(extra="ignore", populate_by_name=True)
     data: list[StatusPageComponentDto]
     has_next: Annotated[bool, Field(alias="hasNext")]
     has_prev: Annotated[bool, Field(alias="hasPrev")]
@@ -5018,7 +5018,7 @@ class TableValueResultStatusPageComponentDto(BaseModel):
 
 
 class TableValueResultStatusPageComponentGroupDto(BaseModel):
-    model_config = ConfigDict(extra="forbid", populate_by_name=True)
+    model_config = ConfigDict(extra="ignore", populate_by_name=True)
     data: list[StatusPageComponentGroupDto]
     has_next: Annotated[bool, Field(alias="hasNext")]
     has_prev: Annotated[bool, Field(alias="hasPrev")]
@@ -5027,7 +5027,7 @@ class TableValueResultStatusPageComponentGroupDto(BaseModel):
 
 
 class TableValueResultStatusPageCustomDomainDto(BaseModel):
-    model_config = ConfigDict(extra="forbid", populate_by_name=True)
+    model_config = ConfigDict(extra="ignore", populate_by_name=True)
     data: list[StatusPageCustomDomainDto]
     has_next: Annotated[bool, Field(alias="hasNext")]
     has_prev: Annotated[bool, Field(alias="hasPrev")]
@@ -5036,7 +5036,7 @@ class TableValueResultStatusPageCustomDomainDto(BaseModel):
 
 
 class TableValueResultStatusPageDto(BaseModel):
-    model_config = ConfigDict(extra="forbid", populate_by_name=True)
+    model_config = ConfigDict(extra="ignore", populate_by_name=True)
     data: list[StatusPageDto]
     has_next: Annotated[bool, Field(alias="hasNext")]
     has_prev: Annotated[bool, Field(alias="hasPrev")]
@@ -5045,7 +5045,7 @@ class TableValueResultStatusPageDto(BaseModel):
 
 
 class TableValueResultStatusPageSubscriberDto(BaseModel):
-    model_config = ConfigDict(extra="forbid", populate_by_name=True)
+    model_config = ConfigDict(extra="ignore", populate_by_name=True)
     data: list[StatusPageSubscriberDto]
     has_next: Annotated[bool, Field(alias="hasNext")]
     has_prev: Annotated[bool, Field(alias="hasPrev")]
@@ -5054,7 +5054,7 @@ class TableValueResultStatusPageSubscriberDto(BaseModel):
 
 
 class TagDto(BaseModel):
-    model_config = ConfigDict(extra="forbid", populate_by_name=True)
+    model_config = ConfigDict(extra="ignore", populate_by_name=True)
     id: Annotated[UUID, Field(description="Unique tag identifier")]
     organization_id: Annotated[
         int,
@@ -5258,7 +5258,7 @@ class TestWebhookEndpointRequest(BaseModel):
 
 
 class TimingPhasesDto(BaseModel):
-    model_config = ConfigDict(extra="forbid", populate_by_name=True)
+    model_config = ConfigDict(extra="ignore", populate_by_name=True)
     dns_ms: Annotated[
         int | None,
         Field(description="DNS resolution time in milliseconds", examples=[12]),
@@ -5290,7 +5290,7 @@ class TimingPhasesDto(BaseModel):
 
 
 class TlsInfoDto(BaseModel):
-    model_config = ConfigDict(extra="forbid", populate_by_name=True)
+    model_config = ConfigDict(extra="ignore", populate_by_name=True)
     subject_cn: Annotated[
         str | None,
         Field(
@@ -5961,7 +5961,7 @@ class UpdateWorkspaceRequest(BaseModel):
 
 
 class UptimeBucketDto(BaseModel):
-    model_config = ConfigDict(extra="forbid", populate_by_name=True)
+    model_config = ConfigDict(extra="ignore", populate_by_name=True)
     timestamp: Annotated[
         AwareDatetime,
         Field(
@@ -5988,7 +5988,7 @@ class UptimeBucketDto(BaseModel):
 
 
 class UptimeDto(BaseModel):
-    model_config = ConfigDict(extra="forbid", populate_by_name=True)
+    model_config = ConfigDict(extra="ignore", populate_by_name=True)
     uptime_percentage: Annotated[
         float | None,
         Field(
@@ -6058,7 +6058,7 @@ class WebhookChannelConfig(BaseModel):
 
 
 class WebhookDeliveryDto(BaseModel):
-    model_config = ConfigDict(extra="forbid", populate_by_name=True)
+    model_config = ConfigDict(extra="ignore", populate_by_name=True)
     id: UUID
     endpoint_id: Annotated[UUID, Field(alias="endpointId")]
     event_id: Annotated[str, Field(alias="eventId")]
@@ -6076,7 +6076,7 @@ class WebhookDeliveryDto(BaseModel):
 
 
 class WebhookEndpointDto(BaseModel):
-    model_config = ConfigDict(extra="forbid", populate_by_name=True)
+    model_config = ConfigDict(extra="ignore", populate_by_name=True)
     id: Annotated[UUID, Field(description="Unique webhook endpoint identifier")]
     url: Annotated[
         str, Field(description="HTTPS endpoint URL that receives event payloads")
@@ -6145,7 +6145,7 @@ class WebhookEventCatalogEntry(BaseModel):
 
 
 class WebhookEventCatalogResponse(BaseModel):
-    model_config = ConfigDict(extra="forbid", populate_by_name=True)
+    model_config = ConfigDict(extra="ignore", populate_by_name=True)
     data: Annotated[
         list[WebhookEventCatalogEntry],
         Field(description="List of all available webhook event types"),
@@ -6153,7 +6153,7 @@ class WebhookEventCatalogResponse(BaseModel):
 
 
 class WebhookSigningSecretDto(BaseModel):
-    model_config = ConfigDict(extra="forbid", populate_by_name=True)
+    model_config = ConfigDict(extra="ignore", populate_by_name=True)
     configured: bool
     masked_secret: Annotated[str | None, Field(alias="maskedSecret")] = None
 
@@ -6167,7 +6167,7 @@ class WebhookTestResult(BaseModel):
 
 
 class WorkspaceDto(BaseModel):
-    model_config = ConfigDict(extra="forbid", populate_by_name=True)
+    model_config = ConfigDict(extra="ignore", populate_by_name=True)
     id: Annotated[int, Field(description="Unique workspace identifier")]
     created_at: Annotated[
         AwareDatetime,
@@ -6227,7 +6227,7 @@ class AuditMetadata(RootModel[MemberRoleChangedMetadata | None]):
 
 
 class AuthMeResponse(BaseModel):
-    model_config = ConfigDict(extra="forbid", populate_by_name=True)
+    model_config = ConfigDict(extra="ignore", populate_by_name=True)
     key: KeyInfo
     organization: OrgInfo
     plan: PlanInfo
@@ -6279,7 +6279,7 @@ class BulkMonitorActionResult(BaseModel):
 
 
 class ComponentUptimeDayDto(BaseModel):
-    model_config = ConfigDict(extra="forbid", populate_by_name=True)
+    model_config = ConfigDict(extra="ignore", populate_by_name=True)
     date: Annotated[
         AwareDatetime,
         Field(
@@ -6641,7 +6641,7 @@ class CreateStatusPageRequest(BaseModel):
 
 
 class CursorPageServiceCatalogDto(BaseModel):
-    model_config = ConfigDict(extra="forbid", populate_by_name=True)
+    model_config = ConfigDict(extra="ignore", populate_by_name=True)
     data: Annotated[list[ServiceCatalogDto], Field(description="Items on this page")]
     next_cursor: Annotated[
         str | None,
@@ -6659,7 +6659,7 @@ class CursorPageServiceCatalogDto(BaseModel):
 
 
 class CursorPageServicePollResultDto(BaseModel):
-    model_config = ConfigDict(extra="forbid", populate_by_name=True)
+    model_config = ConfigDict(extra="ignore", populate_by_name=True)
     data: Annotated[list[ServicePollResultDto], Field(description="Items on this page")]
     next_cursor: Annotated[
         str | None,
@@ -6677,7 +6677,7 @@ class CursorPageServicePollResultDto(BaseModel):
 
 
 class DashboardOverviewDto(BaseModel):
-    model_config = ConfigDict(extra="forbid", populate_by_name=True)
+    model_config = ConfigDict(extra="ignore", populate_by_name=True)
     monitors: MonitorsSummaryDto
     incidents: IncidentsSummaryDto
 
@@ -6701,7 +6701,7 @@ class EscalationChain(BaseModel):
 
 
 class GlobalStatusSummaryDto(BaseModel):
-    model_config = ConfigDict(extra="forbid", populate_by_name=True)
+    model_config = ConfigDict(extra="ignore", populate_by_name=True)
     total_services: Annotated[
         int,
         Field(
@@ -6778,7 +6778,7 @@ class Http(BaseModel):
 
 
 class IncidentDetailDto(BaseModel):
-    model_config = ConfigDict(extra="forbid", populate_by_name=True)
+    model_config = ConfigDict(extra="ignore", populate_by_name=True)
     incident: IncidentDto
     updates: list[IncidentUpdateDto]
     status_page_incidents: Annotated[
@@ -6787,7 +6787,7 @@ class IncidentDetailDto(BaseModel):
 
 
 class IncidentPolicyDto(BaseModel):
-    model_config = ConfigDict(extra="forbid", populate_by_name=True)
+    model_config = ConfigDict(extra="ignore", populate_by_name=True)
     id: Annotated[UUID, Field(description="Unique incident policy identifier")]
     monitor_id: Annotated[
         UUID, Field(alias="monitorId", description="Monitor this policy is attached to")
@@ -6828,7 +6828,7 @@ class IncidentPolicyDto(BaseModel):
 
 
 class IncidentStateTransitionDto(BaseModel):
-    model_config = ConfigDict(extra="forbid", populate_by_name=True)
+    model_config = ConfigDict(extra="ignore", populate_by_name=True)
     id: Annotated[UUID, Field(description="Forensic row UUID")]
     occurred_at: Annotated[
         AwareDatetime,
@@ -6909,7 +6909,7 @@ class IncidentStateTransitionDto(BaseModel):
 
 
 class IncidentTimelineDto(BaseModel):
-    model_config = ConfigDict(extra="forbid", populate_by_name=True)
+    model_config = ConfigDict(extra="ignore", populate_by_name=True)
     transitions: Annotated[
         list[IncidentStateTransitionDto],
         Field(description="State-machine transitions in chronological order"),
@@ -6927,7 +6927,7 @@ class IncidentTimelineDto(BaseModel):
 
 
 class IntegrationConfigSchemaDto(BaseModel):
-    model_config = ConfigDict(extra="forbid", populate_by_name=True)
+    model_config = ConfigDict(extra="ignore", populate_by_name=True)
     connection_fields: Annotated[
         list[IntegrationFieldDto], Field(alias="connectionFields")
     ]
@@ -6935,7 +6935,7 @@ class IntegrationConfigSchemaDto(BaseModel):
 
 
 class IntegrationDto(BaseModel):
-    model_config = ConfigDict(extra="forbid", populate_by_name=True)
+    model_config = ConfigDict(extra="ignore", populate_by_name=True)
     type: str
     name: str
     description: str
@@ -6948,7 +6948,7 @@ class IntegrationDto(BaseModel):
 
 
 class MonitorAssertionDto(BaseModel):
-    model_config = ConfigDict(extra="forbid", populate_by_name=True)
+    model_config = ConfigDict(extra="ignore", populate_by_name=True)
     id: UUID
     monitor_id: Annotated[UUID, Field(alias="monitorId")]
     assertion_type: Annotated[str, Field(alias="assertionType")]
@@ -7001,6 +7001,9 @@ class MonitorAssertionDto(BaseModel):
 
 
 class MonitorDto(BaseModel):
+    """Note: ``currentStatus`` was removed from this DTO. Inspect ``enabled`` and the incident-policy API to derive a live status for a monitor instead."""
+
+    model_config = ConfigDict(extra="ignore", populate_by_name=True)
     """Note: ``currentStatus`` was removed from this DTO. Inspect ``enabled`` and the incident-policy API to derive a live status for a monitor instead."""
 
     model_config = ConfigDict(extra="forbid", populate_by_name=True)
@@ -7106,7 +7109,7 @@ class MonitorTestRequest(BaseModel):
 
 
 class MonitorVersionDto(BaseModel):
-    model_config = ConfigDict(extra="forbid", populate_by_name=True)
+    model_config = ConfigDict(extra="ignore", populate_by_name=True)
     id: Annotated[UUID, Field(description="Unique version record identifier")]
     monitor_id: Annotated[
         UUID, Field(alias="monitorId", description="Monitor this version belongs to")
@@ -7142,7 +7145,7 @@ class MonitorVersionDto(BaseModel):
 
 
 class NotificationPolicyDto(BaseModel):
-    model_config = ConfigDict(extra="forbid", populate_by_name=True)
+    model_config = ConfigDict(extra="ignore", populate_by_name=True)
     id: Annotated[UUID, Field(description="Unique notification policy identifier")]
     organization_id: Annotated[
         int,
@@ -7178,7 +7181,7 @@ class NotificationPolicyDto(BaseModel):
 
 
 class ResourceGroupDto(BaseModel):
-    model_config = ConfigDict(extra="forbid", populate_by_name=True)
+    model_config = ConfigDict(extra="ignore", populate_by_name=True)
     id: Annotated[UUID, Field(description="Unique resource group identifier")]
     organization_id: Annotated[
         int,
@@ -7285,7 +7288,7 @@ class ResourceGroupDto(BaseModel):
 
 
 class ServiceDetailDto(BaseModel):
-    model_config = ConfigDict(extra="forbid", populate_by_name=True)
+    model_config = ConfigDict(extra="ignore", populate_by_name=True)
     id: UUID
     slug: str
     name: str
@@ -7327,7 +7330,7 @@ class ServiceDetailDto(BaseModel):
 
 
 class ServiceIncidentDetailDto(BaseModel):
-    model_config = ConfigDict(extra="forbid", populate_by_name=True)
+    model_config = ConfigDict(extra="ignore", populate_by_name=True)
     id: UUID
     title: str
     status: str
@@ -7343,7 +7346,7 @@ class ServiceIncidentDetailDto(BaseModel):
 
 
 class ServiceUptimeResponse(BaseModel):
-    model_config = ConfigDict(extra="forbid", populate_by_name=True)
+    model_config = ConfigDict(extra="ignore", populate_by_name=True)
     overall_uptime_pct: Annotated[
         float | None,
         Field(
@@ -7370,147 +7373,147 @@ class ServiceUptimeResponse(BaseModel):
 
 
 class SingleValueResponseAuthMeResponse(BaseModel):
-    model_config = ConfigDict(extra="forbid", populate_by_name=True)
+    model_config = ConfigDict(extra="ignore", populate_by_name=True)
     data: AuthMeResponse
 
 
 class SingleValueResponseBulkMonitorActionResult(BaseModel):
-    model_config = ConfigDict(extra="forbid", populate_by_name=True)
+    model_config = ConfigDict(extra="ignore", populate_by_name=True)
     data: BulkMonitorActionResult
 
 
 class SingleValueResponseDashboardOverviewDto(BaseModel):
-    model_config = ConfigDict(extra="forbid", populate_by_name=True)
+    model_config = ConfigDict(extra="ignore", populate_by_name=True)
     data: DashboardOverviewDto
 
 
 class SingleValueResponseGlobalStatusSummaryDto(BaseModel):
-    model_config = ConfigDict(extra="forbid", populate_by_name=True)
+    model_config = ConfigDict(extra="ignore", populate_by_name=True)
     data: GlobalStatusSummaryDto
 
 
 class SingleValueResponseIncidentDetailDto(BaseModel):
-    model_config = ConfigDict(extra="forbid", populate_by_name=True)
+    model_config = ConfigDict(extra="ignore", populate_by_name=True)
     data: IncidentDetailDto
 
 
 class SingleValueResponseIncidentPolicyDto(BaseModel):
-    model_config = ConfigDict(extra="forbid", populate_by_name=True)
+    model_config = ConfigDict(extra="ignore", populate_by_name=True)
     data: IncidentPolicyDto
 
 
 class SingleValueResponseIncidentTimelineDto(BaseModel):
-    model_config = ConfigDict(extra="forbid", populate_by_name=True)
+    model_config = ConfigDict(extra="ignore", populate_by_name=True)
     data: IncidentTimelineDto
 
 
 class SingleValueResponseMonitorAssertionDto(BaseModel):
-    model_config = ConfigDict(extra="forbid", populate_by_name=True)
+    model_config = ConfigDict(extra="ignore", populate_by_name=True)
     data: MonitorAssertionDto
 
 
 class SingleValueResponseMonitorDto(BaseModel):
-    model_config = ConfigDict(extra="forbid", populate_by_name=True)
+    model_config = ConfigDict(extra="ignore", populate_by_name=True)
     data: MonitorDto
 
 
 class SingleValueResponseMonitorVersionDto(BaseModel):
-    model_config = ConfigDict(extra="forbid", populate_by_name=True)
+    model_config = ConfigDict(extra="ignore", populate_by_name=True)
     data: MonitorVersionDto
 
 
 class SingleValueResponseNotificationPolicyDto(BaseModel):
-    model_config = ConfigDict(extra="forbid", populate_by_name=True)
+    model_config = ConfigDict(extra="ignore", populate_by_name=True)
     data: NotificationPolicyDto
 
 
 class SingleValueResponseResourceGroupDto(BaseModel):
-    model_config = ConfigDict(extra="forbid", populate_by_name=True)
+    model_config = ConfigDict(extra="ignore", populate_by_name=True)
     data: ResourceGroupDto
 
 
 class SingleValueResponseServiceDetailDto(BaseModel):
-    model_config = ConfigDict(extra="forbid", populate_by_name=True)
+    model_config = ConfigDict(extra="ignore", populate_by_name=True)
     data: ServiceDetailDto
 
 
 class SingleValueResponseServiceIncidentDetailDto(BaseModel):
-    model_config = ConfigDict(extra="forbid", populate_by_name=True)
+    model_config = ConfigDict(extra="ignore", populate_by_name=True)
     data: ServiceIncidentDetailDto
 
 
 class SingleValueResponseServiceUptimeResponse(BaseModel):
-    model_config = ConfigDict(extra="forbid", populate_by_name=True)
+    model_config = ConfigDict(extra="ignore", populate_by_name=True)
     data: ServiceUptimeResponse
 
 
 class SingleValueResponseStatusPageComponentDto(BaseModel):
-    model_config = ConfigDict(extra="forbid", populate_by_name=True)
+    model_config = ConfigDict(extra="ignore", populate_by_name=True)
     data: StatusPageComponentDto
 
 
 class SingleValueResponseStatusPageComponentGroupDto(BaseModel):
-    model_config = ConfigDict(extra="forbid", populate_by_name=True)
+    model_config = ConfigDict(extra="ignore", populate_by_name=True)
     data: StatusPageComponentGroupDto
 
 
 class SingleValueResponseStatusPageCustomDomainDto(BaseModel):
-    model_config = ConfigDict(extra="forbid", populate_by_name=True)
+    model_config = ConfigDict(extra="ignore", populate_by_name=True)
     data: StatusPageCustomDomainDto
 
 
 class SingleValueResponseStatusPageDto(BaseModel):
-    model_config = ConfigDict(extra="forbid", populate_by_name=True)
+    model_config = ConfigDict(extra="ignore", populate_by_name=True)
     data: StatusPageDto
 
 
 class SingleValueResponseStatusPageSubscriberDto(BaseModel):
-    model_config = ConfigDict(extra="forbid", populate_by_name=True)
+    model_config = ConfigDict(extra="ignore", populate_by_name=True)
     data: StatusPageSubscriberDto
 
 
 class SingleValueResponseTagDto(BaseModel):
-    model_config = ConfigDict(extra="forbid", populate_by_name=True)
+    model_config = ConfigDict(extra="ignore", populate_by_name=True)
     data: TagDto
 
 
 class SingleValueResponseTestChannelResult(BaseModel):
-    model_config = ConfigDict(extra="forbid", populate_by_name=True)
+    model_config = ConfigDict(extra="ignore", populate_by_name=True)
     data: TestChannelResult
 
 
 class SingleValueResponseTestMatchResult(BaseModel):
-    model_config = ConfigDict(extra="forbid", populate_by_name=True)
+    model_config = ConfigDict(extra="ignore", populate_by_name=True)
     data: TestMatchResult
 
 
 class SingleValueResponseUptimeDto(BaseModel):
-    model_config = ConfigDict(extra="forbid", populate_by_name=True)
+    model_config = ConfigDict(extra="ignore", populate_by_name=True)
     data: UptimeDto
 
 
 class SingleValueResponseWebhookEndpointDto(BaseModel):
-    model_config = ConfigDict(extra="forbid", populate_by_name=True)
+    model_config = ConfigDict(extra="ignore", populate_by_name=True)
     data: WebhookEndpointDto
 
 
 class SingleValueResponseWebhookSigningSecretDto(BaseModel):
-    model_config = ConfigDict(extra="forbid", populate_by_name=True)
+    model_config = ConfigDict(extra="ignore", populate_by_name=True)
     data: WebhookSigningSecretDto
 
 
 class SingleValueResponseWebhookTestResult(BaseModel):
-    model_config = ConfigDict(extra="forbid", populate_by_name=True)
+    model_config = ConfigDict(extra="ignore", populate_by_name=True)
     data: WebhookTestResult
 
 
 class SingleValueResponseWorkspaceDto(BaseModel):
-    model_config = ConfigDict(extra="forbid", populate_by_name=True)
+    model_config = ConfigDict(extra="ignore", populate_by_name=True)
     data: WorkspaceDto
 
 
 class StatusPageIncidentDto(BaseModel):
-    model_config = ConfigDict(extra="forbid", populate_by_name=True)
+    model_config = ConfigDict(extra="ignore", populate_by_name=True)
     id: UUID
     status_page_id: Annotated[UUID, Field(alias="statusPageId")]
     title: Annotated[str, Field(min_length=1)]
@@ -7538,7 +7541,7 @@ class StatusPageIncidentDto(BaseModel):
 
 
 class TableValueResultComponentUptimeDayDto(BaseModel):
-    model_config = ConfigDict(extra="forbid", populate_by_name=True)
+    model_config = ConfigDict(extra="ignore", populate_by_name=True)
     data: list[ComponentUptimeDayDto]
     has_next: Annotated[bool, Field(alias="hasNext")]
     has_prev: Annotated[bool, Field(alias="hasPrev")]
@@ -7547,7 +7550,7 @@ class TableValueResultComponentUptimeDayDto(BaseModel):
 
 
 class TableValueResultIncidentStateTransitionDto(BaseModel):
-    model_config = ConfigDict(extra="forbid", populate_by_name=True)
+    model_config = ConfigDict(extra="ignore", populate_by_name=True)
     data: list[IncidentStateTransitionDto]
     has_next: Annotated[bool, Field(alias="hasNext")]
     has_prev: Annotated[bool, Field(alias="hasPrev")]
@@ -7556,7 +7559,7 @@ class TableValueResultIncidentStateTransitionDto(BaseModel):
 
 
 class TableValueResultIntegrationDto(BaseModel):
-    model_config = ConfigDict(extra="forbid", populate_by_name=True)
+    model_config = ConfigDict(extra="ignore", populate_by_name=True)
     data: list[IntegrationDto]
     has_next: Annotated[bool, Field(alias="hasNext")]
     has_prev: Annotated[bool, Field(alias="hasPrev")]
@@ -7565,7 +7568,7 @@ class TableValueResultIntegrationDto(BaseModel):
 
 
 class TableValueResultMonitorDto(BaseModel):
-    model_config = ConfigDict(extra="forbid", populate_by_name=True)
+    model_config = ConfigDict(extra="ignore", populate_by_name=True)
     data: list[MonitorDto]
     has_next: Annotated[bool, Field(alias="hasNext")]
     has_prev: Annotated[bool, Field(alias="hasPrev")]
@@ -7574,7 +7577,7 @@ class TableValueResultMonitorDto(BaseModel):
 
 
 class TableValueResultMonitorVersionDto(BaseModel):
-    model_config = ConfigDict(extra="forbid", populate_by_name=True)
+    model_config = ConfigDict(extra="ignore", populate_by_name=True)
     data: list[MonitorVersionDto]
     has_next: Annotated[bool, Field(alias="hasNext")]
     has_prev: Annotated[bool, Field(alias="hasPrev")]
@@ -7583,7 +7586,7 @@ class TableValueResultMonitorVersionDto(BaseModel):
 
 
 class TableValueResultNotificationPolicyDto(BaseModel):
-    model_config = ConfigDict(extra="forbid", populate_by_name=True)
+    model_config = ConfigDict(extra="ignore", populate_by_name=True)
     data: list[NotificationPolicyDto]
     has_next: Annotated[bool, Field(alias="hasNext")]
     has_prev: Annotated[bool, Field(alias="hasPrev")]
@@ -7592,7 +7595,7 @@ class TableValueResultNotificationPolicyDto(BaseModel):
 
 
 class TableValueResultResourceGroupDto(BaseModel):
-    model_config = ConfigDict(extra="forbid", populate_by_name=True)
+    model_config = ConfigDict(extra="ignore", populate_by_name=True)
     data: list[ResourceGroupDto]
     has_next: Annotated[bool, Field(alias="hasNext")]
     has_prev: Annotated[bool, Field(alias="hasPrev")]
@@ -7601,7 +7604,7 @@ class TableValueResultResourceGroupDto(BaseModel):
 
 
 class TableValueResultStatusPageIncidentDto(BaseModel):
-    model_config = ConfigDict(extra="forbid", populate_by_name=True)
+    model_config = ConfigDict(extra="ignore", populate_by_name=True)
     data: list[StatusPageIncidentDto]
     has_next: Annotated[bool, Field(alias="hasNext")]
     has_prev: Annotated[bool, Field(alias="hasPrev")]
@@ -7610,7 +7613,7 @@ class TableValueResultStatusPageIncidentDto(BaseModel):
 
 
 class TableValueResultTagDto(BaseModel):
-    model_config = ConfigDict(extra="forbid", populate_by_name=True)
+    model_config = ConfigDict(extra="ignore", populate_by_name=True)
     data: list[TagDto]
     has_next: Annotated[bool, Field(alias="hasNext")]
     has_prev: Annotated[bool, Field(alias="hasPrev")]
@@ -7619,7 +7622,7 @@ class TableValueResultTagDto(BaseModel):
 
 
 class TableValueResultWebhookDeliveryDto(BaseModel):
-    model_config = ConfigDict(extra="forbid", populate_by_name=True)
+    model_config = ConfigDict(extra="ignore", populate_by_name=True)
     data: list[WebhookDeliveryDto]
     has_next: Annotated[bool, Field(alias="hasNext")]
     has_prev: Annotated[bool, Field(alias="hasPrev")]
@@ -7628,7 +7631,7 @@ class TableValueResultWebhookDeliveryDto(BaseModel):
 
 
 class TableValueResultWebhookEndpointDto(BaseModel):
-    model_config = ConfigDict(extra="forbid", populate_by_name=True)
+    model_config = ConfigDict(extra="ignore", populate_by_name=True)
     data: list[WebhookEndpointDto]
     has_next: Annotated[bool, Field(alias="hasNext")]
     has_prev: Annotated[bool, Field(alias="hasPrev")]
@@ -7637,7 +7640,7 @@ class TableValueResultWebhookEndpointDto(BaseModel):
 
 
 class TableValueResultWorkspaceDto(BaseModel):
-    model_config = ConfigDict(extra="forbid", populate_by_name=True)
+    model_config = ConfigDict(extra="ignore", populate_by_name=True)
     data: list[WorkspaceDto]
     has_next: Annotated[bool, Field(alias="hasNext")]
     has_prev: Annotated[bool, Field(alias="hasPrev")]
@@ -7826,7 +7829,7 @@ class UpdateNotificationPolicyRequest(BaseModel):
 
 
 class AuditEventDto(BaseModel):
-    model_config = ConfigDict(extra="forbid", populate_by_name=True)
+    model_config = ConfigDict(extra="ignore", populate_by_name=True)
     id: Annotated[int, Field(description="Unique audit event identifier")]
     actor_id: Annotated[
         int | None,
@@ -7871,7 +7874,7 @@ class AuditEventDto(BaseModel):
 
 
 class BatchComponentUptimeDto(BaseModel):
-    model_config = ConfigDict(extra="forbid", populate_by_name=True)
+    model_config = ConfigDict(extra="ignore", populate_by_name=True)
     components: Annotated[
         dict[str, list[ComponentUptimeDayDto]],
         Field(
@@ -7881,7 +7884,7 @@ class BatchComponentUptimeDto(BaseModel):
 
 
 class CheckTraceDto(BaseModel):
-    model_config = ConfigDict(extra="forbid", populate_by_name=True)
+    model_config = ConfigDict(extra="ignore", populate_by_name=True)
     check_id: Annotated[
         UUID,
         Field(
@@ -7943,22 +7946,22 @@ class CreateNotificationPolicyRequest(BaseModel):
 
 
 class SingleValueResponseBatchComponentUptimeDto(BaseModel):
-    model_config = ConfigDict(extra="forbid", populate_by_name=True)
+    model_config = ConfigDict(extra="ignore", populate_by_name=True)
     data: BatchComponentUptimeDto
 
 
 class SingleValueResponseCheckTraceDto(BaseModel):
-    model_config = ConfigDict(extra="forbid", populate_by_name=True)
+    model_config = ConfigDict(extra="ignore", populate_by_name=True)
     data: CheckTraceDto
 
 
 class SingleValueResponseStatusPageIncidentDto(BaseModel):
-    model_config = ConfigDict(extra="forbid", populate_by_name=True)
+    model_config = ConfigDict(extra="ignore", populate_by_name=True)
     data: StatusPageIncidentDto
 
 
 class TableValueResultAuditEventDto(BaseModel):
-    model_config = ConfigDict(extra="forbid", populate_by_name=True)
+    model_config = ConfigDict(extra="ignore", populate_by_name=True)
     data: list[AuditEventDto]
     has_next: Annotated[bool, Field(alias="hasNext")]
     has_prev: Annotated[bool, Field(alias="hasPrev")]
@@ -7967,7 +7970,7 @@ class TableValueResultAuditEventDto(BaseModel):
 
 
 class CheckResultDetailsDto(BaseModel):
-    model_config = ConfigDict(extra="forbid", populate_by_name=True)
+    model_config = ConfigDict(extra="ignore", populate_by_name=True)
     status_code: Annotated[
         int | None,
         Field(
@@ -8021,7 +8024,7 @@ class CheckResultDetailsDto(BaseModel):
 
 
 class CheckResultDto(BaseModel):
-    model_config = ConfigDict(extra="forbid", populate_by_name=True)
+    model_config = ConfigDict(extra="ignore", populate_by_name=True)
     id: Annotated[UUID, Field(description="Unique identifier of the check result")]
     timestamp: Annotated[
         AwareDatetime,
@@ -8066,7 +8069,7 @@ class CheckResultDto(BaseModel):
 
 
 class CursorPageCheckResultDto(BaseModel):
-    model_config = ConfigDict(extra="forbid", populate_by_name=True)
+    model_config = ConfigDict(extra="ignore", populate_by_name=True)
     data: Annotated[list[CheckResultDto], Field(description="Items on this page")]
     next_cursor: Annotated[
         str | None,
