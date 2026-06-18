@@ -4147,6 +4147,7 @@ class ServiceIncidentDto(BaseModel):
     vendor_created_at: Annotated[
         AwareDatetime | None, Field(alias="vendorCreatedAt")
     ] = None
+    affected_regions: Annotated[list[str] | None, Field(alias="affectedRegions")] = None
 
 
 class ServiceIncidentUpdateDto(BaseModel):
@@ -7342,6 +7343,7 @@ class ServiceIncidentDetailDto(BaseModel):
     affected_components: Annotated[
         list[str] | None, Field(alias="affectedComponents")
     ] = None
+    affected_regions: Annotated[list[str] | None, Field(alias="affectedRegions")] = None
     updates: list[ServiceIncidentUpdateDto]
 
 
