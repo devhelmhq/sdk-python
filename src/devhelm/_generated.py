@@ -105,7 +105,7 @@ class Status(StrEnum):
 
 
 class AffectedComponent(BaseModel):
-    model_config = ConfigDict(extra="forbid", populate_by_name=True)
+    model_config = ConfigDict(extra="ignore", populate_by_name=True)
     component_id: Annotated[
         UUID, Field(alias="componentId", description="Status page component ID")
     ]
@@ -115,7 +115,7 @@ class AffectedComponent(BaseModel):
 
 
 class AlertChannelDisplayConfig(BaseModel):
-    model_config = ConfigDict(extra="forbid", populate_by_name=True)
+    model_config = ConfigDict(extra="ignore", populate_by_name=True)
     recipients: Annotated[
         list[str] | None, Field(description="Email recipients list (email channels)")
     ] = None
@@ -308,7 +308,7 @@ class AlertDeliveryDto(BaseModel):
 
 
 class ApiKeyAuthConfig(BaseModel):
-    model_config = ConfigDict(extra="forbid", populate_by_name=True)
+    model_config = ConfigDict(extra="ignore", populate_by_name=True)
     type: Literal["api_key"] = "api_key"
     header_name: Annotated[
         str,
@@ -424,7 +424,7 @@ class AssertionTestResultDto(BaseModel):
 
 
 class BasicAuthConfig(BaseModel):
-    model_config = ConfigDict(extra="forbid", populate_by_name=True)
+    model_config = ConfigDict(extra="ignore", populate_by_name=True)
     type: Literal["basic"] = "basic"
     vault_secret_id: Annotated[
         UUID | None,
@@ -436,7 +436,7 @@ class BasicAuthConfig(BaseModel):
 
 
 class BearerAuthConfig(BaseModel):
-    model_config = ConfigDict(extra="forbid", populate_by_name=True)
+    model_config = ConfigDict(extra="ignore", populate_by_name=True)
     type: Literal["bearer"] = "bearer"
     vault_secret_id: Annotated[
         UUID | None,
@@ -448,7 +448,7 @@ class BearerAuthConfig(BaseModel):
 
 
 class BodyContainsAssertion(BaseModel):
-    model_config = ConfigDict(extra="forbid", populate_by_name=True)
+    model_config = ConfigDict(extra="ignore", populate_by_name=True)
     type: Literal["body_contains"] = "body_contains"
     substring: Annotated[
         str,
@@ -550,7 +550,7 @@ class ChartBucketDto(BaseModel):
 
 
 class ComponentImpact(BaseModel):
-    model_config = ConfigDict(extra="forbid", populate_by_name=True)
+    model_config = ConfigDict(extra="ignore", populate_by_name=True)
     component_id: Annotated[
         UUID, Field(alias="componentId", description="Status page component UUID")
     ]
@@ -588,7 +588,7 @@ class ComponentImpact(BaseModel):
 
 
 class ComponentPosition(BaseModel):
-    model_config = ConfigDict(extra="forbid", populate_by_name=True)
+    model_config = ConfigDict(extra="ignore", populate_by_name=True)
     component_id: Annotated[
         UUID, Field(alias="componentId", description="Component ID")
     ]
@@ -662,7 +662,7 @@ class ComponentUptimeSummaryDto(BaseModel):
 
 
 class ConfirmationPolicy(BaseModel):
-    model_config = ConfigDict(extra="forbid", populate_by_name=True)
+    model_config = ConfigDict(extra="ignore", populate_by_name=True)
     type: Annotated[
         Literal["multi_region"],
         Field(description="How incident confirmation is coordinated across regions"),
@@ -1122,7 +1122,7 @@ class CreateWorkspaceRequest(BaseModel):
 
 
 class DatadogChannelConfig(BaseModel):
-    model_config = ConfigDict(extra="forbid", populate_by_name=True)
+    model_config = ConfigDict(extra="ignore", populate_by_name=True)
     channel_type: Annotated[Literal["datadog"], Field(alias="channelType")] = "datadog"
     api_key: Annotated[
         str, Field(alias="apiKey", description="Datadog API key", min_length=1)
@@ -1139,7 +1139,7 @@ class DatadogChannelConfig(BaseModel):
 
 
 class DayIncident(BaseModel):
-    model_config = ConfigDict(extra="forbid", populate_by_name=True)
+    model_config = ConfigDict(extra="ignore", populate_by_name=True)
     id: Annotated[UUID, Field(description="Status page incident UUID")]
     title: Annotated[str, Field(description="Incident title")]
     status: Annotated[
@@ -1209,7 +1209,7 @@ class DekRotationResultDto(BaseModel):
 
 
 class DeleteChannelResult(BaseModel):
-    model_config = ConfigDict(extra="forbid", populate_by_name=True)
+    model_config = ConfigDict(extra="ignore", populate_by_name=True)
     affected_policies: Annotated[
         int,
         Field(
@@ -1307,7 +1307,7 @@ class DeployLockDto(BaseModel):
 
 
 class DiscordChannelConfig(BaseModel):
-    model_config = ConfigDict(extra="forbid", populate_by_name=True)
+    model_config = ConfigDict(extra="ignore", populate_by_name=True)
     channel_type: Annotated[Literal["discord"], Field(alias="channelType")] = "discord"
     webhook_url: Annotated[
         str, Field(alias="webhookUrl", description="Discord webhook URL", min_length=1)
@@ -1322,7 +1322,7 @@ class DiscordChannelConfig(BaseModel):
 
 
 class Dns(BaseModel):
-    model_config = ConfigDict(extra="forbid", populate_by_name=True)
+    model_config = ConfigDict(extra="ignore", populate_by_name=True)
     check_type: Literal["dns"] = "dns"
     hostname: Annotated[str | None, Field(description="Target hostname")] = None
     requested_types: Annotated[
@@ -1347,7 +1347,7 @@ class Dns(BaseModel):
 
 
 class DnsExpectedCnameAssertion(BaseModel):
-    model_config = ConfigDict(extra="forbid", populate_by_name=True)
+    model_config = ConfigDict(extra="ignore", populate_by_name=True)
     type: Literal["dns_expected_cname"] = "dns_expected_cname"
     value: Annotated[
         str,
@@ -1359,7 +1359,7 @@ class DnsExpectedCnameAssertion(BaseModel):
 
 
 class DnsExpectedIpsAssertion(BaseModel):
-    model_config = ConfigDict(extra="forbid", populate_by_name=True)
+    model_config = ConfigDict(extra="ignore", populate_by_name=True)
     type: Literal["dns_expected_ips"] = "dns_expected_ips"
     ips: Annotated[
         list[str],
@@ -1371,7 +1371,7 @@ class DnsExpectedIpsAssertion(BaseModel):
 
 
 class DnsMaxAnswersAssertion(BaseModel):
-    model_config = ConfigDict(extra="forbid", populate_by_name=True)
+    model_config = ConfigDict(extra="ignore", populate_by_name=True)
     type: Literal["dns_max_answers"] = "dns_max_answers"
     record_type: Annotated[
         str,
@@ -1387,7 +1387,7 @@ class DnsMaxAnswersAssertion(BaseModel):
 
 
 class DnsMinAnswersAssertion(BaseModel):
-    model_config = ConfigDict(extra="forbid", populate_by_name=True)
+    model_config = ConfigDict(extra="ignore", populate_by_name=True)
     type: Literal["dns_min_answers"] = "dns_min_answers"
     record_type: Annotated[
         str,
@@ -1417,7 +1417,7 @@ class RecordType(StrEnum):
 
 
 class DnsMonitorConfig(BaseModel):
-    model_config = ConfigDict(extra="forbid", populate_by_name=True)
+    model_config = ConfigDict(extra="ignore", populate_by_name=True)
     hostname: Annotated[str, Field(description="Domain name to resolve", min_length=1)]
     record_types: Annotated[
         list[RecordType] | None,
@@ -1446,7 +1446,7 @@ class DnsMonitorConfig(BaseModel):
 
 
 class DnsRecordContainsAssertion(BaseModel):
-    model_config = ConfigDict(extra="forbid", populate_by_name=True)
+    model_config = ConfigDict(extra="ignore", populate_by_name=True)
     type: Literal["dns_record_contains"] = "dns_record_contains"
     record_type: Annotated[
         str,
@@ -1466,7 +1466,7 @@ class DnsRecordContainsAssertion(BaseModel):
 
 
 class DnsRecordEqualsAssertion(BaseModel):
-    model_config = ConfigDict(extra="forbid", populate_by_name=True)
+    model_config = ConfigDict(extra="ignore", populate_by_name=True)
     type: Literal["dns_record_equals"] = "dns_record_equals"
     record_type: Annotated[
         str,
@@ -1483,12 +1483,12 @@ class DnsRecordEqualsAssertion(BaseModel):
 
 
 class DnsResolvesAssertion(BaseModel):
-    model_config = ConfigDict(extra="forbid", populate_by_name=True)
+    model_config = ConfigDict(extra="ignore", populate_by_name=True)
     type: Literal["dns_resolves"] = "dns_resolves"
 
 
 class DnsResponseTimeAssertion(BaseModel):
-    model_config = ConfigDict(extra="forbid", populate_by_name=True)
+    model_config = ConfigDict(extra="ignore", populate_by_name=True)
     type: Literal["dns_response_time"] = "dns_response_time"
     max_ms: Annotated[
         int,
@@ -1500,7 +1500,7 @@ class DnsResponseTimeAssertion(BaseModel):
 
 
 class DnsResponseTimeWarnAssertion(BaseModel):
-    model_config = ConfigDict(extra="forbid", populate_by_name=True)
+    model_config = ConfigDict(extra="ignore", populate_by_name=True)
     type: Literal["dns_response_time_warn"] = "dns_response_time_warn"
     warn_ms: Annotated[
         int,
@@ -1512,7 +1512,7 @@ class DnsResponseTimeWarnAssertion(BaseModel):
 
 
 class DnsTtlHighAssertion(BaseModel):
-    model_config = ConfigDict(extra="forbid", populate_by_name=True)
+    model_config = ConfigDict(extra="ignore", populate_by_name=True)
     type: Literal["dns_ttl_high"] = "dns_ttl_high"
     max_ttl: Annotated[
         int,
@@ -1524,7 +1524,7 @@ class DnsTtlHighAssertion(BaseModel):
 
 
 class DnsTtlLowAssertion(BaseModel):
-    model_config = ConfigDict(extra="forbid", populate_by_name=True)
+    model_config = ConfigDict(extra="ignore", populate_by_name=True)
     type: Literal["dns_ttl_low"] = "dns_ttl_low"
     min_ttl: Annotated[
         int,
@@ -1536,7 +1536,7 @@ class DnsTtlLowAssertion(BaseModel):
 
 
 class DnsTxtContainsAssertion(BaseModel):
-    model_config = ConfigDict(extra="forbid", populate_by_name=True)
+    model_config = ConfigDict(extra="ignore", populate_by_name=True)
     type: Literal["dns_txt_contains"] = "dns_txt_contains"
     substring: Annotated[
         str,
@@ -1548,7 +1548,7 @@ class DnsTxtContainsAssertion(BaseModel):
 
 
 class EmailChannelConfig(BaseModel):
-    model_config = ConfigDict(extra="forbid", populate_by_name=True)
+    model_config = ConfigDict(extra="ignore", populate_by_name=True)
     channel_type: Annotated[Literal["email"], Field(alias="channelType")] = "email"
     recipients: Annotated[
         list[EmailStr],
@@ -1618,7 +1618,7 @@ class EnvironmentDto(BaseModel):
 
 
 class ErrorEntry(BaseModel):
-    model_config = ConfigDict(extra="forbid", populate_by_name=True)
+    model_config = ConfigDict(extra="ignore", populate_by_name=True)
     code: Annotated[
         str,
         Field(
@@ -1690,7 +1690,7 @@ class ErrorResponse(BaseModel):
 
 
 class EscalationStep(BaseModel):
-    model_config = ConfigDict(extra="forbid", populate_by_name=True)
+    model_config = ConfigDict(extra="ignore", populate_by_name=True)
     delay_minutes: Annotated[
         int,
         Field(
@@ -1725,7 +1725,7 @@ class EscalationStep(BaseModel):
 
 
 class FailureDetail(BaseModel):
-    model_config = ConfigDict(extra="forbid", populate_by_name=True)
+    model_config = ConfigDict(extra="ignore", populate_by_name=True)
     monitor_id: Annotated[
         UUID, Field(alias="monitorId", description="Monitor ID that failed")
     ]
@@ -1733,7 +1733,7 @@ class FailureDetail(BaseModel):
 
 
 class GitLabChannelConfig(BaseModel):
-    model_config = ConfigDict(extra="forbid", populate_by_name=True)
+    model_config = ConfigDict(extra="ignore", populate_by_name=True)
     channel_type: Annotated[Literal["gitlab"], Field(alias="channelType")] = "gitlab"
     endpoint_url: Annotated[
         str,
@@ -1754,7 +1754,7 @@ class GitLabChannelConfig(BaseModel):
 
 
 class GoogleChatChannelConfig(BaseModel):
-    model_config = ConfigDict(extra="forbid", populate_by_name=True)
+    model_config = ConfigDict(extra="ignore", populate_by_name=True)
     channel_type: Annotated[Literal["google_chat"], Field(alias="channelType")] = (
         "google_chat"
     )
@@ -1769,7 +1769,7 @@ class GoogleChatChannelConfig(BaseModel):
 
 
 class GroupComponentOrder(BaseModel):
-    model_config = ConfigDict(extra="forbid", populate_by_name=True)
+    model_config = ConfigDict(extra="ignore", populate_by_name=True)
     group_id: Annotated[
         UUID, Field(alias="groupId", description="Group these components belong to")
     ]
@@ -1783,7 +1783,7 @@ class GroupComponentOrder(BaseModel):
 
 
 class HeaderAuthConfig(BaseModel):
-    model_config = ConfigDict(extra="forbid", populate_by_name=True)
+    model_config = ConfigDict(extra="ignore", populate_by_name=True)
     type: Literal["header"] = "header"
     header_name: Annotated[
         str,
@@ -1812,7 +1812,7 @@ class Operator(StrEnum):
 
 
 class HeaderValueAssertion(BaseModel):
-    model_config = ConfigDict(extra="forbid", populate_by_name=True)
+    model_config = ConfigDict(extra="ignore", populate_by_name=True)
     type: Literal["header_value"] = "header_value"
     header_name: Annotated[
         str,
@@ -1834,7 +1834,7 @@ class HeaderValueAssertion(BaseModel):
 
 
 class HeartbeatIntervalDriftAssertion(BaseModel):
-    model_config = ConfigDict(extra="forbid", populate_by_name=True)
+    model_config = ConfigDict(extra="ignore", populate_by_name=True)
     type: Literal["heartbeat_interval_drift"] = "heartbeat_interval_drift"
     max_deviation_percent: Annotated[
         int,
@@ -1848,7 +1848,7 @@ class HeartbeatIntervalDriftAssertion(BaseModel):
 
 
 class HeartbeatMaxIntervalAssertion(BaseModel):
-    model_config = ConfigDict(extra="forbid", populate_by_name=True)
+    model_config = ConfigDict(extra="ignore", populate_by_name=True)
     type: Literal["heartbeat_max_interval"] = "heartbeat_max_interval"
     max_seconds: Annotated[
         int,
@@ -1861,7 +1861,7 @@ class HeartbeatMaxIntervalAssertion(BaseModel):
 
 
 class HeartbeatMonitorConfig(BaseModel):
-    model_config = ConfigDict(extra="forbid", populate_by_name=True)
+    model_config = ConfigDict(extra="ignore", populate_by_name=True)
     expected_interval: Annotated[
         int,
         Field(
@@ -1882,7 +1882,7 @@ class HeartbeatMonitorConfig(BaseModel):
 
 
 class HeartbeatPayloadContainsAssertion(BaseModel):
-    model_config = ConfigDict(extra="forbid", populate_by_name=True)
+    model_config = ConfigDict(extra="ignore", populate_by_name=True)
     type: Literal["heartbeat_payload_contains"] = "heartbeat_payload_contains"
     path: Annotated[
         str,
@@ -1904,7 +1904,7 @@ class HeartbeatPingResponse(BaseModel):
 
 
 class HeartbeatReceivedAssertion(BaseModel):
-    model_config = ConfigDict(extra="forbid", populate_by_name=True)
+    model_config = ConfigDict(extra="ignore", populate_by_name=True)
     type: Literal["heartbeat_received"] = "heartbeat_received"
 
 
@@ -1918,7 +1918,7 @@ class Method(StrEnum):
 
 
 class HttpMonitorConfig(BaseModel):
-    model_config = ConfigDict(extra="forbid", populate_by_name=True)
+    model_config = ConfigDict(extra="ignore", populate_by_name=True)
     url: Annotated[
         str, Field(description="Target URL to send requests to", min_length=1)
     ]
@@ -1956,7 +1956,7 @@ class HttpMonitorConfig(BaseModel):
 
 
 class Icmp(BaseModel):
-    model_config = ConfigDict(extra="forbid", populate_by_name=True)
+    model_config = ConfigDict(extra="ignore", populate_by_name=True)
     check_type: Literal["icmp"] = "icmp"
     host: Annotated[str, Field(description="Target host", examples=["1.1.1.1"])]
     packets_sent: Annotated[
@@ -1989,7 +1989,7 @@ class Icmp(BaseModel):
 
 
 class IcmpMonitorConfig(BaseModel):
-    model_config = ConfigDict(extra="forbid", populate_by_name=True)
+    model_config = ConfigDict(extra="ignore", populate_by_name=True)
     host: Annotated[
         str, Field(description="Target hostname or IP address to ping", min_length=1)
     ]
@@ -2008,7 +2008,7 @@ class IcmpMonitorConfig(BaseModel):
 
 
 class IcmpPacketLossAssertion(BaseModel):
-    model_config = ConfigDict(extra="forbid", populate_by_name=True)
+    model_config = ConfigDict(extra="ignore", populate_by_name=True)
     type: Literal["icmp_packet_loss"] = "icmp_packet_loss"
     max_percent: Annotated[
         float,
@@ -2022,12 +2022,12 @@ class IcmpPacketLossAssertion(BaseModel):
 
 
 class IcmpReachableAssertion(BaseModel):
-    model_config = ConfigDict(extra="forbid", populate_by_name=True)
+    model_config = ConfigDict(extra="ignore", populate_by_name=True)
     type: Literal["icmp_reachable"] = "icmp_reachable"
 
 
 class IcmpResponseTimeAssertion(BaseModel):
-    model_config = ConfigDict(extra="forbid", populate_by_name=True)
+    model_config = ConfigDict(extra="ignore", populate_by_name=True)
     type: Literal["icmp_response_time"] = "icmp_response_time"
     max_ms: Annotated[
         int,
@@ -2039,7 +2039,7 @@ class IcmpResponseTimeAssertion(BaseModel):
 
 
 class IcmpResponseTimeWarnAssertion(BaseModel):
-    model_config = ConfigDict(extra="forbid", populate_by_name=True)
+    model_config = ConfigDict(extra="ignore", populate_by_name=True)
     type: Literal["icmp_response_time_warn"] = "icmp_response_time_warn"
     warn_ms: Annotated[
         int,
@@ -2364,7 +2364,7 @@ class IncidentFilterParams(BaseModel):
 
 
 class IncidentIoChannelConfig(BaseModel):
-    model_config = ConfigDict(extra="forbid", populate_by_name=True)
+    model_config = ConfigDict(extra="ignore", populate_by_name=True)
     channel_type: Annotated[Literal["incident_io"], Field(alias="channelType")] = (
         "incident_io"
     )
@@ -2390,7 +2390,7 @@ class IncidentIoChannelConfig(BaseModel):
 
 
 class IncidentRef(BaseModel):
-    model_config = ConfigDict(extra="forbid", populate_by_name=True)
+    model_config = ConfigDict(extra="ignore", populate_by_name=True)
     id: Annotated[
         UUID,
         Field(
@@ -2474,7 +2474,7 @@ class InviteDto(BaseModel):
 
 
 class JiraChannelConfig(BaseModel):
-    model_config = ConfigDict(extra="forbid", populate_by_name=True)
+    model_config = ConfigDict(extra="ignore", populate_by_name=True)
     channel_type: Annotated[Literal["jira"], Field(alias="channelType")] = "jira"
     domain: Annotated[
         str,
@@ -2509,7 +2509,7 @@ class JiraChannelConfig(BaseModel):
 
 
 class JsonPathAssertion(BaseModel):
-    model_config = ConfigDict(extra="forbid", populate_by_name=True)
+    model_config = ConfigDict(extra="ignore", populate_by_name=True)
     type: Literal["json_path"] = "json_path"
     path: Annotated[
         str,
@@ -2530,7 +2530,7 @@ class JsonPathAssertion(BaseModel):
 
 
 class KeyInfo(BaseModel):
-    model_config = ConfigDict(extra="forbid", populate_by_name=True)
+    model_config = ConfigDict(extra="ignore", populate_by_name=True)
     id: Annotated[int, Field(description="Key ID")]
     name: Annotated[str, Field(description="Human-readable key name")]
     created_at: Annotated[
@@ -2547,7 +2547,7 @@ class KeyInfo(BaseModel):
 
 
 class LinearChannelConfig(BaseModel):
-    model_config = ConfigDict(extra="forbid", populate_by_name=True)
+    model_config = ConfigDict(extra="ignore", populate_by_name=True)
     channel_type: Annotated[Literal["linear"], Field(alias="channelType")] = "linear"
     api_key: Annotated[
         str, Field(alias="apiKey", description="Linear API key", min_length=1)
@@ -2576,7 +2576,7 @@ class LinkedStatusPageIncidentDto(BaseModel):
 
 
 class MaintenanceComponentRef(BaseModel):
-    model_config = ConfigDict(extra="forbid", populate_by_name=True)
+    model_config = ConfigDict(extra="ignore", populate_by_name=True)
     id: Annotated[UUID, Field(description="Component identifier")]
     name: Annotated[str, Field(description="Component name")]
     status: Annotated[
@@ -2660,7 +2660,7 @@ class Type2(StrEnum):
 
 
 class MatchRule(BaseModel):
-    model_config = ConfigDict(extra="forbid", populate_by_name=True)
+    model_config = ConfigDict(extra="ignore", populate_by_name=True)
     type: Annotated[
         Type2,
         Field(description="Rule type used to evaluate incidents and status events"),
@@ -2686,7 +2686,7 @@ class MatchRule(BaseModel):
 
 
 class MattermostChannelConfig(BaseModel):
-    model_config = ConfigDict(extra="forbid", populate_by_name=True)
+    model_config = ConfigDict(extra="ignore", populate_by_name=True)
     channel_type: Annotated[Literal["mattermost"], Field(alias="channelType")] = (
         "mattermost"
     )
@@ -2707,12 +2707,12 @@ class MattermostChannelConfig(BaseModel):
 
 
 class McpConnectsAssertion(BaseModel):
-    model_config = ConfigDict(extra="forbid", populate_by_name=True)
+    model_config = ConfigDict(extra="ignore", populate_by_name=True)
     type: Literal["mcp_connects"] = "mcp_connects"
 
 
 class McpHasCapabilityAssertion(BaseModel):
-    model_config = ConfigDict(extra="forbid", populate_by_name=True)
+    model_config = ConfigDict(extra="ignore", populate_by_name=True)
     type: Literal["mcp_has_capability"] = "mcp_has_capability"
     capability: Annotated[
         str,
@@ -2724,7 +2724,7 @@ class McpHasCapabilityAssertion(BaseModel):
 
 
 class McpMinToolsAssertion(BaseModel):
-    model_config = ConfigDict(extra="forbid", populate_by_name=True)
+    model_config = ConfigDict(extra="ignore", populate_by_name=True)
     type: Literal["mcp_min_tools"] = "mcp_min_tools"
     min: Annotated[
         int, Field(description="Minimum number of tools the server must expose")
@@ -2732,7 +2732,7 @@ class McpMinToolsAssertion(BaseModel):
 
 
 class McpProtocolVersionAssertion(BaseModel):
-    model_config = ConfigDict(extra="forbid", populate_by_name=True)
+    model_config = ConfigDict(extra="ignore", populate_by_name=True)
     type: Literal["mcp_protocol_version"] = "mcp_protocol_version"
     version: Annotated[
         str,
@@ -2744,7 +2744,7 @@ class McpProtocolVersionAssertion(BaseModel):
 
 
 class McpResponseTimeAssertion(BaseModel):
-    model_config = ConfigDict(extra="forbid", populate_by_name=True)
+    model_config = ConfigDict(extra="ignore", populate_by_name=True)
     type: Literal["mcp_response_time"] = "mcp_response_time"
     max_ms: Annotated[
         int,
@@ -2756,7 +2756,7 @@ class McpResponseTimeAssertion(BaseModel):
 
 
 class McpResponseTimeWarnAssertion(BaseModel):
-    model_config = ConfigDict(extra="forbid", populate_by_name=True)
+    model_config = ConfigDict(extra="ignore", populate_by_name=True)
     type: Literal["mcp_response_time_warn"] = "mcp_response_time_warn"
     warn_ms: Annotated[
         int,
@@ -2768,7 +2768,7 @@ class McpResponseTimeWarnAssertion(BaseModel):
 
 
 class McpServer(BaseModel):
-    model_config = ConfigDict(extra="forbid", populate_by_name=True)
+    model_config = ConfigDict(extra="ignore", populate_by_name=True)
     check_type: Literal["mcp_server"] = "mcp_server"
     url: Annotated[str | None, Field(description="MCP server URL")] = None
     protocol_version: Annotated[
@@ -2791,7 +2791,7 @@ class McpServer(BaseModel):
 
 
 class McpServerMonitorConfig(BaseModel):
-    model_config = ConfigDict(extra="forbid", populate_by_name=True)
+    model_config = ConfigDict(extra="ignore", populate_by_name=True)
     command: Annotated[
         str,
         Field(description="Command to execute to start the MCP server", min_length=1),
@@ -2807,7 +2807,7 @@ class McpServerMonitorConfig(BaseModel):
 
 
 class McpToolAvailableAssertion(BaseModel):
-    model_config = ConfigDict(extra="forbid", populate_by_name=True)
+    model_config = ConfigDict(extra="ignore", populate_by_name=True)
     type: Literal["mcp_tool_available"] = "mcp_tool_available"
     tool_name: Annotated[
         str,
@@ -2820,7 +2820,7 @@ class McpToolAvailableAssertion(BaseModel):
 
 
 class McpToolCountChangedAssertion(BaseModel):
-    model_config = ConfigDict(extra="forbid", populate_by_name=True)
+    model_config = ConfigDict(extra="ignore", populate_by_name=True)
     type: Literal["mcp_tool_count_changed"] = "mcp_tool_count_changed"
     expected_count: Annotated[
         int,
@@ -2872,7 +2872,7 @@ class NewRole(StrEnum):
 
 
 class MemberRoleChangedMetadata(BaseModel):
-    model_config = ConfigDict(extra="forbid", populate_by_name=True)
+    model_config = ConfigDict(extra="ignore", populate_by_name=True)
     kind: Literal["member_role_changed"] = "member_role_changed"
     old_role: Annotated[
         OldRole,
@@ -2905,7 +2905,7 @@ class MonitorAuthDto(BaseModel):
 
 
 class MonitorReference(BaseModel):
-    model_config = ConfigDict(extra="forbid", populate_by_name=True)
+    model_config = ConfigDict(extra="ignore", populate_by_name=True)
     id: Annotated[UUID, Field(description="Monitor identifier")]
     name: Annotated[str, Field(description="Monitor name")]
 
@@ -3096,7 +3096,7 @@ class NotificationDto(BaseModel):
 
 
 class OpsGenieChannelConfig(BaseModel):
-    model_config = ConfigDict(extra="forbid", populate_by_name=True)
+    model_config = ConfigDict(extra="ignore", populate_by_name=True)
     channel_type: Annotated[Literal["opsgenie"], Field(alias="channelType")] = (
         "opsgenie"
     )
@@ -3130,20 +3130,20 @@ class OrganizationDto(BaseModel):
 
 
 class OrgInfo(BaseModel):
-    model_config = ConfigDict(extra="forbid", populate_by_name=True)
+    model_config = ConfigDict(extra="ignore", populate_by_name=True)
     id: Annotated[int, Field(description="Organization ID")]
     name: Annotated[str, Field(description="Organization name")]
 
 
 class Pageable(BaseModel):
-    model_config = ConfigDict(extra="forbid", populate_by_name=True)
+    model_config = ConfigDict(extra="ignore", populate_by_name=True)
     page: Annotated[int, Field(ge=0)]
     size: Annotated[int, Field(ge=1)]
     sort: list[str]
 
 
 class PagerDutyChannelConfig(BaseModel):
-    model_config = ConfigDict(extra="forbid", populate_by_name=True)
+    model_config = ConfigDict(extra="ignore", populate_by_name=True)
     channel_type: Annotated[Literal["pagerduty"], Field(alias="channelType")] = (
         "pagerduty"
     )
@@ -3164,7 +3164,7 @@ class PagerDutyChannelConfig(BaseModel):
 
 
 class PageSection(BaseModel):
-    model_config = ConfigDict(extra="forbid", populate_by_name=True)
+    model_config = ConfigDict(extra="ignore", populate_by_name=True)
     group_id: Annotated[
         UUID | None,
         Field(alias="groupId", description="Group ID when this section is a group"),
@@ -3191,7 +3191,7 @@ class Tier(StrEnum):
 
 
 class PlanInfo(BaseModel):
-    model_config = ConfigDict(extra="forbid", populate_by_name=True)
+    model_config = ConfigDict(extra="ignore", populate_by_name=True)
     tier: Annotated[Tier, Field(description="Resolved plan tier")]
     subscription_status: Annotated[
         str | None,
@@ -3332,7 +3332,7 @@ class PublishStatusPageIncidentRequest(BaseModel):
 
 
 class PushbulletChannelConfig(BaseModel):
-    model_config = ConfigDict(extra="forbid", populate_by_name=True)
+    model_config = ConfigDict(extra="ignore", populate_by_name=True)
     channel_type: Annotated[Literal["pushbullet"], Field(alias="channelType")] = (
         "pushbullet"
     )
@@ -3350,7 +3350,7 @@ class PushbulletChannelConfig(BaseModel):
 
 
 class PushoverChannelConfig(BaseModel):
-    model_config = ConfigDict(extra="forbid", populate_by_name=True)
+    model_config = ConfigDict(extra="ignore", populate_by_name=True)
     channel_type: Annotated[Literal["pushover"], Field(alias="channelType")] = (
         "pushover"
     )
@@ -3373,7 +3373,7 @@ class PushoverChannelConfig(BaseModel):
 
 
 class RateLimitInfo(BaseModel):
-    model_config = ConfigDict(extra="forbid", populate_by_name=True)
+    model_config = ConfigDict(extra="ignore", populate_by_name=True)
     requests_per_minute: Annotated[
         int,
         Field(
@@ -3389,7 +3389,7 @@ class RateLimitInfo(BaseModel):
 
 
 class RecoveryPolicy(BaseModel):
-    model_config = ConfigDict(extra="forbid", populate_by_name=True)
+    model_config = ConfigDict(extra="ignore", populate_by_name=True)
     consecutive_successes: Annotated[
         int,
         Field(
@@ -3414,7 +3414,7 @@ class RecoveryPolicy(BaseModel):
 
 
 class RedirectCountAssertion(BaseModel):
-    model_config = ConfigDict(extra="forbid", populate_by_name=True)
+    model_config = ConfigDict(extra="ignore", populate_by_name=True)
     type: Literal["redirect_count"] = "redirect_count"
     max_count: Annotated[
         int,
@@ -3426,7 +3426,7 @@ class RedirectCountAssertion(BaseModel):
 
 
 class RedirectTargetAssertion(BaseModel):
-    model_config = ConfigDict(extra="forbid", populate_by_name=True)
+    model_config = ConfigDict(extra="ignore", populate_by_name=True)
     type: Literal["redirect_target"] = "redirect_target"
     expected: Annotated[
         str,
@@ -3441,7 +3441,7 @@ class RedirectTargetAssertion(BaseModel):
 
 
 class RegexBodyAssertion(BaseModel):
-    model_config = ConfigDict(extra="forbid", populate_by_name=True)
+    model_config = ConfigDict(extra="ignore", populate_by_name=True)
     type: Literal["regex_body"] = "regex_body"
     pattern: Annotated[
         str,
@@ -3669,7 +3669,7 @@ class ResourceGroupMemberDto(BaseModel):
 
 
 class ResponseSizeAssertion(BaseModel):
-    model_config = ConfigDict(extra="forbid", populate_by_name=True)
+    model_config = ConfigDict(extra="ignore", populate_by_name=True)
     type: Literal["response_size"] = "response_size"
     max_bytes: Annotated[
         int,
@@ -3681,7 +3681,7 @@ class ResponseSizeAssertion(BaseModel):
 
 
 class ResponseTimeAssertion(BaseModel):
-    model_config = ConfigDict(extra="forbid", populate_by_name=True)
+    model_config = ConfigDict(extra="ignore", populate_by_name=True)
     type: Literal["response_time"] = "response_time"
     threshold_ms: Annotated[
         int,
@@ -3693,7 +3693,7 @@ class ResponseTimeAssertion(BaseModel):
 
 
 class ResponseTimeWarnAssertion(BaseModel):
-    model_config = ConfigDict(extra="forbid", populate_by_name=True)
+    model_config = ConfigDict(extra="ignore", populate_by_name=True)
     type: Literal["response_time_warn"] = "response_time_warn"
     warn_ms: Annotated[
         int,
@@ -3742,7 +3742,7 @@ class ResultSummaryDto(BaseModel):
 
 
 class RetryStrategy(BaseModel):
-    model_config = ConfigDict(extra="forbid", populate_by_name=True)
+    model_config = ConfigDict(extra="ignore", populate_by_name=True)
     type: Annotated[
         str,
         Field(description="Retry strategy kind, e.g. fixed interval between attempts"),
@@ -3760,7 +3760,7 @@ class RetryStrategy(BaseModel):
 
 
 class RootlyChannelConfig(BaseModel):
-    model_config = ConfigDict(extra="forbid", populate_by_name=True)
+    model_config = ConfigDict(extra="ignore", populate_by_name=True)
     channel_type: Annotated[Literal["rootly"], Field(alias="channelType")] = "rootly"
     api_key: Annotated[
         str,
@@ -4519,7 +4519,7 @@ class SingleValueResponseString(BaseModel):
 
 
 class SlackChannelConfig(BaseModel):
-    model_config = ConfigDict(extra="forbid", populate_by_name=True)
+    model_config = ConfigDict(extra="ignore", populate_by_name=True)
     channel_type: Annotated[Literal["slack"], Field(alias="channelType")] = "slack"
     webhook_url: Annotated[
         str,
@@ -4537,7 +4537,7 @@ class SlackChannelConfig(BaseModel):
 
 
 class SplunkOnCallChannelConfig(BaseModel):
-    model_config = ConfigDict(extra="forbid", populate_by_name=True)
+    model_config = ConfigDict(extra="ignore", populate_by_name=True)
     channel_type: Annotated[Literal["splunk_oncall"], Field(alias="channelType")] = (
         "splunk_oncall"
     )
@@ -4556,7 +4556,7 @@ class SplunkOnCallChannelConfig(BaseModel):
 
 
 class SslExpiryAssertion(BaseModel):
-    model_config = ConfigDict(extra="forbid", populate_by_name=True)
+    model_config = ConfigDict(extra="ignore", populate_by_name=True)
     type: Literal["ssl_expiry"] = "ssl_expiry"
     min_days_remaining: Annotated[
         int,
@@ -4573,7 +4573,7 @@ class Source1(StrEnum):
 
 
 class StateTransitionDetails(BaseModel):
-    model_config = ConfigDict(extra="forbid", populate_by_name=True)
+    model_config = ConfigDict(extra="ignore", populate_by_name=True)
     source: Annotated[
         Source1,
         Field(
@@ -4583,7 +4583,7 @@ class StateTransitionDetails(BaseModel):
 
 
 class StatusCodeAssertion(BaseModel):
-    model_config = ConfigDict(extra="forbid", populate_by_name=True)
+    model_config = ConfigDict(extra="ignore", populate_by_name=True)
     type: Literal["status_code"] = "status_code"
     expected: Annotated[
         str,
@@ -4601,7 +4601,7 @@ class StatusCodeAssertion(BaseModel):
 
 
 class StatusPageBranding(BaseModel):
-    model_config = ConfigDict(extra="forbid", populate_by_name=True)
+    model_config = ConfigDict(extra="ignore", populate_by_name=True)
     logo_url: Annotated[
         str | None,
         Field(
@@ -4840,7 +4840,7 @@ class StatusPageSubscriberDto(BaseModel):
 
 
 class Summary(BaseModel):
-    model_config = ConfigDict(extra="forbid", populate_by_name=True)
+    model_config = ConfigDict(extra="ignore", populate_by_name=True)
     id: UUID
     name: Annotated[str, Field(min_length=1)]
     slug: Annotated[str, Field(min_length=1)]
@@ -5078,7 +5078,7 @@ class TagDto(BaseModel):
 
 
 class Tcp(BaseModel):
-    model_config = ConfigDict(extra="forbid", populate_by_name=True)
+    model_config = ConfigDict(extra="ignore", populate_by_name=True)
     check_type: Literal["tcp"] = "tcp"
     host: Annotated[str, Field(description="Target host", examples=["db.example.com"])]
     port: Annotated[int, Field(description="Target port", examples=[5432])]
@@ -5088,12 +5088,12 @@ class Tcp(BaseModel):
 
 
 class TcpConnectsAssertion(BaseModel):
-    model_config = ConfigDict(extra="forbid", populate_by_name=True)
+    model_config = ConfigDict(extra="ignore", populate_by_name=True)
     type: Literal["tcp_connects"] = "tcp_connects"
 
 
 class TcpMonitorConfig(BaseModel):
-    model_config = ConfigDict(extra="forbid", populate_by_name=True)
+    model_config = ConfigDict(extra="ignore", populate_by_name=True)
     host: Annotated[
         str, Field(description="Target hostname or IP address", min_length=1)
     ]
@@ -5105,7 +5105,7 @@ class TcpMonitorConfig(BaseModel):
 
 
 class TcpResponseTimeAssertion(BaseModel):
-    model_config = ConfigDict(extra="forbid", populate_by_name=True)
+    model_config = ConfigDict(extra="ignore", populate_by_name=True)
     type: Literal["tcp_response_time"] = "tcp_response_time"
     max_ms: Annotated[
         int,
@@ -5117,7 +5117,7 @@ class TcpResponseTimeAssertion(BaseModel):
 
 
 class TcpResponseTimeWarnAssertion(BaseModel):
-    model_config = ConfigDict(extra="forbid", populate_by_name=True)
+    model_config = ConfigDict(extra="ignore", populate_by_name=True)
     type: Literal["tcp_response_time_warn"] = "tcp_response_time_warn"
     warn_ms: Annotated[
         int,
@@ -5129,7 +5129,7 @@ class TcpResponseTimeWarnAssertion(BaseModel):
 
 
 class TeamsChannelConfig(BaseModel):
-    model_config = ConfigDict(extra="forbid", populate_by_name=True)
+    model_config = ConfigDict(extra="ignore", populate_by_name=True)
     channel_type: Annotated[Literal["teams"], Field(alias="channelType")] = "teams"
     webhook_url: Annotated[
         str,
@@ -5142,7 +5142,7 @@ class TeamsChannelConfig(BaseModel):
 
 
 class TelegramChannelConfig(BaseModel):
-    model_config = ConfigDict(extra="forbid", populate_by_name=True)
+    model_config = ConfigDict(extra="ignore", populate_by_name=True)
     channel_type: Annotated[Literal["telegram"], Field(alias="channelType")] = (
         "telegram"
     )
@@ -5165,13 +5165,13 @@ class TelegramChannelConfig(BaseModel):
 
 
 class TestChannelResult(BaseModel):
-    model_config = ConfigDict(extra="forbid", populate_by_name=True)
+    model_config = ConfigDict(extra="ignore", populate_by_name=True)
     success: bool
     message: str
 
 
 class TestMatchResult(BaseModel):
-    model_config = ConfigDict(extra="forbid", populate_by_name=True)
+    model_config = ConfigDict(extra="ignore", populate_by_name=True)
     matched: Annotated[
         bool,
         Field(
@@ -5370,7 +5370,7 @@ class AggregationType(StrEnum):
 
 
 class TriggerRule(BaseModel):
-    model_config = ConfigDict(extra="forbid", populate_by_name=True)
+    model_config = ConfigDict(extra="ignore", populate_by_name=True)
     type: Annotated[
         Type4,
         Field(
@@ -6032,7 +6032,7 @@ class UptimeDto(BaseModel):
 
 
 class WebhookChannelConfig(BaseModel):
-    model_config = ConfigDict(extra="forbid", populate_by_name=True)
+    model_config = ConfigDict(extra="ignore", populate_by_name=True)
     channel_type: Annotated[Literal["webhook"], Field(alias="channelType")] = "webhook"
     url: Annotated[
         str,
@@ -6128,7 +6128,7 @@ class WebhookEndpointDto(BaseModel):
 
 
 class WebhookEventCatalogEntry(BaseModel):
-    model_config = ConfigDict(extra="forbid", populate_by_name=True)
+    model_config = ConfigDict(extra="ignore", populate_by_name=True)
     type: Annotated[
         str,
         Field(description='Dot-notation event type identifier, e.g. "monitor.created"'),
@@ -6159,7 +6159,7 @@ class WebhookSigningSecretDto(BaseModel):
 
 
 class WebhookTestResult(BaseModel):
-    model_config = ConfigDict(extra="forbid", populate_by_name=True)
+    model_config = ConfigDict(extra="ignore", populate_by_name=True)
     success: bool
     status_code: Annotated[int | None, Field(alias="statusCode")] = None
     message: str
@@ -6189,7 +6189,7 @@ class WorkspaceDto(BaseModel):
 
 
 class ZapierChannelConfig(BaseModel):
-    model_config = ConfigDict(extra="forbid", populate_by_name=True)
+    model_config = ConfigDict(extra="ignore", populate_by_name=True)
     channel_type: Annotated[Literal["zapier"], Field(alias="channelType")] = "zapier"
     webhook_url: Annotated[
         str,
@@ -6266,7 +6266,7 @@ class BulkMonitorActionRequest(BaseModel):
 
 
 class BulkMonitorActionResult(BaseModel):
-    model_config = ConfigDict(extra="forbid", populate_by_name=True)
+    model_config = ConfigDict(extra="ignore", populate_by_name=True)
     succeeded: Annotated[
         list[UUID], Field(description="IDs of monitors on which the action succeeded")
     ]
@@ -6683,7 +6683,7 @@ class DashboardOverviewDto(BaseModel):
 
 
 class EscalationChain(BaseModel):
-    model_config = ConfigDict(extra="forbid", populate_by_name=True)
+    model_config = ConfigDict(extra="ignore", populate_by_name=True)
     steps: Annotated[
         list[EscalationStep],
         Field(
@@ -6765,7 +6765,7 @@ class GlobalStatusSummaryDto(BaseModel):
 
 
 class Http(BaseModel):
-    model_config = ConfigDict(extra="forbid", populate_by_name=True)
+    model_config = ConfigDict(extra="ignore", populate_by_name=True)
     check_type: Literal["http"] = "http"
     timing: TimingPhasesDto | None = None
     body_truncated: Annotated[
@@ -7001,6 +7001,7 @@ class MonitorAssertionDto(BaseModel):
 
 
 class MonitorDto(BaseModel):
+    model_config = ConfigDict(extra="ignore", populate_by_name=True)
     """Note: ``currentStatus`` was removed from this DTO. Inspect ``enabled`` and the incident-policy API to derive a live status for a monitor instead."""
 
     model_config = ConfigDict(extra="ignore", populate_by_name=True)

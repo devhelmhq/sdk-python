@@ -521,6 +521,20 @@ class TestStatusPageDto:
         with pytest.raises(ValidationError):
             StatusPageDto.model_validate({"id": UID})
 
+    def test_ignores_unknown_and_null_open_incident(self) -> None:
+        dto = StatusPageDto.model_validate(
+            _status_page_fixture(openIncident=None, mystery_response_field="x")
+        )
+        assert dto.name == "Status"
+
+
+class TestCreateStatusPageRequestExtras:
+    def test_rejects_unknown_top_level_field(self) -> None:
+        with pytest.raises(ValidationError, match="extra"):
+            CreateStatusPageRequest.model_validate(
+                {"name": "My Page", "slug": "my-page", "mystery_request_field": "x"}
+            )
+
 
 class TestStatusPageIncidentDto:
     def test_valid(self) -> None:
@@ -535,6 +549,17 @@ class TestStatusPageIncidentDto:
 class TestStatusPageComponentDto:
     def test_valid(self) -> None:
         dto = StatusPageComponentDto.model_validate(_sp_component_fixture())
+        assert dto.name == "API"
+
+    def test_ignores_unknown_null_fields(self) -> None:
+        dto = StatusPageComponentDto.model_validate(
+            _sp_component_fixture(
+                serviceSubscriptionId=None,
+                serviceSlug=None,
+                overrideStatus=None,
+                mystery_response_field="x",
+            )
+        )
         assert dto.name == "API"
 
 
@@ -562,6 +587,12 @@ class TestStatusPageBranding:
     def test_empty_branding_uses_defaults(self) -> None:
         b = StatusPageBranding.model_validate({})
         assert b.hide_powered_by is False
+
+    def test_ignores_unknown_field(self) -> None:
+        b = StatusPageBranding.model_validate(
+            {"fontFamily": "Inter", "hidePoweredBy": True}
+        )
+        assert b.hide_powered_by is True
 
 
 class TestWebhookTestResult:
@@ -691,21 +722,29 @@ class TestSubscribedEventStrictness:
         with pytest.raises(ValidationError):
             CheckTypeDetailsDto.model_validate({"check_type": "graphql"})
 
-    def test_check_type_details_inner_variant_rejects_extra_keys(self) -> None:
-        # The Http inner variant has `extra='forbid'`. If anyone ever drops
-        # it, this test fails — that's the whole point of having explicit
-        # coverage for RootModel-wrapped inners (P1).
-        with pytest.raises(ValidationError, match="extra"):
-            CheckTypeDetailsDto.model_validate(
-                {"check_type": "http", "totally_made_up_key": True}
-            )
+    def test_check_type_details_inner_variant_ignores_extra_keys(self) -> None:
+        # Nested check-detail variants decode API responses, so unknown
+        # fields must be ignored (Postel's Law). Request authoring stays
+        # strict on *Request / *Params only.
+        details = CheckTypeDetailsDto.model_validate(
+            {"check_type": "http", "totally_made_up_key": True}
+        )
+        assert details.root.check_type == "http"
 
-    def test_check_type_details_dns_variant_rejects_extra_keys(self) -> None:
-        with pytest.raises(ValidationError, match="extra"):
-            CheckTypeDetailsDto.model_validate(
-                {"check_type": "dns", "rogue_field": "x"}
-            )
+    def test_check_type_details_dns_variant_ignores_extra_keys(self) -> None:
+        details = CheckTypeDetailsDto.model_validate(
+            {"check_type": "dns", "rogue_field": "x"}
+        )
+        assert details.root.check_type == "dns"
 
-    def test_check_type_details_tcp_variant_rejects_extra_keys(self) -> None:
-        with pytest.raises(ValidationError, match="extra"):
-            CheckTypeDetailsDto.model_validate({"check_type": "tcp", "tls_extra": True})
+    def test_check_type_details_tcp_variant_ignores_extra_keys(self) -> None:
+        details = CheckTypeDetailsDto.model_validate(
+            {
+                "check_type": "tcp",
+                "host": "db.example.com",
+                "port": 5432,
+                "connected": True,
+                "tls_extra": True,
+            }
+        )
+        assert details.root.check_type == "tcp"

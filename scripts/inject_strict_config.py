@@ -1,7 +1,13 @@
 #!/usr/bin/env python3
-"""Inject ``model_config = ConfigDict(extra='forbid', populate_by_name=True)``
-into every generated Pydantic BaseModel class, and add Pydantic v2
-``Field(discriminator=...)`` annotations on tagged-union fields.
+"""Inject ``model_config`` into every generated Pydantic BaseModel class,
+and add Pydantic v2 ``Field(discriminator=...)`` annotations on tagged-union
+fields.
+
+Request / Params models get ``extra='forbid'`` so typos fail before the HTTP
+call. Every other generated model — response DTOs and nested value objects
+used when decoding API responses — gets ``extra='ignore'`` (Postel's Law).
+Additive API fields, including nullable ones the published surface has never
+seen, must not crash the client.
 
 datamodel-code-generator does not emit a config block when the source
 OpenAPI spec lacks ``additionalProperties: false``. Springdoc never emits
@@ -30,9 +36,10 @@ discriminator, Pydantic routes to the correct subtype based on the tag
 value and reports only that subtype's errors (typically 1).
 Implements P0.Bug4 from the round-3 DevEx audit.
 
-This implements policies P1 (response extras forbidden) and P2 (request
-extras forbidden) from `mini/cowork/design/040-codegen-policies.md` plus
-the two DevEx fixes above.
+This implements Postel's Law on the wire (`runbooks/api-contract.md` § 2.2:
+tolerant response decoders, strict request authoring) plus the two DevEx
+fixes above. P2 (request extras forbidden) stays; P1 is now "response extras
+ignored", not rejected.
 
 The transform is purely syntactic so we can run it on the codegen output
 without parsing Python AST. Idempotent: re-runs upgrade an existing
@@ -50,20 +57,28 @@ from pathlib import Path
 # `root-model-extra`), so skip them. Their behavior is governed by the
 # inner type, which on its own enforces strict validation.
 CLASS_RE = re.compile(r"^class\s+([A-Za-z_][\w]*)\s*\(\s*(BaseModel)\s*\)\s*:\s*$")
-CONFIG_LINE_STRICT = "    model_config = ConfigDict(extra='forbid', populate_by_name=True)"
-CONFIG_LINE_TOLERANT = "    model_config = ConfigDict(extra='ignore', populate_by_name=True)"
+CONFIG_LINE_STRICT = (
+    "    model_config = ConfigDict(extra='forbid', populate_by_name=True)"
+)
+CONFIG_LINE_TOLERANT = (
+    "    model_config = ConfigDict(extra='ignore', populate_by_name=True)"
+)
 
 
 def _is_response_shape(class_name: str) -> bool:
-    """Response-shape classes tolerate unknown fields (Postel's Law)."""
-    if class_name[0].islower():
+    """Tolerate unknown fields on every non-authoring model (Postel's Law).
+
+    ``*Request`` / ``*Params`` stay ``extra='forbid'``. Everything else —
+    ``*Dto``, nested value objects on those DTOs (``StatusPageBranding``,
+    check-detail variants, channel configs), envelopes — ignores unknown
+    keys so an additive API field is a non-event. Shared nested types used
+    on both request and response follow the response rule: crashing a
+    ``get`` / ``list`` is worse than dropping an unknown nested request key
+    the API would ignore anyway.
+    """
+    if not class_name or class_name[0].islower():
         return False
-    if class_name.endswith(("Request", "Params")):
-        return False
-    return bool(
-        class_name.endswith(("Dto", "Response"))
-        or class_name.startswith(("SingleValueResponse", "TableValueResult", "CursorPage"))
-    )
+    return not class_name.endswith(("Request", "Params"))
 
 
 # Keep the old name for backward compat in case anything imports it
@@ -78,7 +93,7 @@ CLASS_BANNERS: dict[str, str] = {
         "Note: ``currentStatus`` was removed from this DTO. "
         "Inspect ``enabled`` and the incident-policy API to derive a "
         "live status for a monitor instead."
-    ),
+    )
 }
 
 
@@ -104,9 +119,7 @@ def inject(source: str) -> tuple[str, int]:
     """Return (new_source, count_of_classes_modified)."""
     if "from pydantic import" in source and "ConfigDict" not in source:
         source = source.replace(
-            "from pydantic import",
-            "from pydantic import ConfigDict, ",
-            1,
+            "from pydantic import", "from pydantic import ConfigDict, ", 1
         )
         source = source.replace("ConfigDict, ConfigDict, ", "ConfigDict, ", 1)
 
@@ -147,7 +160,11 @@ def inject(source: str) -> tuple[str, int]:
             i += 1
             continue
         class_name = m.group(1)
-        config_line = CONFIG_LINE_TOLERANT if _is_response_shape(class_name) else CONFIG_LINE_STRICT
+        config_line = (
+            CONFIG_LINE_TOLERANT
+            if _is_response_shape(class_name)
+            else CONFIG_LINE_STRICT
+        )
         # Look at the very next line. If it's already model_config or pass,
         # leave the class alone (idempotency / empty class).
         next_idx = i + 1
