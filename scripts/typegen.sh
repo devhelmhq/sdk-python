@@ -69,11 +69,10 @@ uv run datamodel-codegen \
 # satisfying the discriminator requirement and making the field optional at
 # construction (callers don't need to repeat the discriminator value).
 
-# Post-process: inject `model_config = ConfigDict(extra='forbid')` into every
-# generated class so that requests with unknown fields and responses with
-# unknown fields BOTH fail loudly. Implements P1 + P2 from
-# `mini/cowork/design/040-codegen-policies.md`.
-echo "=> Injecting strict-fail config (extra='forbid') into generated models..."
+# Post-process: extra='forbid' on *Request/*Params, extra='ignore' on every
+# other generated model (Postel's Law — additive API response fields must
+# not crash). See scripts/inject_strict_config.py.
+echo "=> Injecting model_config (forbid on requests, ignore on responses)..."
 uv run python "$SCRIPT_DIR/inject_strict_config.py" "$OUTPUT"
 
 # Re-format after injection so the file stays ruff-clean. Non-fatal so the
