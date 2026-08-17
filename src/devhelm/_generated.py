@@ -86,14 +86,47 @@ class AddResourceGroupMemberRequest(BaseModel):
     ]
 
 
+class Channel(StrEnum):
+    email = "EMAIL"
+    sms = "SMS"
+    webhook = "WEBHOOK"
+
+
 class AdminAddSubscriberRequest(BaseModel):
     model_config = ConfigDict(extra="forbid", populate_by_name=True)
     email: Annotated[
-        EmailStr,
+        EmailStr | None,
         Field(
-            description="Email address to add as a confirmed subscriber", min_length=1
+            description="Email for EMAIL channel; legacy clients may send only this",
+            max_length=320,
+            min_length=0,
         ),
-    ]
+    ] = None
+    channel: Annotated[
+        Channel | None, Field(description="Delivery channel (default: EMAIL)")
+    ] = None
+    destination: Annotated[
+        str | None,
+        Field(
+            description="Channel destination (email, phone, or webhook URL)",
+            max_length=2048,
+            min_length=0,
+        ),
+    ] = None
+    component_ids: Annotated[
+        list[UUID] | None,
+        Field(
+            alias="componentIds",
+            description="Component IDs to scope; omit to leave existing scope; empty list widens to the whole page",
+        ),
+    ] = None
+    require_confirmation: Annotated[
+        bool | None,
+        Field(
+            alias="requireConfirmation",
+            description="When true (EMAIL only), create unconfirmed and send opt-in; null/false confirms immediately",
+        ),
+    ] = None
 
 
 class Status(StrEnum):
@@ -173,6 +206,41 @@ class AlertChannelDisplayConfig(BaseModel):
     project_key: Annotated[
         str | None, Field(alias="projectKey", description="Jira project key")
     ] = None
+    phone_number: Annotated[
+        str | None,
+        Field(
+            alias="phoneNumber",
+            description="Recipient phone number in E.164 format (SMS / phone-call channels)",
+        ),
+    ] = None
+    verified_phone_number_id: Annotated[
+        int | None,
+        Field(
+            alias="verifiedPhoneNumberId",
+            description="Id of the org verified_phone_number row bound to this channel",
+        ),
+    ] = None
+    phone_numbers: Annotated[
+        list[str] | None,
+        Field(
+            alias="phoneNumbers",
+            description="Deprecated mirror of phoneNumber as a length-1 list for older clients",
+        ),
+    ] = None
+    voice_language: Annotated[
+        str | None,
+        Field(
+            alias="voiceLanguage",
+            description="BCP-47 voice language for phone-call TTS (e.g. en-US, de-DE)",
+        ),
+    ] = None
+    preferred_language: Annotated[
+        str | None,
+        Field(
+            alias="preferredLanguage",
+            description="Preferred language for SMS/voice (BCP-47, e.g. en-US, de-DE)",
+        ),
+    ] = None
 
 
 class AlertChannelDto(BaseModel):
@@ -189,6 +257,10 @@ class AlertChannelDto(BaseModel):
     display_config: Annotated[
         AlertChannelDisplayConfig | None, Field(alias="displayConfig")
     ] = None
+    enabled: Annotated[
+        bool,
+        Field(description="Whether this channel is enabled and will receive alerts"),
+    ]
     created_at: Annotated[
         AwareDatetime,
         Field(alias="createdAt", description="Timestamp when the channel was created"),
@@ -549,6 +621,21 @@ class ChartBucketDto(BaseModel):
     ] = None
 
 
+class CodeCheckStep(BaseModel):
+    model_config = ConfigDict(extra="ignore", populate_by_name=True)
+    name: Annotated[str, Field(description="Step name from test.step() or test() call")]
+    status: Annotated[
+        str, Field(description="Step outcome: passed, failed, skipped, or timedOut")
+    ]
+    duration_ms: Annotated[
+        int | None,
+        Field(alias="durationMs", description="Step duration in milliseconds"),
+    ] = None
+    error: Annotated[
+        str | None, Field(description="Error message if the step failed")
+    ] = None
+
+
 class ComponentImpact(BaseModel):
     model_config = ConfigDict(extra="ignore", populate_by_name=True)
     component_id: Annotated[
@@ -601,6 +688,23 @@ class ComponentPosition(BaseModel):
     ] = None
 
 
+class ComponentSample(BaseModel):
+    model_config = ConfigDict(extra="ignore", populate_by_name=True)
+    component_id: Annotated[
+        UUID, Field(alias="componentId", description="Component ID")
+    ]
+    component_name: Annotated[
+        str | None, Field(alias="componentName", description="Component display name")
+    ] = None
+    old_status: Annotated[
+        str | None,
+        Field(alias="oldStatus", description="Previous status before the flip"),
+    ] = None
+    new_status: Annotated[
+        str, Field(alias="newStatus", description="New status after the flip")
+    ]
+
+
 class ComponentsSummaryDto(BaseModel):
     model_config = ConfigDict(extra="ignore", populate_by_name=True)
     total_count: Annotated[
@@ -634,6 +738,30 @@ class ComponentStatusDto(BaseModel):
         str,
         Field(
             description="Current component status, e.g. operational, degraded_performance"
+        ),
+    ]
+
+
+class ComponentTransitionEventDto(BaseModel):
+    model_config = ConfigDict(extra="ignore", populate_by_name=True)
+    new_status: Annotated[
+        str,
+        Field(
+            alias="newStatus", description="New status that defines this rollup bucket"
+        ),
+    ]
+    component_count: Annotated[
+        int,
+        Field(
+            alias="componentCount",
+            description="Total components in the 5-minute rollup bucket",
+        ),
+    ]
+    component_sample: Annotated[
+        list[ComponentSample],
+        Field(
+            alias="componentSample",
+            description="Up to 5 sample components from the bucket",
         ),
     ]
 
@@ -834,6 +962,20 @@ class CreateManualIncidentRequest(BaseModel):
         str | None,
         Field(description="Detailed description or context for the incident"),
     ] = None
+    service_id: Annotated[
+        UUID | None,
+        Field(
+            alias="serviceId",
+            description="Vendor service to link; optional for Dependencies create CTA",
+        ),
+    ] = None
+    service_incident_id: Annotated[
+        UUID | None,
+        Field(
+            alias="serviceIncidentId",
+            description="Vendor incident to link; idempotent if an active org incident already links it",
+        ),
+    ] = None
 
 
 class Type(StrEnum):
@@ -843,6 +985,8 @@ class Type(StrEnum):
     tcp = "TCP"
     icmp = "ICMP"
     heartbeat = "HEARTBEAT"
+    browser = "BROWSER"
+    multi_step_api = "MULTI_STEP_API"
 
 
 class HealthThresholdType(StrEnum):
@@ -896,6 +1040,7 @@ class Type1(StrEnum):
     monitor = "MONITOR"
     group = "GROUP"
     static = "STATIC"
+    dependency = "DEPENDENCY"
 
 
 class CreateStatusPageComponentRequest(BaseModel):
@@ -912,7 +1057,8 @@ class CreateStatusPageComponentRequest(BaseModel):
         ),
     ] = None
     type: Annotated[
-        Type1, Field(description="Component type: MONITOR, GROUP, or STATIC")
+        Type1,
+        Field(description="Component type: MONITOR, GROUP, STATIC, or DEPENDENCY"),
     ]
     monitor_id: Annotated[
         UUID | None,
@@ -925,6 +1071,13 @@ class CreateStatusPageComponentRequest(BaseModel):
             description="Resource group ID (required when type=GROUP)",
         ),
     ] = None
+    service_subscription_id: Annotated[
+        UUID | None,
+        Field(
+            alias="serviceSubscriptionId",
+            description="Service subscription (Dependency) ID — required when type=DEPENDENCY. Bind an existing org subscription; catalog picks must create the subscription first, then pass its id",
+        ),
+    ] = None
     group_id: Annotated[
         UUID | None,
         Field(alias="groupId", description="Component group ID for visual grouping"),
@@ -933,7 +1086,7 @@ class CreateStatusPageComponentRequest(BaseModel):
         bool | None,
         Field(
             alias="showUptime",
-            description="Whether to show the uptime bar (default: true)",
+            description="Whether to show the uptime bar (default: true; false for DEPENDENCY)",
         ),
     ] = None
     display_order: Annotated[
@@ -944,7 +1097,7 @@ class CreateStatusPageComponentRequest(BaseModel):
         bool | None,
         Field(
             alias="excludeFromOverall",
-            description="Exclude from overall status calculation (default: false, use true for third-party deps)",
+            description="Exclude from overall status calculation (default: false; true for DEPENDENCY)",
         ),
     ] = None
     start_date: Annotated[
@@ -1021,6 +1174,13 @@ class CreateStatusPageIncidentRequest(BaseModel):
         Field(
             alias="notifySubscribers",
             description="Whether to email confirmed subscribers about this incident (default: true)",
+        ),
+    ] = None
+    monitoring_incident_id: Annotated[
+        UUID | None,
+        Field(
+            alias="monitoringIncidentId",
+            description="Monitoring incident ID to link this status page incident to; null for standalone",
         ),
     ] = None
 
@@ -1119,6 +1279,25 @@ class CreateWebhookEndpointRequest(BaseModel):
 class CreateWorkspaceRequest(BaseModel):
     model_config = ConfigDict(extra="forbid", populate_by_name=True)
     name: Annotated[str, Field(description="Workspace name", min_length=1)]
+
+
+class CreditTier(BaseModel):
+    model_config = ConfigDict(extra="ignore", populate_by_name=True)
+    uptime_range: Annotated[
+        str,
+        Field(alias="uptimeRange", description="Uptime range, e.g. '99.1% – 99.98%'"),
+    ]
+    credit_percent: Annotated[
+        int | None,
+        Field(alias="creditPercent", description="Credit percent of monthly fee"),
+    ] = None
+    formula: Annotated[
+        str | None,
+        Field(description="Credit formula when percent is not a fixed number"),
+    ] = None
+    notes: Annotated[
+        str | None, Field(description="Additional notes on this credit tier")
+    ] = None
 
 
 class DatadogChannelConfig(BaseModel):
@@ -2050,220 +2229,108 @@ class IcmpResponseTimeWarnAssertion(BaseModel):
     ]
 
 
-class IncidentDto(BaseModel):
+class IncidentActivityEventDto(BaseModel):
     model_config = ConfigDict(extra="ignore", populate_by_name=True)
-    id: Annotated[UUID, Field(description="Unique incident identifier")]
-    monitor_id: Annotated[
-        UUID | None,
-        Field(
-            alias="monitorId",
-            description="Monitor that triggered the incident; null for service or manual incidents",
-        ),
+    id: Annotated[UUID, Field(description="Stable event ID (source row ID)")]
+    at: Annotated[
+        AwareDatetime, Field(description="When the event occurred (ISO 8601)")
+    ]
+    kind: Annotated[
+        str,
+        Field(description="Activity event kind in the merged incident activity stream"),
+    ]
+    actor: Annotated[
+        str | None,
+        Field(description="Actor label when known (user email, system, etc.)"),
     ] = None
-    organization_id: Annotated[
-        int,
-        Field(
-            alias="organizationId", description="Organization this incident belongs to"
-        ),
+    summary: Annotated[str, Field(description="Human-readable summary of the event")]
+    payload: Annotated[
+        dict[str, dict[str, Any]] | None,
+        Field(description="Kind-specific structured fields"),
+    ] = None
+
+
+class IncidentEventDto(BaseModel):
+    model_config = ConfigDict(extra="ignore", populate_by_name=True)
+    incident_id: Annotated[
+        UUID, Field(alias="incidentId", description="Vendor catalog incident ID")
     ]
-    source: Annotated[
-        str, Field(description="Incident origin: MONITOR, SERVICE, or MANUAL")
-    ]
-    status: Annotated[
-        str, Field(description="Current lifecycle status (OPEN, RESOLVED, etc.)")
-    ]
-    severity: Annotated[
-        str, Field(description="Severity level: DOWN, DEGRADED, or MAINTENANCE")
-    ]
+    external_id: Annotated[
+        str | None,
+        Field(alias="externalId", description="Vendor-supplied external incident ID"),
+    ] = None
     title: Annotated[
-        str | None,
-        Field(
-            description="Short summary of the incident; null for auto-generated incidents"
-        ),
-    ] = None
-    triggered_by_rule: Annotated[
-        str | None,
-        Field(
-            alias="triggeredByRule",
-            description="Human-readable description of the trigger rule that fired",
-        ),
-    ] = None
-    affected_regions: Annotated[
-        list[str],
-        Field(
-            alias="affectedRegions",
-            description="Probe regions that observed the failure",
-        ),
+        str, Field(description="Incident title from the vendor status page")
     ]
-    reopen_count: Annotated[
-        int,
-        Field(
-            alias="reopenCount",
-            description="Number of times this incident has been reopened",
-        ),
-    ]
-    created_by_user_id: Annotated[
-        int | None,
-        Field(
-            alias="createdByUserId",
-            description="User who created the incident (manual incidents only)",
-        ),
+    impact: Annotated[
+        str | None, Field(description="Vendor impact level (major, minor, none)")
     ] = None
-    status_page_visible: Annotated[
-        bool,
-        Field(
-            alias="statusPageVisible",
-            description="Whether this incident is visible on the status page",
-        ),
-    ]
-    service_incident_id: Annotated[
-        UUID | None,
-        Field(
-            alias="serviceIncidentId",
-            description="Linked vendor service incident ID; null for monitor incidents",
-        ),
-    ] = None
-    service_id: Annotated[
-        UUID | None,
-        Field(
-            alias="serviceId",
-            description="Linked service catalog ID; null for monitor incidents",
-        ),
-    ] = None
-    external_ref: Annotated[
+    status: Annotated[
         str | None,
-        Field(
-            alias="externalRef",
-            description="External reference ID (e.g. PagerDuty incident ID)",
-        ),
+        Field(description="Vendor lifecycle status (only set on incident.update rows)"),
     ] = None
-    affected_components: Annotated[
-        list[str] | None,
-        Field(
-            alias="affectedComponents",
-            description="Service components affected by this incident",
-        ),
+    body: Annotated[
+        str | None,
+        Field(description="Update body text (only set on incident.update rows)"),
     ] = None
     shortlink: Annotated[
-        str | None, Field(description="Short URL linking to the incident details")
-    ] = None
-    resolution_reason: Annotated[
-        str | None,
-        Field(
-            alias="resolutionReason",
-            description="How the incident was resolved (AUTO_RECOVERED, MANUAL, etc.)",
-        ),
+        str | None, Field(description="Short public URL for the vendor incident")
     ] = None
     started_at: Annotated[
         AwareDatetime | None,
-        Field(
-            alias="startedAt",
-            description="Timestamp when the incident was detected or created",
-        ),
-    ] = None
-    confirmed_at: Annotated[
-        AwareDatetime | None,
-        Field(
-            alias="confirmedAt",
-            description="Timestamp when the incident was confirmed (multi-region confirmation)",
-        ),
+        Field(alias="startedAt", description="When the vendor incident started"),
     ] = None
     resolved_at: Annotated[
         AwareDatetime | None,
-        Field(
-            alias="resolvedAt", description="Timestamp when the incident was resolved"
-        ),
+        Field(alias="resolvedAt", description="When the vendor incident resolved"),
     ] = None
-    cooldown_until: Annotated[
+    detected_at: Annotated[
         AwareDatetime | None,
         Field(
-            alias="cooldownUntil",
-            description="Cooldown window end; new incidents suppressed until this time",
+            alias="detectedAt", description="When DevHelm first detected the incident"
         ),
     ] = None
-    created_at: Annotated[
-        AwareDatetime,
+    vendor_created_at: Annotated[
+        AwareDatetime | None,
         Field(
-            alias="createdAt",
-            description="Timestamp when the incident record was created",
-        ),
-    ]
-    updated_at: Annotated[
-        AwareDatetime,
-        Field(
-            alias="updatedAt",
-            description="Timestamp when the incident was last updated",
-        ),
-    ]
-    monitor_name: Annotated[
-        str | None,
-        Field(
-            alias="monitorName",
-            description="Name of the associated monitor; populated on list responses. Omitted from JSON (undefined to SDKs) on detail responses, treat missing as null.",
+            alias="vendorCreatedAt", description="Vendor-reported creation timestamp"
         ),
     ] = None
-    service_name: Annotated[
-        str | None,
-        Field(
-            alias="serviceName",
-            description="Name of the associated service; populated on list responses. Omitted from JSON (undefined to SDKs) on detail responses, treat missing as null.",
-        ),
-    ] = None
-    service_slug: Annotated[
-        str | None,
-        Field(
-            alias="serviceSlug",
-            description="Slug of the associated service; populated on list responses. Omitted from JSON (undefined to SDKs) on detail responses, treat missing as null.",
-        ),
-    ] = None
-    monitor_type: Annotated[
-        str | None,
-        Field(
-            alias="monitorType",
-            description="Type of the associated monitor; populated on list responses. Omitted from JSON (undefined to SDKs) on detail responses, treat missing as null.",
-        ),
-    ] = None
-    resource_group_id: Annotated[
-        UUID | None,
-        Field(
-            alias="resourceGroupId",
-            description="Resource group that owns this incident; null when not group-managed",
-        ),
-    ] = None
-    resource_group_name: Annotated[
-        str | None,
-        Field(
-            alias="resourceGroupName",
-            description="Name of the resource group; populated on list responses. Omitted from JSON (undefined to SDKs) on detail responses, treat missing as null.",
-        ),
-    ] = None
-    triggering_check_id: Annotated[
-        UUID | None,
-        Field(
-            alias="triggeringCheckId",
-            description="Scheduler-minted check execution ID whose result confirmed this incident; joins to check_results, rule_evaluations, and incident_state_transitions. Omitted from JSON (undefined to SDKs) when null, treat missing as null.",
-        ),
-    ] = None
-    triggered_by_rule_snapshot_hash_hex: Annotated[
-        str | None,
-        Field(
-            alias="triggeredByRuleSnapshotHashHex",
-            description="Hex SHA-256 of the canonical policy snapshot that fired; combined with triggeredByRuleIndex points to the exact TriggerRule. Omitted from JSON when null, treat missing as null.",
-        ),
-    ] = None
-    triggered_by_rule_index: Annotated[
+    duration_seconds: Annotated[
         int | None,
         Field(
-            alias="triggeredByRuleIndex",
-            description="Index of the fired rule inside the policy's trigger_rules array. Omitted from JSON when null, treat missing as null.",
+            alias="durationSeconds",
+            description="Total duration in seconds (set on incident.resolved)",
         ),
     ] = None
-    engine_version: Annotated[
-        str | None,
+    affected_component_ids: Annotated[
+        list[UUID] | None,
         Field(
-            alias="engineVersion",
-            description="Detection engine semver that evaluated the rule. Omitted from JSON when null, treat missing as null.",
+            alias="affectedComponentIds",
+            description="Affected component IDs from the vendor incident join",
         ),
+    ] = None
+
+
+class IncidentFailingMemberSnapshotDto(BaseModel):
+    model_config = ConfigDict(extra="ignore", populate_by_name=True)
+    member_type: Annotated[
+        str, Field(alias="memberType", description="Member type: monitor or service")
+    ]
+    monitor_id: Annotated[
+        UUID | None,
+        Field(alias="monitorId", description="Monitor ID when memberType is monitor"),
+    ] = None
+    service_id: Annotated[
+        UUID | None,
+        Field(alias="serviceId", description="Service ID when memberType is service"),
+    ] = None
+    name: Annotated[
+        str, Field(description="Frozen display name at snapshot time", min_length=1)
+    ]
+    membership_id: Annotated[
+        UUID | None,
+        Field(alias="membershipId", description="Membership row ID when available"),
     ] = None
 
 
@@ -2318,7 +2385,7 @@ class IncidentFilterParams(BaseModel):
         UUID | None,
         Field(
             alias="resourceGroupId",
-            description="Only return incidents whose monitor belongs to this resource group",
+            description="Only return incidents owned by this resource group (incidents.resource_group_id)",
         ),
     ] = None
     tag_id: Annotated[
@@ -2333,6 +2400,13 @@ class IncidentFilterParams(BaseModel):
         Field(
             alias="environmentId",
             description="Only return incidents whose monitor lives in this environment",
+        ),
+    ] = None
+    exclude_id: Annotated[
+        UUID | None,
+        Field(
+            alias="excludeId",
+            description="Exclude this incident ID from results (related-incident lists)",
         ),
     ] = None
     started_from: Annotated[
@@ -2415,6 +2489,57 @@ class IncidentsSummaryDto(BaseModel):
     mttr30d: float | None = None
 
 
+class IncidentTriggerDto(BaseModel):
+    model_config = ConfigDict(extra="ignore", populate_by_name=True)
+    rule_type: Annotated[
+        str | None,
+        Field(
+            alias="ruleType",
+            description="Trigger rule type (consecutive_failures, failures_in_window, response_time); null when unknown",
+        ),
+    ] = None
+    rule_index: Annotated[
+        int | None,
+        Field(
+            alias="ruleIndex",
+            description="0-based index into the policy trigger_rules array; null when unknown",
+        ),
+    ] = None
+    count: Annotated[
+        int | None,
+        Field(
+            description="Observed failing_streak or failures_in_window from forensics; null when unavailable"
+        ),
+    ] = None
+    threshold: Annotated[
+        int | None,
+        Field(
+            description="Rule required count or threshold_ms from forensics; null when unavailable"
+        ),
+    ] = None
+    last_error: Annotated[
+        str | None,
+        Field(
+            alias="lastError",
+            description="failure_reason from the triggering check result; null when unavailable",
+        ),
+    ] = None
+    first_failed_check_at: Annotated[
+        AwareDatetime | None,
+        Field(
+            alias="firstFailedCheckAt",
+            description="Earliest failing check timestamp in the confirm window when computable; null otherwise",
+        ),
+    ] = None
+    source: Annotated[
+        str,
+        Field(
+            description="Where the enrichment came from: forensics, checks, or none (STATUS_DATA/manual/no data)",
+            min_length=1,
+        ),
+    ]
+
+
 class IncidentUpdateDto(BaseModel):
     model_config = ConfigDict(extra="ignore", populate_by_name=True)
     id: UUID
@@ -2452,6 +2577,10 @@ class InviteDto(BaseModel):
             alias="roleOffered",
             description="Role that will be assigned to the invitee on acceptance",
         ),
+    ]
+    created_at: Annotated[
+        AwareDatetime,
+        Field(alias="createdAt", description="Timestamp when the invite was created"),
     ]
     expires_at: Annotated[
         AwareDatetime,
@@ -2564,15 +2693,58 @@ class LinearChannelConfig(BaseModel):
 
 class LinkedStatusPageIncidentDto(BaseModel):
     model_config = ConfigDict(extra="ignore", populate_by_name=True)
-    id: UUID
-    status_page_id: Annotated[UUID, Field(alias="statusPageId")]
-    status_page_name: Annotated[str, Field(alias="statusPageName")]
-    status_page_slug: Annotated[str, Field(alias="statusPageSlug")]
-    title: str
-    status: str
-    impact: str
-    scheduled: bool
-    published_at: Annotated[AwareDatetime | None, Field(alias="publishedAt")] = None
+    id: Annotated[
+        UUID,
+        Field(
+            description="Status page incident ID (same value as spIncidentId; kept for backwards compatibility)"
+        ),
+    ]
+    sp_incident_id: Annotated[
+        UUID,
+        Field(
+            alias="spIncidentId",
+            description="Status page incident ID (alias for id) — use this when the outer context is a monitoring incident",
+        ),
+    ]
+    status_page_id: Annotated[
+        UUID, Field(alias="statusPageId", description="Parent status page ID")
+    ]
+    status_page_name: Annotated[
+        str,
+        Field(alias="statusPageName", description="Parent status page display name"),
+    ]
+    status_page_slug: Annotated[
+        str, Field(alias="statusPageSlug", description="Parent status page URL slug")
+    ]
+    title: Annotated[str, Field(description="Customer-facing incident title")]
+    status: Annotated[
+        str,
+        Field(
+            description="Current lifecycle status (INVESTIGATING, IDENTIFIED, MONITORING, RESOLVED)"
+        ),
+    ]
+    impact: Annotated[
+        str, Field(description="Impact level (NONE, MINOR, MAJOR, CRITICAL)")
+    ]
+    scheduled: Annotated[bool, Field(description="Scheduled maintenance flag")]
+    published_at: Annotated[
+        AwareDatetime | None,
+        Field(alias="publishedAt", description="Publish time; null while draft"),
+    ] = None
+    connection_mode: Annotated[
+        str,
+        Field(
+            alias="connectionMode",
+            description="Whether the linked SPI was created by automation (AUTO) or by a human/API caller (MANUAL)",
+        ),
+    ]
+    page_incident_mode: Annotated[
+        str,
+        Field(
+            alias="pageIncidentMode",
+            description="Incident mode of the parent status page at read time (MANUAL, REVIEW, AUTOMATIC)",
+        ),
+    ]
 
 
 class MaintenanceComponentRef(BaseModel):
@@ -2582,6 +2754,54 @@ class MaintenanceComponentRef(BaseModel):
     status: Annotated[
         str, Field(description="Component status at the time of the maintenance update")
     ]
+
+
+class MaintenanceEventDto(BaseModel):
+    model_config = ConfigDict(extra="ignore", populate_by_name=True)
+    maintenance_id: Annotated[
+        UUID, Field(alias="maintenanceId", description="Vendor catalog maintenance ID")
+    ]
+    external_id: Annotated[
+        str,
+        Field(
+            alias="externalId", description="Vendor-supplied external maintenance ID"
+        ),
+    ]
+    title: Annotated[
+        str, Field(description="Maintenance title from the vendor status page")
+    ]
+    status: Annotated[
+        str,
+        Field(
+            description="Lifecycle status: scheduled, in_progress, verifying, completed"
+        ),
+    ]
+    impact: Annotated[str | None, Field(description="Vendor impact level")] = None
+    shortlink: Annotated[
+        str | None, Field(description="Short public URL for the vendor maintenance")
+    ] = None
+    scheduled_for: Annotated[
+        AwareDatetime | None,
+        Field(
+            alias="scheduledFor",
+            description="Scheduled start; null for undated maintenance",
+        ),
+    ] = None
+    scheduled_until: Annotated[
+        AwareDatetime | None, Field(alias="scheduledUntil", description="Scheduled end")
+    ] = None
+    started_at: Annotated[
+        AwareDatetime | None,
+        Field(alias="startedAt", description="When maintenance actually started"),
+    ] = None
+    completed_at: Annotated[
+        AwareDatetime | None,
+        Field(alias="completedAt", description="When maintenance completed"),
+    ] = None
+    affected_component_ids: Annotated[
+        list[UUID] | None,
+        Field(alias="affectedComponentIds", description="Affected component IDs"),
+    ] = None
 
 
 class MaintenanceUpdateDto(BaseModel):
@@ -2946,6 +3166,8 @@ class Type3(StrEnum):
     tcp = "TCP"
     icmp = "ICMP"
     heartbeat = "HEARTBEAT"
+    browser = "BROWSER"
+    multi_step_api = "MULTI_STEP_API"
 
 
 class MonitorTestResultDto(BaseModel):
@@ -2979,12 +3201,46 @@ class NewTagRequest(BaseModel):
     ] = None
 
 
+class NoSlaContext(BaseModel):
+    model_config = ConfigDict(extra="ignore", populate_by_name=True)
+    reason: Annotated[str | None, Field(description="Reason no SLA is published")] = (
+        None
+    )
+    historical_claim: Annotated[
+        str | None,
+        Field(
+            alias="historicalClaim", description="Non-binding historical uptime claim"
+        ),
+    ] = None
+    support_sla: Annotated[
+        str | None,
+        Field(
+            alias="supportSla",
+            description="Support response time SLA if different from uptime SLA",
+        ),
+    ] = None
+    enterprise_note: Annotated[
+        str | None,
+        Field(
+            alias="enterpriseNote",
+            description="Note about enterprise/custom SLA availability",
+        ),
+    ] = None
+
+
 class NotificationDispatchDto(BaseModel):
     model_config = ConfigDict(extra="ignore", populate_by_name=True)
     id: Annotated[UUID, Field(description="Unique dispatch record identifier")]
     incident_id: Annotated[
         UUID, Field(alias="incidentId", description="Incident this dispatch is for")
     ]
+    incident_title: Annotated[
+        str | None,
+        Field(
+            alias="incidentTitle",
+            description="Incident title at read time; null if untitled or missing",
+        ),
+    ] = None
     policy_id: Annotated[
         UUID,
         Field(
@@ -3026,6 +3282,27 @@ class NotificationDispatchDto(BaseModel):
         Field(
             alias="acknowledgedAt",
             description="Timestamp when this dispatch was acknowledged (null if not acknowledged)",
+        ),
+    ] = None
+    acknowledged_by: Annotated[
+        str | None,
+        Field(
+            alias="acknowledgedBy",
+            description="Actor who acknowledged this dispatch (user email, api-key:<id>, voice:<callSid>, etc.); null if not acknowledged",
+        ),
+    ] = None
+    acknowledged_via: Annotated[
+        str | None,
+        Field(
+            alias="acknowledgedVia",
+            description="Channel used to acknowledge (DASHBOARD, API, PHONE_CALL, INTERNAL, etc.); null if not acknowledged",
+        ),
+    ] = None
+    matched_rules: Annotated[
+        list[str] | None,
+        Field(
+            alias="matchedRules",
+            description='Labels of match rules that caused this dispatch (same wording as TestMatchResult); null on pre-V138 rows; catch-all is ["(catch-all: no rules defined)"]',
         ),
     ] = None
     next_escalation_at: Annotated[
@@ -3095,6 +3372,89 @@ class NotificationDto(BaseModel):
     ]
 
 
+class NotificationPolicyWindowStatsDto(BaseModel):
+    model_config = ConfigDict(extra="ignore", populate_by_name=True)
+    fires: Annotated[int, Field(description="Dispatches created in the window")]
+    acknowledgements: Annotated[
+        int, Field(description="Fires in the window that were acknowledged")
+    ]
+    ackable_fires: Annotated[
+        int,
+        Field(
+            alias="ackableFires",
+            description="Ack ratio denominator: fires when the policy has an ack gate, else 0",
+        ),
+    ]
+    expired: Annotated[
+        int, Field(description="Fires that exhausted escalation without acknowledgment")
+    ]
+    sends: Annotated[
+        int, Field(description="Alert deliveries linked to fires in the window")
+    ]
+    failed_sends: Annotated[
+        int,
+        Field(alias="failedSends", description="Linked deliveries with status FAILED"),
+    ]
+    median_ack_seconds: Annotated[
+        int | None,
+        Field(
+            alias="medianAckSeconds",
+            description="Median seconds from fire to ack among acknowledged fires; null when none",
+        ),
+    ] = None
+    deepest_step_reached: Annotated[
+        int | None,
+        Field(
+            alias="deepestStepReached",
+            description="Highest escalation step reached in the window; null when no fires",
+        ),
+    ] = None
+    last_fired_at: Annotated[
+        AwareDatetime | None,
+        Field(
+            alias="lastFiredAt",
+            description="Created-at of the most recent fire in the window; null when none",
+        ),
+    ] = None
+    last_fired_incident_id: Annotated[
+        UUID | None,
+        Field(
+            alias="lastFiredIncidentId",
+            description="Incident id of the most recent fire in the window; null when none",
+        ),
+    ] = None
+
+
+class OfficialSla(BaseModel):
+    model_config = ConfigDict(extra="ignore", populate_by_name=True)
+    percentage: Annotated[
+        str | None, Field(description="Advertised uptime percentage, e.g. '99.99%'")
+    ] = None
+    scope: Annotated[
+        str | None,
+        Field(description="Scope of the SLA, e.g. 'Monthly uptime per region'"),
+    ] = None
+    measurement: Annotated[
+        str | None, Field(description="How the vendor measures uptime for SLA purposes")
+    ] = None
+    exclusions: Annotated[
+        str | None, Field(description="Summary of exclusions from SLA calculation")
+    ] = None
+    applies_to_plans: Annotated[
+        list[str] | None,
+        Field(
+            alias="appliesToPlans",
+            description="Plan names this SLA applies to, e.g. ['Enterprise']",
+        ),
+    ] = None
+    not_covered: Annotated[
+        str | None,
+        Field(
+            alias="notCovered", description="Services/components NOT covered by the SLA"
+        ),
+    ] = None
+
+
 class OpsGenieChannelConfig(BaseModel):
     model_config = ConfigDict(extra="ignore", populate_by_name=True)
     channel_type: Annotated[Literal["opsgenie"], Field(alias="channelType")] = (
@@ -3126,6 +3486,32 @@ class OrganizationDto(BaseModel):
     ] = None
     website_url: Annotated[
         str | None, Field(alias="websiteUrl", description="Organization website URL")
+    ] = None
+
+
+class OrgIncidentAnnotationDto(BaseModel):
+    model_config = ConfigDict(extra="ignore", populate_by_name=True)
+    incident_id: Annotated[
+        UUID, Field(alias="incidentId", description="Internal org incident ID")
+    ]
+    display_key: Annotated[
+        str | None,
+        Field(
+            alias="displayKey",
+            description="Human display key (e.g. DEV-42); null until platform INC codes ship",
+        ),
+    ] = None
+    status: Annotated[str, Field(description="Internal incident lifecycle status")]
+    severity: Annotated[str, Field(description="Internal incident severity")]
+    alerted: Annotated[
+        bool,
+        Field(
+            description="Whether alert channels were eligible to fire (false for AWARENESS silent tracking)"
+        ),
+    ]
+    started_at: Annotated[
+        AwareDatetime | None,
+        Field(alias="startedAt", description="When the internal incident started"),
     ] = None
 
 
@@ -3179,6 +3565,48 @@ class PageSection(BaseModel):
     page_order: Annotated[
         int, Field(alias="pageOrder", description="Position on the page (0-based)")
     ]
+
+
+class PhoneCallChannelConfig(BaseModel):
+    model_config = ConfigDict(extra="ignore", populate_by_name=True)
+    channel_type: Annotated[Literal["phone_call"], Field(alias="channelType")] = (
+        "phone_call"
+    )
+    phone_number: Annotated[
+        str | None,
+        Field(
+            alias="phoneNumber",
+            description="Recipient phone number in E.164 format, e.g. +14155550123",
+        ),
+    ] = None
+    verified_phone_number_id: Annotated[
+        int | None,
+        Field(
+            alias="verifiedPhoneNumberId",
+            description="Id of an org verified_phone_number row; alternative to phoneNumber",
+        ),
+    ] = None
+    phone_numbers: Annotated[
+        list[str] | None,
+        Field(
+            alias="phoneNumbers",
+            description="Deprecated: use phoneNumber. Accepted as a length-1 list for one release; ignored when phoneNumber or id is set",
+        ),
+    ] = None
+    voice_language: Annotated[
+        str | None,
+        Field(
+            alias="voiceLanguage",
+            description="TTS voice language/locale (default: en-US). See VoiceLanguage for supported values",
+        ),
+    ] = None
+    preferred_language: Annotated[
+        str | None,
+        Field(
+            alias="preferredLanguage",
+            description="Preferred language for TTS and notifications (BCP-47, e.g. en-US, de-DE). Alias for voiceLanguage",
+        ),
+    ] = None
 
 
 class Tier(StrEnum):
@@ -3284,6 +3712,27 @@ class PollChartBucketDto(BaseModel):
             alias="totalPolls", description="Total polls in this bucket", examples=[60]
         ),
     ]
+
+
+class PricingTier(BaseModel):
+    model_config = ConfigDict(extra="ignore", populate_by_name=True)
+    name: Annotated[
+        str, Field(description="Tier name, e.g. 'Free', 'Pro', 'Enterprise'")
+    ]
+    sla_percentage: Annotated[
+        str | None,
+        Field(
+            alias="slaPercentage",
+            description="SLA percentage for this tier, e.g. '99.9%'",
+        ),
+    ] = None
+    price_from: Annotated[
+        str | None,
+        Field(
+            alias="priceFrom",
+            description="Starting price, e.g. '$0', '$25/mo', 'Custom'",
+        ),
+    ] = None
 
 
 class Status6(StrEnum):
@@ -3527,6 +3976,54 @@ class ResolveIncidentRequest(BaseModel):
     ] = None
 
 
+class ResourceGroupDeleteBlockerDto(BaseModel):
+    model_config = ConfigDict(extra="ignore", populate_by_name=True)
+    status_page_id: Annotated[
+        UUID,
+        Field(
+            alias="statusPageId",
+            description="Status page that owns the blocking component",
+        ),
+    ]
+    status_page_name: Annotated[
+        str,
+        Field(
+            alias="statusPageName",
+            description="Human-readable status page name",
+            min_length=1,
+        ),
+    ]
+    status_page_slug: Annotated[
+        str,
+        Field(
+            alias="statusPageSlug",
+            description="URL-safe status page slug",
+            min_length=1,
+        ),
+    ]
+    component_id: Annotated[
+        UUID,
+        Field(
+            alias="componentId",
+            description="Blocking GROUP-typed status page component ID",
+        ),
+    ]
+    component_name: Annotated[
+        str,
+        Field(
+            alias="componentName",
+            description="Blocking component display name",
+            min_length=1,
+        ),
+    ]
+    hostname: Annotated[
+        str | None,
+        Field(
+            description="Public hostname when a custom domain is configured; null otherwise"
+        ),
+    ] = None
+
+
 class ResourceGroupHealthDto(BaseModel):
     model_config = ConfigDict(extra="ignore", populate_by_name=True)
     status: Annotated[
@@ -3547,7 +4044,7 @@ class ResourceGroupHealthDto(BaseModel):
         int,
         Field(
             alias="activeIncidents",
-            description="Number of members with an active incident or non-operational status",
+            description="Number of members currently non-operational (not an incident-row count)",
         ),
     ]
     threshold_status: Annotated[
@@ -3561,110 +4058,42 @@ class ResourceGroupHealthDto(BaseModel):
         int | None,
         Field(
             alias="failingCount",
-            description="Number of failing members at time of last evaluation",
+            description="Number of failing members at time of last evaluation; null when no threshold configured",
         ),
     ] = None
-
-
-class ResourceGroupMemberDto(BaseModel):
-    model_config = ConfigDict(extra="ignore", populate_by_name=True)
-    id: Annotated[UUID, Field(description="Unique group member record identifier")]
-    group_id: Annotated[
-        UUID,
-        Field(alias="groupId", description="Resource group this member belongs to"),
-    ]
-    member_type: Annotated[
-        str,
-        Field(alias="memberType", description="Type of member: 'monitor' or 'service'"),
-    ]
-    monitor_id: Annotated[
-        UUID | None,
-        Field(
-            alias="monitorId",
-            description="Monitor ID; set when memberType is 'monitor'",
-        ),
-    ] = None
-    service_id: Annotated[
-        UUID | None,
-        Field(
-            alias="serviceId",
-            description="Service ID; set when memberType is 'service'",
-        ),
-    ] = None
-    name: Annotated[
-        str | None,
-        Field(description="Display name of the referenced monitor or service"),
-    ] = None
-    slug: Annotated[
-        str | None,
-        Field(
-            description="Slug identifier for the service (services only); used for icons and uptime API calls"
-        ),
-    ] = None
-    subscription_id: Annotated[
-        UUID | None,
-        Field(
-            alias="subscriptionId",
-            description="Subscription ID for the service (services only); used to link to the dependency detail page",
-        ),
-    ] = None
-    status: Annotated[str, Field(description="Computed health status for this member")]
-    effective_frequency: Annotated[
-        str | None,
-        Field(
-            alias="effectiveFrequency",
-            description="Effective check frequency label showing the group default when the monitor inherits it; null for services or when no group default is configured",
-        ),
-    ] = None
-    created_at: Annotated[
-        AwareDatetime,
-        Field(
-            alias="createdAt",
-            description="Timestamp when the member was added to the group",
-        ),
-    ]
-    uptime24h: Annotated[
-        float | None,
-        Field(description="24h uptime percentage; populated when includeMetrics=true"),
-    ] = None
-    chart_data: Annotated[
-        list[float] | None,
-        Field(
-            alias="chartData",
-            description="Uptime tick values (0-100) for last-24h mini chart; populated when includeMetrics=true",
-        ),
-    ] = None
-    avg_latency_ms: Annotated[
-        float | None,
-        Field(
-            alias="avgLatencyMs",
-            description="Average latency in ms (monitors only); populated when includeMetrics=true",
-        ),
-    ] = None
-    p95_latency_ms: Annotated[
-        float | None,
-        Field(
-            alias="p95LatencyMs",
-            description="P95 latency in ms (monitors only); populated when includeMetrics=true",
-        ),
-    ] = None
-    last_checked_at: Annotated[
+    health_breached_since: Annotated[
         AwareDatetime | None,
         Field(
-            alias="lastCheckedAt",
-            description="Timestamp of the most recent health check; populated when includeMetrics=true",
+            alias="healthBreachedSince",
+            description="When the health threshold was first breached in the current cycle; null when not breached",
         ),
     ] = None
-    monitor_type: Annotated[
-        str | None,
+    health_evaluated_at: Annotated[
+        AwareDatetime | None,
         Field(
-            alias="monitorType",
-            description="Monitor type (HTTP, DNS, TCP, ICMP, HEARTBEAT, MCP); monitors only",
+            alias="healthEvaluatedAt",
+            description="When group health was last evaluated (threshold or stamp-only); null until first evaluation",
         ),
     ] = None
-    environment_name: Annotated[
-        str | None,
-        Field(alias="environmentName", description="Environment name; monitors only"),
+
+
+class ResourceGroupMemberIncidentMarkDto(BaseModel):
+    model_config = ConfigDict(extra="ignore", populate_by_name=True)
+    at: Annotated[
+        AwareDatetime,
+        Field(
+            description="Incident startedAt (or first confirmed) within the trailing 24h window"
+        ),
+    ]
+    incident_id: Annotated[
+        UUID | None,
+        Field(
+            alias="incidentId",
+            description="Incident ID for navigation; null when unknown",
+        ),
+    ] = None
+    severity: Annotated[
+        str | None, Field(description="Optional severity display hint")
     ] = None
 
 
@@ -3930,6 +4359,27 @@ class ScheduledMaintenanceDto(BaseModel):
     ]
 
 
+class ScriptMonitorConfig(BaseModel):
+    model_config = ConfigDict(extra="ignore", populate_by_name=True)
+    script: Annotated[
+        str,
+        Field(
+            description="Playwright test script source code",
+            max_length=65536,
+            min_length=1,
+        ),
+    ]
+    timeout_seconds: Annotated[
+        int | None,
+        Field(
+            alias="timeoutSeconds",
+            description="Maximum execution time in seconds (5–120)",
+            ge=5,
+            le=120,
+        ),
+    ] = None
+
+
 class SecretDto(BaseModel):
     model_config = ConfigDict(extra="ignore", populate_by_name=True)
     id: Annotated[UUID, Field(description="Unique secret identifier")]
@@ -3986,6 +4436,21 @@ class SeoMetadataDto(BaseModel):
     ] = None
 
 
+class ServiceBreakdown(BaseModel):
+    model_config = ConfigDict(extra="ignore", populate_by_name=True)
+    service: Annotated[str, Field(description="Sub-service name, e.g. 'EC2', 'S3'")]
+    sla_percentage: Annotated[
+        str | None,
+        Field(alias="slaPercentage", description="SLA percentage for this sub-service"),
+    ] = None
+    scope: Annotated[
+        str | None, Field(description="Scope qualifier, e.g. 'Region (Multi-AZ)'")
+    ] = None
+    notes: Annotated[
+        str | None, Field(description="Additional notes on measurement or conditions")
+    ] = None
+
+
 class ServiceCatalogDto(BaseModel):
     model_config = ConfigDict(extra="ignore", populate_by_name=True)
     id: UUID
@@ -4006,6 +4471,13 @@ class ServiceCatalogDto(BaseModel):
     ]
     enabled: bool
     published: bool
+    sla_published: Annotated[
+        bool,
+        Field(
+            alias="slaPublished",
+            description="Whether the service's SLA page is publicly visible",
+        ),
+    ]
     overall_status: Annotated[str | None, Field(alias="overallStatus")] = None
     created_at: Annotated[AwareDatetime, Field(alias="createdAt")]
     updated_at: Annotated[AwareDatetime, Field(alias="updatedAt")]
@@ -4147,6 +4619,7 @@ class ServiceIncidentDto(BaseModel):
     vendor_created_at: Annotated[
         AwareDatetime | None, Field(alias="vendorCreatedAt")
     ] = None
+    affected_regions: Annotated[list[str] | None, Field(alias="affectedRegions")] = None
 
 
 class ServiceIncidentUpdateDto(BaseModel):
@@ -4388,9 +4861,49 @@ class SetAlertChannelsRequest(BaseModel):
     ]
 
 
+class SetEnabledRequest(BaseModel):
+    model_config = ConfigDict(extra="forbid", populate_by_name=True)
+    enabled: Annotated[
+        bool, Field(description="Whether the resource should be enabled")
+    ]
+
+
 class SetMonitorAuthRequest(BaseModel):
     model_config = ConfigDict(extra="forbid", populate_by_name=True)
     config: ApiKeyAuthConfig | BasicAuthConfig | BearerAuthConfig | HeaderAuthConfig
+
+
+class Status7(StrEnum):
+    operational = "OPERATIONAL"
+    degraded_performance = "DEGRADED_PERFORMANCE"
+    partial_outage = "PARTIAL_OUTAGE"
+    major_outage = "MAJOR_OUTAGE"
+    under_maintenance = "UNDER_MAINTENANCE"
+
+
+class SetStatusPageComponentOverrideRequest(BaseModel):
+    model_config = ConfigDict(extra="forbid", populate_by_name=True)
+    status: Annotated[
+        Status7,
+        Field(
+            description="Override status while active; takes precedence over binding until expiry/clear"
+        ),
+    ]
+    reason: Annotated[
+        str | None,
+        Field(
+            description="Optional operator reason shown in the builder",
+            max_length=2000,
+            min_length=0,
+        ),
+    ] = None
+    expires_at: Annotated[
+        AwareDatetime,
+        Field(
+            alias="expiresAt",
+            description="When the override expires (must be in the future, at most 24h from now)",
+        ),
+    ]
 
 
 class SingleValueResponseAlertChannelDto(BaseModel):
@@ -4478,11 +4991,6 @@ class SingleValueResponseResourceGroupHealthDto(BaseModel):
     data: ResourceGroupHealthDto
 
 
-class SingleValueResponseResourceGroupMemberDto(BaseModel):
-    model_config = ConfigDict(extra="ignore", populate_by_name=True)
-    data: ResourceGroupMemberDto
-
-
 class SingleValueResponseResultSummaryDto(BaseModel):
     model_config = ConfigDict(extra="ignore", populate_by_name=True)
     data: ResultSummaryDto
@@ -4518,6 +5026,24 @@ class SingleValueResponseString(BaseModel):
     data: str
 
 
+class Status8(StrEnum):
+    pending = "PENDING"
+    dispatching = "DISPATCHING"
+    delivered = "DELIVERED"
+    escalating = "ESCALATING"
+    acknowledged = "ACKNOWLEDGED"
+    completed = "COMPLETED"
+
+
+class SkippedDispatch(BaseModel):
+    model_config = ConfigDict(extra="ignore", populate_by_name=True)
+    id: Annotated[UUID, Field(description="Dispatch identifier")]
+    status: Annotated[Status8, Field(description="Current dispatch status")]
+    reason: Annotated[
+        str, Field(description="Why this dispatch was skipped", min_length=1)
+    ]
+
+
 class SlackChannelConfig(BaseModel):
     model_config = ConfigDict(extra="ignore", populate_by_name=True)
     channel_type: Annotated[Literal["slack"], Field(alias="channelType")] = "slack"
@@ -4532,6 +5058,63 @@ class SlackChannelConfig(BaseModel):
         Field(
             alias="mentionText",
             description="Optional mention text included in notifications, e.g. @channel",
+        ),
+    ] = None
+
+
+class SmsChannelConfig(BaseModel):
+    model_config = ConfigDict(extra="ignore", populate_by_name=True)
+    channel_type: Annotated[Literal["sms"], Field(alias="channelType")] = "sms"
+    phone_number: Annotated[
+        str | None,
+        Field(
+            alias="phoneNumber",
+            description="Recipient phone number in E.164 format, e.g. +14155550123",
+        ),
+    ] = None
+    verified_phone_number_id: Annotated[
+        int | None,
+        Field(
+            alias="verifiedPhoneNumberId",
+            description="Id of an org verified_phone_number row; alternative to phoneNumber",
+        ),
+    ] = None
+    phone_numbers: Annotated[
+        list[str] | None,
+        Field(
+            alias="phoneNumbers",
+            description="Deprecated: use phoneNumber. Accepted as a length-1 list for one release; ignored when phoneNumber or id is set",
+        ),
+    ] = None
+    preferred_language: Annotated[
+        str | None,
+        Field(
+            alias="preferredLanguage",
+            description="Preferred language for SMS body (BCP-47, e.g. en-US, de-DE). Default: en-US",
+        ),
+    ] = None
+
+
+class SourceUrls(BaseModel):
+    model_config = ConfigDict(extra="ignore", populate_by_name=True)
+    sla_page: Annotated[
+        str | None, Field(alias="slaPage", description="URL to vendor's SLA page")
+    ] = None
+    pricing_page: Annotated[
+        str | None,
+        Field(alias="pricingPage", description="URL to vendor's pricing page"),
+    ] = None
+    tos_page: Annotated[
+        str | None,
+        Field(alias="tosPage", description="URL to vendor's Terms of Service"),
+    ] = None
+    status_page: Annotated[
+        str | None, Field(alias="statusPage", description="URL to vendor's status page")
+    ] = None
+    all_slas_page: Annotated[
+        str | None,
+        Field(
+            alias="allSlasPage", description="URL to vendor's all-services SLA listing"
         ),
     ] = None
 
@@ -4598,6 +5181,31 @@ class StatusCodeAssertion(BaseModel):
             description="Comparison operator (equals, contains, less_than, greater_than, etc.)"
         ),
     ]
+
+
+class StatusEventDto(BaseModel):
+    model_config = ConfigDict(extra="ignore", populate_by_name=True)
+    id: Annotated[
+        UUID,
+        Field(
+            description="Stable row ID (incident/update/maintenance UUID or transition bucket key)"
+        ),
+    ]
+    type: Annotated[
+        str, Field(description="Status event row type on the Dependencies Detail rail")
+    ]
+    at: Annotated[
+        AwareDatetime,
+        Field(
+            description="Canonical timestamp used for reverse-chronological ordering"
+        ),
+    ]
+    incident: IncidentEventDto | None = None
+    maintenance: MaintenanceEventDto | None = None
+    component: ComponentTransitionEventDto | None = None
+    org_annotation: Annotated[
+        OrgIncidentAnnotationDto | None, Field(alias="orgAnnotation")
+    ] = None
 
 
 class StatusPageBranding(BaseModel):
@@ -4743,7 +5351,62 @@ class StatusPageComponentDto(BaseModel):
     type: str
     monitor_id: Annotated[UUID | None, Field(alias="monitorId")] = None
     resource_group_id: Annotated[UUID | None, Field(alias="resourceGroupId")] = None
-    current_status: Annotated[str, Field(alias="currentStatus")]
+    service_subscription_id: Annotated[
+        UUID | None,
+        Field(
+            alias="serviceSubscriptionId",
+            description="Service subscription (Dependency) id when type=DEPENDENCY",
+        ),
+    ] = None
+    service_slug: Annotated[
+        str | None,
+        Field(
+            alias="serviceSlug",
+            description="Slug of the subscribed catalog service (denormalized for display)",
+        ),
+    ] = None
+    service_name: Annotated[
+        str | None,
+        Field(
+            alias="serviceName",
+            description="Display name of the subscribed catalog service (denormalized for display)",
+        ),
+    ] = None
+    current_status: Annotated[
+        str,
+        Field(
+            alias="currentStatus",
+            description="Effective display status (incident > active override > binding)",
+        ),
+    ]
+    override_status: Annotated[
+        str | None,
+        Field(
+            alias="overrideStatus",
+            description="Active timed override status; null when unset or expired",
+        ),
+    ] = None
+    override_reason: Annotated[
+        str | None,
+        Field(
+            alias="overrideReason",
+            description="Optional operator reason for the active override",
+        ),
+    ] = None
+    override_expires_at: Annotated[
+        AwareDatetime | None,
+        Field(
+            alias="overrideExpiresAt",
+            description="When the active override expires; null when unset or expired",
+        ),
+    ] = None
+    override_actor: Annotated[
+        int | None,
+        Field(
+            alias="overrideActor",
+            description="User id who set the override; null for API-key actors or when inactive",
+        ),
+    ] = None
     show_uptime: Annotated[bool, Field(alias="showUptime")]
     display_order: Annotated[int, Field(alias="displayOrder")]
     page_order: Annotated[int, Field(alias="pageOrder")]
@@ -4787,32 +5450,6 @@ class StatusPageCustomDomainDto(BaseModel):
     primary: bool
 
 
-class StatusPageDto(BaseModel):
-    model_config = ConfigDict(extra="ignore", populate_by_name=True)
-    id: UUID
-    organization_id: Annotated[int, Field(alias="organizationId")]
-    workspace_id: Annotated[int, Field(alias="workspaceId")]
-    name: Annotated[str, Field(min_length=1)]
-    slug: Annotated[str, Field(min_length=1)]
-    description: str | None = None
-    branding: StatusPageBranding
-    visibility: str
-    enabled: bool
-    incident_mode: Annotated[str, Field(alias="incidentMode")]
-    component_count: Annotated[int | None, Field(alias="componentCount")] = None
-    subscriber_count: Annotated[int | None, Field(alias="subscriberCount")] = None
-    overall_status: Annotated[str | None, Field(alias="overallStatus")] = None
-    managed_by: Annotated[
-        str | None,
-        Field(
-            alias="managedBy",
-            description="Source that created/owns this status page: DASHBOARD, CLI, TERRAFORM, MCP, or API. Null on pages created before this attribution column existed.",
-        ),
-    ] = None
-    created_at: Annotated[AwareDatetime, Field(alias="createdAt")]
-    updated_at: Annotated[AwareDatetime, Field(alias="updatedAt")]
-
-
 class StatusPageIncidentComponentDto(BaseModel):
     model_config = ConfigDict(extra="ignore", populate_by_name=True)
     status_page_component_id: Annotated[UUID, Field(alias="statusPageComponentId")]
@@ -4831,12 +5468,170 @@ class StatusPageIncidentUpdateDto(BaseModel):
     created_at: Annotated[AwareDatetime, Field(alias="createdAt")]
 
 
+class StatusPageMeasuredUptimeDayDto(BaseModel):
+    model_config = ConfigDict(extra="ignore", populate_by_name=True)
+    date: Annotated[
+        AwareDatetime,
+        Field(
+            description="Start-of-day timestamp for this bucket (UTC midnight, ISO 8601)"
+        ),
+    ]
+    total_checks: Annotated[
+        int,
+        Field(
+            alias="totalChecks",
+            description="Total probe checks recorded that day across regions",
+        ),
+    ]
+    passed_checks: Annotated[
+        int,
+        Field(
+            alias="passedChecks",
+            description="Checks that passed that day across regions",
+        ),
+    ]
+    uptime_percentage: Annotated[
+        float | None,
+        Field(
+            alias="uptimePercentage",
+            description="passedChecks / totalChecks × 100; null when totalChecks is 0",
+        ),
+    ] = None
+
+
+class StatusPageNotificationDeliveryDto(BaseModel):
+    model_config = ConfigDict(extra="ignore", populate_by_name=True)
+    id: Annotated[UUID, Field(description="Delivery receipt ID")]
+    status_page_id: Annotated[
+        UUID,
+        Field(alias="statusPageId", description="Status page that owns this delivery"),
+    ]
+    subscriber_id: Annotated[
+        UUID,
+        Field(alias="subscriberId", description="Subscriber this delivery targeted"),
+    ]
+    destination: Annotated[
+        str | None,
+        Field(description="Subscriber destination (email, phone, or webhook URL)"),
+    ] = None
+    channel: Annotated[
+        str,
+        Field(description="Delivery channel from the subscriber (EMAIL, SMS, WEBHOOK)"),
+    ]
+    incident_id: Annotated[
+        UUID | None,
+        Field(
+            alias="incidentId", description="Related status-page incident ID, if any"
+        ),
+    ] = None
+    incident_update_id: Annotated[
+        UUID | None,
+        Field(
+            alias="incidentUpdateId", description="Related incident update ID, if any"
+        ),
+    ] = None
+    event_type: Annotated[
+        str,
+        Field(
+            alias="eventType",
+            description="Notification event type that triggered this delivery",
+        ),
+    ]
+    status: Annotated[str, Field(description="Current delivery status")]
+    attempt_count: Annotated[
+        int, Field(alias="attemptCount", description="Number of delivery attempts made")
+    ]
+    last_attempt_at: Annotated[
+        AwareDatetime | None,
+        Field(alias="lastAttemptAt", description="When the last attempt was made"),
+    ] = None
+    next_retry_at: Annotated[
+        AwareDatetime | None,
+        Field(
+            alias="nextRetryAt",
+            description="When the next retry is scheduled; null if not retrying",
+        ),
+    ] = None
+    delivered_at: Annotated[
+        AwareDatetime | None,
+        Field(
+            alias="deliveredAt",
+            description="When delivery was confirmed; null if not delivered",
+        ),
+    ] = None
+    error_message: Annotated[
+        str | None,
+        Field(
+            alias="errorMessage",
+            description="Error summary from the last failed attempt",
+        ),
+    ] = None
+    created_at: Annotated[
+        AwareDatetime,
+        Field(alias="createdAt", description="When the delivery row was created"),
+    ]
+
+
+class StatusPageOpenIncidentSummaryDto(BaseModel):
+    model_config = ConfigDict(extra="ignore", populate_by_name=True)
+    id: Annotated[
+        UUID | None,
+        Field(
+            description="Incident id for dashboard CTAs that open the matching drawer"
+        ),
+    ] = None
+    title: Annotated[
+        str,
+        Field(
+            description="Incident title shown on the list card live row", min_length=1
+        ),
+    ]
+    status: Annotated[str, Field(description="Lifecycle status of the open incident")]
+    started_at: Annotated[
+        AwareDatetime,
+        Field(alias="startedAt", description="When the incident started (ISO 8601)"),
+    ]
+    updated_at: Annotated[
+        AwareDatetime,
+        Field(
+            alias="updatedAt",
+            description="When the incident was last updated (ISO 8601)",
+        ),
+    ]
+
+
 class StatusPageSubscriberDto(BaseModel):
     model_config = ConfigDict(extra="ignore", populate_by_name=True)
-    id: UUID
-    email: str
-    confirmed: bool
-    created_at: Annotated[AwareDatetime, Field(alias="createdAt")]
+    id: Annotated[UUID, Field(description="Subscriber id")]
+    email: Annotated[
+        str | None,
+        Field(description="Email when channel is EMAIL; null for other channels"),
+    ] = None
+    channel: Annotated[str, Field(description="Delivery channel (EMAIL, SMS, WEBHOOK)")]
+    destination: Annotated[
+        str, Field(description="Channel destination (email, phone, or webhook URL)")
+    ]
+    component_ids: Annotated[
+        list[UUID] | None,
+        Field(
+            alias="componentIds",
+            description="Scoped component IDs; null means whole page",
+        ),
+    ] = None
+    confirmed: Annotated[
+        bool, Field(description="Whether the subscriber has confirmed opt-in")
+    ]
+    confirmation_sent: Annotated[
+        bool | None,
+        Field(
+            alias="confirmationSent",
+            description="True when this call sent a confirmation email; omitted on list reads",
+        ),
+    ] = None
+    created_at: Annotated[
+        AwareDatetime,
+        Field(alias="createdAt", description="When the subscriber was created"),
+    ]
 
 
 class Summary(BaseModel):
@@ -4853,6 +5648,7 @@ class TableValueResultAlertChannelDto(BaseModel):
     has_prev: Annotated[bool, Field(alias="hasPrev")]
     total_elements: Annotated[int | None, Field(alias="totalElements")] = None
     total_pages: Annotated[int | None, Field(alias="totalPages")] = None
+    next_cursor: Annotated[str | None, Field(alias="nextCursor")] = None
 
 
 class TableValueResultAlertDeliveryDto(BaseModel):
@@ -4862,6 +5658,7 @@ class TableValueResultAlertDeliveryDto(BaseModel):
     has_prev: Annotated[bool, Field(alias="hasPrev")]
     total_elements: Annotated[int | None, Field(alias="totalElements")] = None
     total_pages: Annotated[int | None, Field(alias="totalPages")] = None
+    next_cursor: Annotated[str | None, Field(alias="nextCursor")] = None
 
 
 class TableValueResultApiKeyDto(BaseModel):
@@ -4871,6 +5668,7 @@ class TableValueResultApiKeyDto(BaseModel):
     has_prev: Annotated[bool, Field(alias="hasPrev")]
     total_elements: Annotated[int | None, Field(alias="totalElements")] = None
     total_pages: Annotated[int | None, Field(alias="totalPages")] = None
+    next_cursor: Annotated[str | None, Field(alias="nextCursor")] = None
 
 
 class TableValueResultCategoryDto(BaseModel):
@@ -4880,6 +5678,7 @@ class TableValueResultCategoryDto(BaseModel):
     has_prev: Annotated[bool, Field(alias="hasPrev")]
     total_elements: Annotated[int | None, Field(alias="totalElements")] = None
     total_pages: Annotated[int | None, Field(alias="totalPages")] = None
+    next_cursor: Annotated[str | None, Field(alias="nextCursor")] = None
 
 
 class TableValueResultDeliveryAttemptDto(BaseModel):
@@ -4889,6 +5688,7 @@ class TableValueResultDeliveryAttemptDto(BaseModel):
     has_prev: Annotated[bool, Field(alias="hasPrev")]
     total_elements: Annotated[int | None, Field(alias="totalElements")] = None
     total_pages: Annotated[int | None, Field(alias="totalPages")] = None
+    next_cursor: Annotated[str | None, Field(alias="nextCursor")] = None
 
 
 class TableValueResultEnvironmentDto(BaseModel):
@@ -4898,15 +5698,7 @@ class TableValueResultEnvironmentDto(BaseModel):
     has_prev: Annotated[bool, Field(alias="hasPrev")]
     total_elements: Annotated[int | None, Field(alias="totalElements")] = None
     total_pages: Annotated[int | None, Field(alias="totalPages")] = None
-
-
-class TableValueResultIncidentDto(BaseModel):
-    model_config = ConfigDict(extra="ignore", populate_by_name=True)
-    data: list[IncidentDto]
-    has_next: Annotated[bool, Field(alias="hasNext")]
-    has_prev: Annotated[bool, Field(alias="hasPrev")]
-    total_elements: Annotated[int | None, Field(alias="totalElements")] = None
-    total_pages: Annotated[int | None, Field(alias="totalPages")] = None
+    next_cursor: Annotated[str | None, Field(alias="nextCursor")] = None
 
 
 class TableValueResultInviteDto(BaseModel):
@@ -4916,6 +5708,7 @@ class TableValueResultInviteDto(BaseModel):
     has_prev: Annotated[bool, Field(alias="hasPrev")]
     total_elements: Annotated[int | None, Field(alias="totalElements")] = None
     total_pages: Annotated[int | None, Field(alias="totalPages")] = None
+    next_cursor: Annotated[str | None, Field(alias="nextCursor")] = None
 
 
 class TableValueResultMaintenanceWindowDto(BaseModel):
@@ -4925,6 +5718,7 @@ class TableValueResultMaintenanceWindowDto(BaseModel):
     has_prev: Annotated[bool, Field(alias="hasPrev")]
     total_elements: Annotated[int | None, Field(alias="totalElements")] = None
     total_pages: Annotated[int | None, Field(alias="totalPages")] = None
+    next_cursor: Annotated[str | None, Field(alias="nextCursor")] = None
 
 
 class TableValueResultMemberDto(BaseModel):
@@ -4934,6 +5728,7 @@ class TableValueResultMemberDto(BaseModel):
     has_prev: Annotated[bool, Field(alias="hasPrev")]
     total_elements: Annotated[int | None, Field(alias="totalElements")] = None
     total_pages: Annotated[int | None, Field(alias="totalPages")] = None
+    next_cursor: Annotated[str | None, Field(alias="nextCursor")] = None
 
 
 class TableValueResultNotificationDispatchDto(BaseModel):
@@ -4943,6 +5738,7 @@ class TableValueResultNotificationDispatchDto(BaseModel):
     has_prev: Annotated[bool, Field(alias="hasPrev")]
     total_elements: Annotated[int | None, Field(alias="totalElements")] = None
     total_pages: Annotated[int | None, Field(alias="totalPages")] = None
+    next_cursor: Annotated[str | None, Field(alias="nextCursor")] = None
 
 
 class TableValueResultNotificationDto(BaseModel):
@@ -4952,6 +5748,7 @@ class TableValueResultNotificationDto(BaseModel):
     has_prev: Annotated[bool, Field(alias="hasPrev")]
     total_elements: Annotated[int | None, Field(alias="totalElements")] = None
     total_pages: Annotated[int | None, Field(alias="totalPages")] = None
+    next_cursor: Annotated[str | None, Field(alias="nextCursor")] = None
 
 
 class TableValueResultRuleEvaluationDto(BaseModel):
@@ -4961,6 +5758,7 @@ class TableValueResultRuleEvaluationDto(BaseModel):
     has_prev: Annotated[bool, Field(alias="hasPrev")]
     total_elements: Annotated[int | None, Field(alias="totalElements")] = None
     total_pages: Annotated[int | None, Field(alias="totalPages")] = None
+    next_cursor: Annotated[str | None, Field(alias="nextCursor")] = None
 
 
 class TableValueResultScheduledMaintenanceDto(BaseModel):
@@ -4970,6 +5768,7 @@ class TableValueResultScheduledMaintenanceDto(BaseModel):
     has_prev: Annotated[bool, Field(alias="hasPrev")]
     total_elements: Annotated[int | None, Field(alias="totalElements")] = None
     total_pages: Annotated[int | None, Field(alias="totalPages")] = None
+    next_cursor: Annotated[str | None, Field(alias="nextCursor")] = None
 
 
 class TableValueResultSecretDto(BaseModel):
@@ -4979,6 +5778,7 @@ class TableValueResultSecretDto(BaseModel):
     has_prev: Annotated[bool, Field(alias="hasPrev")]
     total_elements: Annotated[int | None, Field(alias="totalElements")] = None
     total_pages: Annotated[int | None, Field(alias="totalPages")] = None
+    next_cursor: Annotated[str | None, Field(alias="nextCursor")] = None
 
 
 class TableValueResultServiceComponentDto(BaseModel):
@@ -4988,6 +5788,7 @@ class TableValueResultServiceComponentDto(BaseModel):
     has_prev: Annotated[bool, Field(alias="hasPrev")]
     total_elements: Annotated[int | None, Field(alias="totalElements")] = None
     total_pages: Annotated[int | None, Field(alias="totalPages")] = None
+    next_cursor: Annotated[str | None, Field(alias="nextCursor")] = None
 
 
 class TableValueResultServiceIncidentDto(BaseModel):
@@ -4997,6 +5798,7 @@ class TableValueResultServiceIncidentDto(BaseModel):
     has_prev: Annotated[bool, Field(alias="hasPrev")]
     total_elements: Annotated[int | None, Field(alias="totalElements")] = None
     total_pages: Annotated[int | None, Field(alias="totalPages")] = None
+    next_cursor: Annotated[str | None, Field(alias="nextCursor")] = None
 
 
 class TableValueResultServiceSubscriptionDto(BaseModel):
@@ -5006,6 +5808,7 @@ class TableValueResultServiceSubscriptionDto(BaseModel):
     has_prev: Annotated[bool, Field(alias="hasPrev")]
     total_elements: Annotated[int | None, Field(alias="totalElements")] = None
     total_pages: Annotated[int | None, Field(alias="totalPages")] = None
+    next_cursor: Annotated[str | None, Field(alias="nextCursor")] = None
 
 
 class TableValueResultStatusPageComponentDto(BaseModel):
@@ -5015,6 +5818,7 @@ class TableValueResultStatusPageComponentDto(BaseModel):
     has_prev: Annotated[bool, Field(alias="hasPrev")]
     total_elements: Annotated[int | None, Field(alias="totalElements")] = None
     total_pages: Annotated[int | None, Field(alias="totalPages")] = None
+    next_cursor: Annotated[str | None, Field(alias="nextCursor")] = None
 
 
 class TableValueResultStatusPageComponentGroupDto(BaseModel):
@@ -5024,6 +5828,7 @@ class TableValueResultStatusPageComponentGroupDto(BaseModel):
     has_prev: Annotated[bool, Field(alias="hasPrev")]
     total_elements: Annotated[int | None, Field(alias="totalElements")] = None
     total_pages: Annotated[int | None, Field(alias="totalPages")] = None
+    next_cursor: Annotated[str | None, Field(alias="nextCursor")] = None
 
 
 class TableValueResultStatusPageCustomDomainDto(BaseModel):
@@ -5033,15 +5838,17 @@ class TableValueResultStatusPageCustomDomainDto(BaseModel):
     has_prev: Annotated[bool, Field(alias="hasPrev")]
     total_elements: Annotated[int | None, Field(alias="totalElements")] = None
     total_pages: Annotated[int | None, Field(alias="totalPages")] = None
+    next_cursor: Annotated[str | None, Field(alias="nextCursor")] = None
 
 
-class TableValueResultStatusPageDto(BaseModel):
+class TableValueResultStatusPageNotificationDeliveryDto(BaseModel):
     model_config = ConfigDict(extra="ignore", populate_by_name=True)
-    data: list[StatusPageDto]
+    data: list[StatusPageNotificationDeliveryDto]
     has_next: Annotated[bool, Field(alias="hasNext")]
     has_prev: Annotated[bool, Field(alias="hasPrev")]
     total_elements: Annotated[int | None, Field(alias="totalElements")] = None
     total_pages: Annotated[int | None, Field(alias="totalPages")] = None
+    next_cursor: Annotated[str | None, Field(alias="nextCursor")] = None
 
 
 class TableValueResultStatusPageSubscriberDto(BaseModel):
@@ -5051,6 +5858,7 @@ class TableValueResultStatusPageSubscriberDto(BaseModel):
     has_prev: Annotated[bool, Field(alias="hasPrev")]
     total_elements: Annotated[int | None, Field(alias="totalElements")] = None
     total_pages: Annotated[int | None, Field(alias="totalPages")] = None
+    next_cursor: Annotated[str | None, Field(alias="nextCursor")] = None
 
 
 class TagDto(BaseModel):
@@ -5188,6 +5996,24 @@ class TestMatchResult(BaseModel):
     ]
 
 
+class TestMonitorNotificationsRequest(BaseModel):
+    model_config = ConfigDict(extra="forbid", populate_by_name=True)
+    channel_ids: Annotated[
+        list[UUID] | None,
+        Field(
+            alias="channelIds",
+            description="Channel IDs to test; null or empty tests all channels attached to the monitor",
+        ),
+    ] = None
+    include_resolved: Annotated[
+        bool,
+        Field(
+            alias="includeResolved",
+            description="Whether to include a resolved notification in the test (default: false)",
+        ),
+    ]
+
+
 class TestNotificationPolicyRequest(BaseModel):
     model_config = ConfigDict(extra="forbid", populate_by_name=True)
     severity: Annotated[
@@ -5261,7 +6087,10 @@ class TimingPhasesDto(BaseModel):
     model_config = ConfigDict(extra="ignore", populate_by_name=True)
     dns_ms: Annotated[
         int | None,
-        Field(description="DNS resolution time in milliseconds", examples=[12]),
+        Field(
+            description="Legacy DNS phase; null for new checks (no longer measured)",
+            examples=[12],
+        ),
     ] = None
     tcp_ms: Annotated[
         int | None, Field(description="TCP connect time in milliseconds", examples=[18])
@@ -5489,6 +6318,47 @@ class UpdateAssertionRequest(BaseModel):
     ] = None
 
 
+class UpdateDatadogChannelConfig(BaseModel):
+    model_config = ConfigDict(extra="ignore", populate_by_name=True)
+    channel_type: Annotated[Literal["datadog"], Field(alias="channelType")] = "datadog"
+    api_key: Annotated[
+        str | None, Field(alias="apiKey", description="Datadog API key")
+    ] = None
+    site: Annotated[
+        str | None,
+        Field(
+            description="Datadog site region (e.g. datadoghq.com, datadoghq.eu, us3.datadoghq.com)"
+        ),
+    ] = None
+    tags: Annotated[
+        str | None, Field(description="Comma-separated tags to attach to events")
+    ] = None
+
+
+class UpdateDiscordChannelConfig(BaseModel):
+    model_config = ConfigDict(extra="ignore", populate_by_name=True)
+    channel_type: Annotated[Literal["discord"], Field(alias="channelType")] = "discord"
+    webhook_url: Annotated[
+        str | None, Field(alias="webhookUrl", description="Discord webhook URL")
+    ] = None
+    mention_role_id: Annotated[
+        str | None,
+        Field(
+            alias="mentionRoleId",
+            description="Optional Discord role ID to mention in notifications",
+        ),
+    ] = None
+
+
+class UpdateEmailChannelConfig(BaseModel):
+    model_config = ConfigDict(extra="ignore", populate_by_name=True)
+    channel_type: Annotated[Literal["email"], Field(alias="channelType")] = "email"
+    recipients: Annotated[
+        list[EmailStr],
+        Field(description="Email addresses to send notifications to", min_length=1),
+    ]
+
+
 class UpdateEnvironmentRequest(BaseModel):
     model_config = ConfigDict(extra="forbid", populate_by_name=True)
     name: Annotated[
@@ -5512,6 +6382,62 @@ class UpdateEnvironmentRequest(BaseModel):
     ] = None
 
 
+class UpdateGitLabChannelConfig(BaseModel):
+    model_config = ConfigDict(extra="ignore", populate_by_name=True)
+    channel_type: Annotated[Literal["gitlab"], Field(alias="channelType")] = "gitlab"
+    endpoint_url: Annotated[
+        str,
+        Field(
+            alias="endpointUrl",
+            description="GitLab alert integration endpoint URL",
+            min_length=1,
+        ),
+    ]
+    authorization_key: Annotated[
+        str | None,
+        Field(
+            alias="authorizationKey",
+            description="Authorization key from GitLab alert integration settings",
+        ),
+    ] = None
+
+
+class UpdateGoogleChatChannelConfig(BaseModel):
+    model_config = ConfigDict(extra="ignore", populate_by_name=True)
+    channel_type: Annotated[Literal["google_chat"], Field(alias="channelType")] = (
+        "google_chat"
+    )
+    webhook_url: Annotated[
+        str | None,
+        Field(alias="webhookUrl", description="Google Chat space webhook URL"),
+    ] = None
+
+
+class UpdateIncidentIoChannelConfig(BaseModel):
+    model_config = ConfigDict(extra="ignore", populate_by_name=True)
+    channel_type: Annotated[Literal["incident_io"], Field(alias="channelType")] = (
+        "incident_io"
+    )
+    api_key: Annotated[
+        str | None,
+        Field(
+            alias="apiKey",
+            description="incident.io API key with 'Create incidents' permission",
+        ),
+    ] = None
+    severity_id: Annotated[
+        str | None,
+        Field(
+            alias="severityId",
+            description="Severity ID for created incidents (from List Severities API)",
+        ),
+    ] = None
+    visibility: Annotated[
+        str | None,
+        Field(description="Incident visibility: public or private (default: public)"),
+    ] = None
+
+
 class UpdateIncidentPolicyRequest(BaseModel):
     model_config = ConfigDict(extra="forbid", populate_by_name=True)
     trigger_rules: Annotated[
@@ -5524,6 +6450,81 @@ class UpdateIncidentPolicyRequest(BaseModel):
     ]
     confirmation: ConfirmationPolicy
     recovery: RecoveryPolicy
+
+
+class Severity5(StrEnum):
+    down = "DOWN"
+    degraded = "DEGRADED"
+    maintenance = "MAINTENANCE"
+
+
+class UpdateIncidentRequest(BaseModel):
+    model_config = ConfigDict(extra="forbid", populate_by_name=True)
+    title: Annotated[
+        str | None,
+        Field(
+            description="New title; null preserves current (min 1 char if present)",
+            max_length=2147483647,
+            min_length=1,
+        ),
+    ] = None
+    severity: Annotated[
+        Severity5 | None,
+        Field(
+            description="New severity: DOWN, DEGRADED, or MAINTENANCE; null preserves current"
+        ),
+    ] = None
+
+
+class UpdateJiraChannelConfig(BaseModel):
+    model_config = ConfigDict(extra="ignore", populate_by_name=True)
+    channel_type: Annotated[Literal["jira"], Field(alias="channelType")] = "jira"
+    domain: Annotated[
+        str,
+        Field(
+            description="Atlassian instance domain (e.g. yourteam.atlassian.net)",
+            min_length=1,
+        ),
+    ]
+    email: Annotated[
+        str,
+        Field(
+            description="Atlassian account email for API authentication", min_length=1
+        ),
+    ]
+    api_token: Annotated[
+        str | None, Field(alias="apiToken", description="Atlassian API token")
+    ] = None
+    project_key: Annotated[
+        str,
+        Field(
+            alias="projectKey",
+            description="Jira project key where issues are created (e.g. OPS)",
+            min_length=1,
+        ),
+    ]
+    issue_type: Annotated[
+        str | None,
+        Field(
+            alias="issueType", description="Issue type name (e.g. Bug, Task, Incident)"
+        ),
+    ] = None
+
+
+class UpdateLinearChannelConfig(BaseModel):
+    model_config = ConfigDict(extra="ignore", populate_by_name=True)
+    channel_type: Annotated[Literal["linear"], Field(alias="channelType")] = "linear"
+    api_key: Annotated[
+        str | None, Field(alias="apiKey", description="Linear API key")
+    ] = None
+    team_id: Annotated[
+        str,
+        Field(alias="teamId", description="Team ID to create issues in", min_length=1),
+    ]
+    label_id: Annotated[
+        str | None,
+        Field(alias="labelId", description="Label ID to attach to created issues"),
+    ] = None
 
 
 class UpdateMaintenanceWindowRequest(BaseModel):
@@ -5568,9 +6569,40 @@ class UpdateMaintenanceWindowRequest(BaseModel):
     ] = None
 
 
+class UpdateMattermostChannelConfig(BaseModel):
+    model_config = ConfigDict(extra="ignore", populate_by_name=True)
+    channel_type: Annotated[Literal["mattermost"], Field(alias="channelType")] = (
+        "mattermost"
+    )
+    webhook_url: Annotated[
+        str | None,
+        Field(alias="webhookUrl", description="Mattermost incoming webhook URL"),
+    ] = None
+    channel: Annotated[
+        str | None, Field(description="Override channel (if webhook allows)")
+    ] = None
+    icon_url: Annotated[
+        str | None, Field(alias="iconUrl", description="Custom bot icon URL")
+    ] = None
+
+
 class UpdateMonitorAuthRequest(BaseModel):
     model_config = ConfigDict(extra="forbid", populate_by_name=True)
     config: ApiKeyAuthConfig | BasicAuthConfig | BearerAuthConfig | HeaderAuthConfig
+
+
+class UpdateOpsGenieChannelConfig(BaseModel):
+    model_config = ConfigDict(extra="ignore", populate_by_name=True)
+    channel_type: Annotated[Literal["opsgenie"], Field(alias="channelType")] = (
+        "opsgenie"
+    )
+    api_key: Annotated[
+        str | None,
+        Field(alias="apiKey", description="OpsGenie API key for alert creation"),
+    ] = None
+    region: Annotated[
+        str | None, Field(description="OpsGenie API region: us or eu")
+    ] = None
 
 
 class UpdateOrgDetailsRequest(BaseModel):
@@ -5612,6 +6644,102 @@ class UpdateOrgDetailsRequest(BaseModel):
             min_length=0,
         ),
     ] = None
+
+
+class UpdatePagerDutyChannelConfig(BaseModel):
+    model_config = ConfigDict(extra="ignore", populate_by_name=True)
+    channel_type: Annotated[Literal["pagerduty"], Field(alias="channelType")] = (
+        "pagerduty"
+    )
+    routing_key: Annotated[
+        str | None,
+        Field(
+            alias="routingKey",
+            description="PagerDuty Events API v2 routing (integration) key",
+        ),
+    ] = None
+    severity_override: Annotated[
+        str | None,
+        Field(
+            alias="severityOverride", description="Override PagerDuty severity mapping"
+        ),
+    ] = None
+
+
+class UpdatePhoneCallChannelConfig(BaseModel):
+    model_config = ConfigDict(extra="ignore", populate_by_name=True)
+    channel_type: Annotated[Literal["phone_call"], Field(alias="channelType")] = (
+        "phone_call"
+    )
+    phone_number: Annotated[
+        str | None,
+        Field(
+            alias="phoneNumber",
+            description="Recipient phone number in E.164 format; null preserves current",
+        ),
+    ] = None
+    verified_phone_number_id: Annotated[
+        int | None,
+        Field(
+            alias="verifiedPhoneNumberId",
+            description="Id of an org verified_phone_number row; null preserves current when phoneNumber also null",
+        ),
+    ] = None
+    phone_numbers: Annotated[
+        list[str] | None,
+        Field(alias="phoneNumbers", description="Deprecated: use phoneNumber"),
+    ] = None
+    voice_language: Annotated[
+        str | None,
+        Field(
+            alias="voiceLanguage",
+            description="TTS voice language/locale (default: en-US). See VoiceLanguage for supported values",
+        ),
+    ] = None
+    preferred_language: Annotated[
+        str | None,
+        Field(
+            alias="preferredLanguage",
+            description="Preferred language for TTS and notifications (BCP-47, e.g. en-US, de-DE). Alias for voiceLanguage",
+        ),
+    ] = None
+
+
+class UpdatePushbulletChannelConfig(BaseModel):
+    model_config = ConfigDict(extra="ignore", populate_by_name=True)
+    channel_type: Annotated[Literal["pushbullet"], Field(alias="channelType")] = (
+        "pushbullet"
+    )
+    access_token: Annotated[
+        str | None, Field(alias="accessToken", description="Pushbullet access token")
+    ] = None
+    device_iden: Annotated[
+        str | None,
+        Field(
+            alias="deviceIden",
+            description="Target device identifier (broadcasts to all if empty)",
+        ),
+    ] = None
+
+
+class UpdatePushoverChannelConfig(BaseModel):
+    model_config = ConfigDict(extra="ignore", populate_by_name=True)
+    channel_type: Annotated[Literal["pushover"], Field(alias="channelType")] = (
+        "pushover"
+    )
+    user_key: Annotated[
+        str | None, Field(alias="userKey", description="Pushover user or group key")
+    ] = None
+    app_token: Annotated[
+        str | None,
+        Field(alias="appToken", description="Pushover application API token"),
+    ] = None
+    priority: Annotated[
+        str | None, Field(description="Notification priority override (-2 to 2)")
+    ] = None
+    sound: Annotated[str | None, Field(description="Notification sound override")] = (
+        None
+    )
 
 
 class UpdateResourceGroupRequest(BaseModel):
@@ -5718,6 +6846,21 @@ class UpdateResourceGroupRequest(BaseModel):
     ] = None
 
 
+class UpdateRootlyChannelConfig(BaseModel):
+    model_config = ConfigDict(extra="ignore", populate_by_name=True)
+    channel_type: Annotated[Literal["rootly"], Field(alias="channelType")] = "rootly"
+    api_key: Annotated[
+        str | None,
+        Field(
+            alias="apiKey",
+            description="Rootly API token with incident creation permission",
+        ),
+    ] = None
+    severity: Annotated[
+        str | None, Field(description="Severity slug override (e.g. sev0, sev1)")
+    ] = None
+
+
 class UpdateSecretRequest(BaseModel):
     model_config = ConfigDict(extra="forbid", populate_by_name=True)
     value: Annotated[
@@ -5726,6 +6869,69 @@ class UpdateSecretRequest(BaseModel):
             description="New secret value, stored encrypted (max 32KB)",
             max_length=32768,
             min_length=0,
+        ),
+    ]
+
+
+class UpdateSlackChannelConfig(BaseModel):
+    model_config = ConfigDict(extra="ignore", populate_by_name=True)
+    channel_type: Annotated[Literal["slack"], Field(alias="channelType")] = "slack"
+    webhook_url: Annotated[
+        str | None, Field(alias="webhookUrl", description="Slack incoming webhook URL")
+    ] = None
+    mention_text: Annotated[
+        str | None,
+        Field(
+            alias="mentionText",
+            description="Optional mention text included in notifications, e.g. @channel",
+        ),
+    ] = None
+
+
+class UpdateSmsChannelConfig(BaseModel):
+    model_config = ConfigDict(extra="ignore", populate_by_name=True)
+    channel_type: Annotated[Literal["sms"], Field(alias="channelType")] = "sms"
+    phone_number: Annotated[
+        str | None,
+        Field(
+            alias="phoneNumber",
+            description="Recipient phone number in E.164 format; null preserves current",
+        ),
+    ] = None
+    verified_phone_number_id: Annotated[
+        int | None,
+        Field(
+            alias="verifiedPhoneNumberId",
+            description="Id of an org verified_phone_number row; null preserves current when phoneNumber also null",
+        ),
+    ] = None
+    phone_numbers: Annotated[
+        list[str] | None,
+        Field(alias="phoneNumbers", description="Deprecated: use phoneNumber"),
+    ] = None
+    preferred_language: Annotated[
+        str | None,
+        Field(
+            alias="preferredLanguage",
+            description="Preferred language for SMS body (BCP-47, e.g. en-US, de-DE). Default: en-US",
+        ),
+    ] = None
+
+
+class UpdateSplunkOnCallChannelConfig(BaseModel):
+    model_config = ConfigDict(extra="ignore", populate_by_name=True)
+    channel_type: Annotated[Literal["splunk_oncall"], Field(alias="channelType")] = (
+        "splunk_oncall"
+    )
+    api_key: Annotated[
+        str | None, Field(alias="apiKey", description="Splunk On-Call REST API key")
+    ] = None
+    routing_key: Annotated[
+        str,
+        Field(
+            alias="routingKey",
+            description="Routing key for alert routing",
+            min_length=1,
         ),
     ]
 
@@ -5826,6 +7032,13 @@ class UpdateStatusPageComponentRequest(BaseModel):
     ] = None
 
 
+class Status9(StrEnum):
+    investigating = "INVESTIGATING"
+    identified = "IDENTIFIED"
+    monitoring = "MONITORING"
+    resolved = "RESOLVED"
+
+
 class UpdateStatusPageIncidentRequest(BaseModel):
     model_config = ConfigDict(extra="forbid", populate_by_name=True)
     title: Annotated[
@@ -5837,7 +7050,7 @@ class UpdateStatusPageIncidentRequest(BaseModel):
         ),
     ] = None
     status: Annotated[
-        Status6 | None, Field(description="New status; null preserves current")
+        Status9 | None, Field(description="New status; null preserves current")
     ] = None
     impact: Annotated[
         Impact | None, Field(description="New impact level; null preserves current")
@@ -5863,7 +7076,52 @@ class UpdateStatusPageIncidentRequest(BaseModel):
             description="URL to an external postmortem document; empty string clears",
             max_length=2048,
             min_length=0,
-            pattern="^https?://.*",
+            pattern="^$|^https?://.*",
+        ),
+    ] = None
+    published: Annotated[
+        bool | None,
+        Field(
+            description="Whether the incident is published on the public page; null preserves current. true publishes (sets publishedAt); false unpublishes (clears publishedAt)"
+        ),
+    ] = None
+    scheduled_for: Annotated[
+        AwareDatetime | None,
+        Field(
+            alias="scheduledFor",
+            description="New maintenance window start; null preserves current. Only for scheduled incidents",
+        ),
+    ] = None
+    scheduled_until: Annotated[
+        AwareDatetime | None,
+        Field(
+            alias="scheduledUntil",
+            description="New maintenance window end; null preserves current. Only for scheduled incidents",
+        ),
+    ] = None
+    auto_resolve: Annotated[
+        bool | None,
+        Field(
+            alias="autoResolve",
+            description="Whether the window auto-completes at scheduledUntil; null preserves current",
+        ),
+    ] = None
+
+
+class UpdateStatusPageIncidentUpdateRequest(BaseModel):
+    model_config = ConfigDict(extra="forbid", populate_by_name=True)
+    body: Annotated[
+        str,
+        Field(
+            description="Replacement update body in markdown",
+            max_length=10000,
+            min_length=0,
+        ),
+    ]
+    status: Annotated[
+        Status9 | None,
+        Field(
+            description="Replacement lifecycle status for this update; null preserves current"
         ),
     ] = None
 
@@ -5922,6 +7180,57 @@ class UpdateTagRequest(BaseModel):
     ] = None
 
 
+class UpdateTeamsChannelConfig(BaseModel):
+    model_config = ConfigDict(extra="ignore", populate_by_name=True)
+    channel_type: Annotated[Literal["teams"], Field(alias="channelType")] = "teams"
+    webhook_url: Annotated[
+        str | None,
+        Field(alias="webhookUrl", description="Microsoft Teams incoming webhook URL"),
+    ] = None
+
+
+class UpdateTelegramChannelConfig(BaseModel):
+    model_config = ConfigDict(extra="ignore", populate_by_name=True)
+    channel_type: Annotated[Literal["telegram"], Field(alias="channelType")] = (
+        "telegram"
+    )
+    bot_token: Annotated[
+        str | None,
+        Field(alias="botToken", description="Telegram bot token from @BotFather"),
+    ] = None
+    chat_id: Annotated[
+        str,
+        Field(
+            alias="chatId",
+            description="Chat, group, or channel ID to send alerts to",
+            min_length=1,
+        ),
+    ]
+
+
+class UpdateWebhookChannelConfig(BaseModel):
+    model_config = ConfigDict(extra="ignore", populate_by_name=True)
+    channel_type: Annotated[Literal["webhook"], Field(alias="channelType")] = "webhook"
+    url: Annotated[
+        str | None,
+        Field(description="Webhook endpoint URL that receives alert payloads"),
+    ] = None
+    signing_secret: Annotated[
+        str | None,
+        Field(
+            alias="signingSecret",
+            description="HMAC secret for X-DevHelm-Signature header; omit for unsigned delivery",
+        ),
+    ] = None
+    custom_headers: Annotated[
+        dict[str, str] | None,
+        Field(
+            alias="customHeaders",
+            description="Additional HTTP headers to include in webhook requests",
+        ),
+    ] = None
+
+
 class UpdateWebhookEndpointRequest(BaseModel):
     model_config = ConfigDict(extra="forbid", populate_by_name=True)
     url: Annotated[
@@ -5958,6 +7267,15 @@ class UpdateWorkspaceRequest(BaseModel):
     name: Annotated[
         str, Field(description="New workspace name", max_length=200, min_length=0)
     ]
+
+
+class UpdateZapierChannelConfig(BaseModel):
+    model_config = ConfigDict(extra="ignore", populate_by_name=True)
+    channel_type: Annotated[Literal["zapier"], Field(alias="channelType")] = "zapier"
+    webhook_url: Annotated[
+        str | None,
+        Field(alias="webhookUrl", description="Zapier/n8n/Make catch webhook URL"),
+    ] = None
 
 
 class UptimeBucketDto(BaseModel):
@@ -6029,6 +7347,32 @@ class UptimeDto(BaseModel):
             examples=[312],
         ),
     ] = None
+    p50_latency_ms: Annotated[
+        float | None,
+        Field(
+            alias="p50LatencyMs",
+            description="50th-percentile (median) latency in milliseconds; null when no data",
+            examples=[128],
+        ),
+    ] = None
+    incident_count: Annotated[
+        int,
+        Field(
+            alias="incidentCount",
+            description="Number of incidents that started within the requested window",
+            examples=[2],
+        ),
+    ]
+
+
+class VoiceLanguageDto(BaseModel):
+    model_config = ConfigDict(extra="ignore", populate_by_name=True)
+    code: Annotated[
+        str, Field(description="BCP-47 locale code, e.g. en-US", min_length=1)
+    ]
+    label: Annotated[
+        str, Field(description="Human-readable label, e.g. English (US)", min_length=1)
+    ]
 
 
 class WebhookChannelConfig(BaseModel):
@@ -6045,7 +7389,7 @@ class WebhookChannelConfig(BaseModel):
         str | None,
         Field(
             alias="signingSecret",
-            description="Optional HMAC signing secret for payload verification",
+            description="HMAC secret for X-DevHelm-Signature header; omit for unsigned delivery",
         ),
     ] = None
     custom_headers: Annotated[
@@ -6201,6 +7545,20 @@ class ZapierChannelConfig(BaseModel):
     ]
 
 
+class AcknowledgeAllIncidentsResponse(BaseModel):
+    model_config = ConfigDict(extra="ignore", populate_by_name=True)
+    acknowledged: Annotated[
+        list[NotificationDispatchDto],
+        Field(description="Dispatches successfully acknowledged in this request"),
+    ]
+    skipped: Annotated[
+        list[SkippedDispatch],
+        Field(
+            description="Dispatches skipped (already acked or not in an acknowledgeable state)"
+        ),
+    ]
+
+
 class AddMonitorTagsRequest(BaseModel):
     model_config = ConfigDict(extra="forbid", populate_by_name=True)
     tag_ids: Annotated[
@@ -6278,6 +7636,40 @@ class BulkMonitorActionResult(BaseModel):
     ]
 
 
+class Code(BaseModel):
+    model_config = ConfigDict(extra="ignore", populate_by_name=True)
+    check_type: Literal["code"] = "code"
+    exit_code: Annotated[
+        int, Field(alias="exitCode", description="Container exit code (0 = pass)")
+    ]
+    stdout_snippet: Annotated[
+        str | None,
+        Field(alias="stdoutSnippet", description="Truncated stdout from the container"),
+    ] = None
+    stderr_snippet: Annotated[
+        str | None,
+        Field(alias="stderrSnippet", description="Truncated stderr from the container"),
+    ] = None
+    steps: Annotated[
+        list[CodeCheckStep] | None,
+        Field(description="Named steps extracted from Playwright test output"),
+    ] = None
+    failure_kind: Annotated[
+        str | None,
+        Field(
+            alias="failureKind",
+            description="Failure classification: timeout, assertion, or error",
+        ),
+    ] = None
+    timed_out: Annotated[
+        bool | None,
+        Field(
+            alias="timedOut",
+            description="Whether the run hit a step/total/run-budget timeout",
+        ),
+    ] = None
+
+
 class ComponentUptimeDayDto(BaseModel):
     model_config = ConfigDict(extra="ignore", populate_by_name=True)
     date: Annotated[
@@ -6342,10 +7734,12 @@ class CreateAlertChannelRequest(BaseModel):
         | MattermostChannelConfig
         | OpsGenieChannelConfig
         | PagerDutyChannelConfig
+        | PhoneCallChannelConfig
         | PushbulletChannelConfig
         | PushoverChannelConfig
         | RootlyChannelConfig
         | SlackChannelConfig
+        | SmsChannelConfig
         | SplunkOnCallChannelConfig
         | TeamsChannelConfig
         | TelegramChannelConfig
@@ -6434,6 +7828,7 @@ class CreateMonitorRequest(BaseModel):
         | HttpMonitorConfig
         | IcmpMonitorConfig
         | McpServerMonitorConfig
+        | ScriptMonitorConfig
         | TcpMonitorConfig
     )
     frequency_seconds: Annotated[
@@ -6640,6 +8035,56 @@ class CreateStatusPageRequest(BaseModel):
     ] = None
 
 
+class CreditPolicy(BaseModel):
+    model_config = ConfigDict(extra="ignore", populate_by_name=True)
+    summary: Annotated[
+        str | None, Field(description="Brief summary of credit policy")
+    ] = None
+    max_credit_percent: Annotated[
+        int | None,
+        Field(
+            alias="maxCreditPercent", description="Max credit as percent of monthly fee"
+        ),
+    ] = None
+    claim_window_days: Annotated[
+        int | None,
+        Field(
+            alias="claimWindowDays",
+            description="Days to submit a credit claim after eligibility",
+        ),
+    ] = None
+    credit_application_days: Annotated[
+        int | None,
+        Field(
+            alias="creditApplicationDays",
+            description="Days for credit to be applied after approval",
+        ),
+    ] = None
+    tiers: Annotated[
+        list[CreditTier] | None, Field(description="Credit tiers by uptime threshold")
+    ] = None
+
+
+class CursorPageIncidentActivityEventDto(BaseModel):
+    model_config = ConfigDict(extra="ignore", populate_by_name=True)
+    data: Annotated[
+        list[IncidentActivityEventDto], Field(description="Items on this page")
+    ]
+    next_cursor: Annotated[
+        str | None,
+        Field(
+            alias="nextCursor",
+            description="Opaque cursor for the next page; null when there are no more results",
+        ),
+    ] = None
+    has_more: Annotated[
+        bool,
+        Field(
+            alias="hasMore", description="Whether more results exist beyond this page"
+        ),
+    ]
+
+
 class CursorPageServiceCatalogDto(BaseModel):
     model_config = ConfigDict(extra="ignore", populate_by_name=True)
     data: Annotated[list[ServiceCatalogDto], Field(description="Items on this page")]
@@ -6661,6 +8106,24 @@ class CursorPageServiceCatalogDto(BaseModel):
 class CursorPageServicePollResultDto(BaseModel):
     model_config = ConfigDict(extra="ignore", populate_by_name=True)
     data: Annotated[list[ServicePollResultDto], Field(description="Items on this page")]
+    next_cursor: Annotated[
+        str | None,
+        Field(
+            alias="nextCursor",
+            description="Opaque cursor for the next page; null when there are no more results",
+        ),
+    ] = None
+    has_more: Annotated[
+        bool,
+        Field(
+            alias="hasMore", description="Whether more results exist beyond this page"
+        ),
+    ]
+
+
+class CursorPageStatusEventDto(BaseModel):
+    model_config = ConfigDict(extra="ignore", populate_by_name=True)
+    data: Annotated[list[StatusEventDto], Field(description="Items on this page")]
     next_cursor: Annotated[
         str | None,
         Field(
@@ -6777,12 +8240,262 @@ class Http(BaseModel):
     ] = None
 
 
-class IncidentDetailDto(BaseModel):
+class IncidentDto(BaseModel):
     model_config = ConfigDict(extra="ignore", populate_by_name=True)
-    incident: IncidentDto
-    updates: list[IncidentUpdateDto]
-    status_page_incidents: Annotated[
-        list[LinkedStatusPageIncidentDto] | None, Field(alias="statusPageIncidents")
+    id: Annotated[UUID, Field(description="Unique incident identifier")]
+    monitor_id: Annotated[
+        UUID | None,
+        Field(
+            alias="monitorId",
+            description="Monitor that triggered the incident; null for service or manual incidents",
+        ),
+    ] = None
+    organization_id: Annotated[
+        int,
+        Field(
+            alias="organizationId", description="Organization this incident belongs to"
+        ),
+    ]
+    source: Annotated[
+        str, Field(description="Incident origin: MONITOR, SERVICE, or MANUAL")
+    ]
+    status: Annotated[
+        str, Field(description="Current lifecycle status (OPEN, RESOLVED, etc.)")
+    ]
+    severity: Annotated[
+        str, Field(description="Severity level: DOWN, DEGRADED, or MAINTENANCE")
+    ]
+    title: Annotated[
+        str | None,
+        Field(
+            description="Short summary of the incident; null for auto-generated incidents"
+        ),
+    ] = None
+    triggered_by_rule: Annotated[
+        str | None,
+        Field(
+            alias="triggeredByRule",
+            description="Human-readable description of the trigger rule that fired",
+        ),
+    ] = None
+    affected_regions: Annotated[
+        list[str],
+        Field(
+            alias="affectedRegions",
+            description="Probe regions that observed the failure",
+        ),
+    ]
+    reopen_count: Annotated[
+        int,
+        Field(
+            alias="reopenCount",
+            description="Number of times this incident has been reopened",
+        ),
+    ]
+    created_by_user_id: Annotated[
+        int | None,
+        Field(
+            alias="createdByUserId",
+            description="User who created the incident (manual incidents only)",
+        ),
+    ] = None
+    status_page_visible: Annotated[
+        bool,
+        Field(
+            alias="statusPageVisible",
+            description="Whether this incident is visible on the status page",
+        ),
+    ]
+    suppress_dispatch: Annotated[
+        bool,
+        Field(
+            alias="suppressDispatch",
+            description="When true, alert channels are suppressed (AWARENESS silent tracking); false means Alerted",
+        ),
+    ]
+    service_incident_id: Annotated[
+        UUID | None,
+        Field(
+            alias="serviceIncidentId",
+            description="Linked vendor service incident ID; null for monitor incidents",
+        ),
+    ] = None
+    service_id: Annotated[
+        UUID | None,
+        Field(
+            alias="serviceId",
+            description="Linked service catalog ID; null for monitor incidents",
+        ),
+    ] = None
+    external_ref: Annotated[
+        str | None,
+        Field(
+            alias="externalRef",
+            description="External reference ID (e.g. PagerDuty incident ID)",
+        ),
+    ] = None
+    affected_components: Annotated[
+        list[str] | None,
+        Field(
+            alias="affectedComponents",
+            description="Service components affected by this incident",
+        ),
+    ] = None
+    shortlink: Annotated[
+        str | None, Field(description="Short URL linking to the incident details")
+    ] = None
+    resolution_reason: Annotated[
+        str | None,
+        Field(
+            alias="resolutionReason",
+            description="How the incident was resolved (AUTO_RECOVERED, MANUAL, etc.)",
+        ),
+    ] = None
+    resolution_note: Annotated[
+        str | None,
+        Field(
+            alias="resolutionNote",
+            description="Body from the most recent resolve update; null when not currently resolved, auto-resolved without a note, or no resolve update body was provided",
+        ),
+    ] = None
+    started_at: Annotated[
+        AwareDatetime | None,
+        Field(
+            alias="startedAt",
+            description="Timestamp when the incident was detected or created",
+        ),
+    ] = None
+    confirmed_at: Annotated[
+        AwareDatetime | None,
+        Field(
+            alias="confirmedAt",
+            description="Timestamp when the incident was confirmed (multi-region confirmation)",
+        ),
+    ] = None
+    resolved_at: Annotated[
+        AwareDatetime | None,
+        Field(
+            alias="resolvedAt", description="Timestamp when the incident was resolved"
+        ),
+    ] = None
+    cooldown_until: Annotated[
+        AwareDatetime | None,
+        Field(
+            alias="cooldownUntil",
+            description="Cooldown window end; new incidents suppressed until this time",
+        ),
+    ] = None
+    created_at: Annotated[
+        AwareDatetime,
+        Field(
+            alias="createdAt",
+            description="Timestamp when the incident record was created",
+        ),
+    ]
+    updated_at: Annotated[
+        AwareDatetime,
+        Field(
+            alias="updatedAt",
+            description="Timestamp when the incident was last updated",
+        ),
+    ]
+    monitor_name: Annotated[
+        str | None,
+        Field(
+            alias="monitorName",
+            description="Name of the associated monitor; populated on list responses. Omitted from JSON (undefined to SDKs) on detail responses, treat missing as null.",
+        ),
+    ] = None
+    service_name: Annotated[
+        str | None,
+        Field(
+            alias="serviceName",
+            description="Name of the associated service; populated on list responses. Omitted from JSON (undefined to SDKs) on detail responses, treat missing as null.",
+        ),
+    ] = None
+    service_slug: Annotated[
+        str | None,
+        Field(
+            alias="serviceSlug",
+            description="Slug of the associated service; populated on list responses. Omitted from JSON (undefined to SDKs) on detail responses, treat missing as null.",
+        ),
+    ] = None
+    monitor_type: Annotated[
+        str | None,
+        Field(
+            alias="monitorType",
+            description="Type of the associated monitor; populated on list responses. Omitted from JSON (undefined to SDKs) on detail responses, treat missing as null.",
+        ),
+    ] = None
+    resource_group_id: Annotated[
+        UUID | None,
+        Field(
+            alias="resourceGroupId",
+            description="Resource group that owns this incident; null when not group-managed",
+        ),
+    ] = None
+    resource_group_name: Annotated[
+        str | None,
+        Field(
+            alias="resourceGroupName",
+            description="Name of the resource group; populated on list responses. Omitted from JSON (undefined to SDKs) on detail responses, treat missing as null.",
+        ),
+    ] = None
+    triggering_check_id: Annotated[
+        UUID | None,
+        Field(
+            alias="triggeringCheckId",
+            description="Scheduler-minted check execution ID whose result confirmed this incident; joins to check_results, rule_evaluations, and incident_state_transitions. Omitted from JSON (undefined to SDKs) when null, treat missing as null.",
+        ),
+    ] = None
+    triggered_by_rule_snapshot_hash_hex: Annotated[
+        str | None,
+        Field(
+            alias="triggeredByRuleSnapshotHashHex",
+            description="Hex SHA-256 of the canonical policy snapshot that fired; combined with triggeredByRuleIndex points to the exact TriggerRule. Omitted from JSON when null, treat missing as null.",
+        ),
+    ] = None
+    triggered_by_rule_index: Annotated[
+        int | None,
+        Field(
+            alias="triggeredByRuleIndex",
+            description="Index of the fired rule inside the policy's trigger_rules array. Omitted from JSON when null, treat missing as null.",
+        ),
+    ] = None
+    engine_version: Annotated[
+        str | None,
+        Field(
+            alias="engineVersion",
+            description="Detection engine semver that evaluated the rule. Omitted from JSON when null, treat missing as null.",
+        ),
+    ] = None
+    display_key: Annotated[
+        str | None,
+        Field(
+            alias="displayKey",
+            description='Org-scoped human-readable incident code, e.g. "ABC-42". Null on incidents created by pre-INC-keys API pods before the sweep; treat missing as unknown and fall back to the id',
+        ),
+    ] = None
+    alert_collapsed_by_resource_group_ids: Annotated[
+        list[UUID] | None,
+        Field(
+            alias="alertCollapsedByResourceGroupIds",
+            description="Sticky union of resource-group IDs that suppressed a paging dispatch for this member incident; null when never written / legacy",
+        ),
+    ] = None
+    peak_failing_member_count: Annotated[
+        int | None,
+        Field(
+            alias="peakFailingMemberCount",
+            description="Peak non-operational member count while this RESOURCE_GROUP incident was open; null otherwise",
+        ),
+    ] = None
+    failing_members_at_peak: Annotated[
+        list[IncidentFailingMemberSnapshotDto] | None,
+        Field(
+            alias="failingMembersAtPeak",
+            description="Frozen failing members at peakFailingMemberCount; null when not a group incident or never snapshotted",
+        ),
     ] = None
 
 
@@ -7001,13 +8714,9 @@ class MonitorAssertionDto(BaseModel):
 
 
 class MonitorDto(BaseModel):
-    model_config = ConfigDict(extra="ignore", populate_by_name=True)
     """Note: ``currentStatus`` was removed from this DTO. Inspect ``enabled`` and the incident-policy API to derive a live status for a monitor instead."""
 
     model_config = ConfigDict(extra="ignore", populate_by_name=True)
-    """Note: ``currentStatus`` was removed from this DTO. Inspect ``enabled`` and the incident-policy API to derive a live status for a monitor instead."""
-
-    model_config = ConfigDict(extra="forbid", populate_by_name=True)
     id: Annotated[UUID, Field(description="Unique monitor identifier")]
     organization_id: Annotated[
         int,
@@ -7025,6 +8734,7 @@ class MonitorDto(BaseModel):
         | HttpMonitorConfig
         | IcmpMonitorConfig
         | McpServerMonitorConfig
+        | ScriptMonitorConfig
         | TcpMonitorConfig
     )
     frequency_seconds: Annotated[
@@ -7101,6 +8811,7 @@ class MonitorTestRequest(BaseModel):
         | HttpMonitorConfig
         | IcmpMonitorConfig
         | McpServerMonitorConfig
+        | ScriptMonitorConfig
         | TcpMonitorConfig
     )
     assertions: Annotated[
@@ -7157,6 +8868,9 @@ class NotificationPolicyDto(BaseModel):
     name: Annotated[
         str, Field(description="Human-readable name for this policy", min_length=1)
     ]
+    description: Annotated[
+        str | None, Field(description="Optional note; null when unset")
+    ] = None
     match_rules: Annotated[
         list[MatchRule],
         Field(
@@ -7179,154 +8893,165 @@ class NotificationPolicyDto(BaseModel):
             alias="updatedAt", description="Timestamp when the policy was last updated"
         ),
     ]
+    stats7d: NotificationPolicyWindowStatsDto | None = None
+    stats30d: NotificationPolicyWindowStatsDto | None = None
+    last_fired_at: Annotated[
+        AwareDatetime | None,
+        Field(
+            alias="lastFiredAt",
+            description="Created-at of the most recent dispatch for this policy; null if never fired",
+        ),
+    ] = None
+    last_fired_incident_id: Annotated[
+        UUID | None,
+        Field(
+            alias="lastFiredIncidentId",
+            description="Incident id of the most recent dispatch; null if never fired",
+        ),
+    ] = None
 
 
-class ResourceGroupDto(BaseModel):
+class RelatedIncidentsResponse(BaseModel):
     model_config = ConfigDict(extra="ignore", populate_by_name=True)
-    id: Annotated[UUID, Field(description="Unique resource group identifier")]
-    organization_id: Annotated[
+    data: Annotated[
+        list[IncidentDto],
+        Field(description="Related incident rows (newest first, capped by limit)"),
+    ]
+    total: Annotated[
         int,
-        Field(alias="organizationId", description="Organization this group belongs to"),
-    ]
-    name: Annotated[str, Field(description="Human-readable group name", min_length=1)]
-    slug: Annotated[str, Field(description="URL-safe group identifier", min_length=1)]
-    description: Annotated[
-        str | None, Field(description="Optional group description")
-    ] = None
-    alert_policy_id: Annotated[
-        UUID | None,
         Field(
-            alias="alertPolicyId",
-            description="Notification policy applied to this group",
-        ),
-    ] = None
-    default_frequency: Annotated[
-        int | None,
-        Field(
-            alias="defaultFrequency",
-            description="Default check frequency in seconds for member monitors",
-        ),
-    ] = None
-    default_regions: Annotated[
-        list[str] | None,
-        Field(
-            alias="defaultRegions", description="Default regions for member monitors"
-        ),
-    ] = None
-    default_retry_strategy: Annotated[
-        RetryStrategy | None, Field(alias="defaultRetryStrategy")
-    ] = None
-    default_alert_channels: Annotated[
-        list[UUID] | None,
-        Field(
-            alias="defaultAlertChannels",
-            description="Default alert channel IDs for member monitors",
-        ),
-    ] = None
-    default_environment_id: Annotated[
-        UUID | None,
-        Field(
-            alias="defaultEnvironmentId",
-            description="Default environment ID for member monitors",
-        ),
-    ] = None
-    health_threshold_type: Annotated[
-        str | None,
-        Field(
-            alias="healthThresholdType",
-            description="Health threshold type: COUNT or PERCENTAGE",
-        ),
-    ] = None
-    health_threshold_value: Annotated[
-        float | None,
-        Field(alias="healthThresholdValue", description="Health threshold value"),
-    ] = None
-    suppress_member_alerts: Annotated[
-        bool,
-        Field(
-            alias="suppressMemberAlerts",
-            description="When true, member-level incidents skip notification dispatch; only group alerts fire",
+            description="Total matching incidents in the window, excluding the current incident"
         ),
     ]
-    confirmation_delay_seconds: Annotated[
-        int | None,
+
+
+class ResourceGroupMemberDto(BaseModel):
+    model_config = ConfigDict(extra="ignore", populate_by_name=True)
+    id: Annotated[UUID, Field(description="Unique group member record identifier")]
+    group_id: Annotated[
+        UUID,
+        Field(alias="groupId", description="Resource group this member belongs to"),
+    ]
+    member_type: Annotated[
+        str,
+        Field(alias="memberType", description="Type of member: 'monitor' or 'service'"),
+    ]
+    monitor_id: Annotated[
+        UUID | None,
         Field(
-            alias="confirmationDelaySeconds",
-            description="Seconds to wait after health threshold breach before creating group incident",
+            alias="monitorId",
+            description="Monitor ID; set when memberType is 'monitor'",
         ),
     ] = None
-    recovery_cooldown_minutes: Annotated[
-        int | None,
+    service_id: Annotated[
+        UUID | None,
         Field(
-            alias="recoveryCooldownMinutes",
-            description="Cooldown minutes after group incident resolves before a new one can open",
+            alias="serviceId",
+            description="Service ID; set when memberType is 'service'",
         ),
     ] = None
-    health: ResourceGroupHealthDto
-    members: Annotated[
-        list[ResourceGroupMemberDto] | None,
-        Field(
-            description="Member list with individual statuses; populated on detail GET only"
-        ),
+    name: Annotated[
+        str | None,
+        Field(description="Display name of the referenced monitor or service"),
     ] = None
-    managed_by: Annotated[
+    slug: Annotated[
         str | None,
         Field(
-            alias="managedBy",
-            description="Source that created/owns this group: DASHBOARD, CLI, TERRAFORM, MCP, or API. Null on groups created before this attribution column existed.",
+            description="Slug identifier for the service (services only); used for icons and uptime API calls"
+        ),
+    ] = None
+    subscription_id: Annotated[
+        UUID | None,
+        Field(
+            alias="subscriptionId",
+            description="Subscription ID for the service (services only); used to link to the dependency detail page",
+        ),
+    ] = None
+    status: Annotated[str, Field(description="Computed health status for this member")]
+    effective_frequency: Annotated[
+        str | None,
+        Field(
+            alias="effectiveFrequency",
+            description="Effective check frequency label showing the group default when the monitor inherits it; null for services or when no group default is configured",
         ),
     ] = None
     created_at: Annotated[
         AwareDatetime,
-        Field(alias="createdAt", description="Timestamp when the group was created"),
-    ]
-    updated_at: Annotated[
-        AwareDatetime,
         Field(
-            alias="updatedAt", description="Timestamp when the group was last updated"
+            alias="createdAt",
+            description="Timestamp when the member was added to the group",
         ),
     ]
-
-
-class ServiceDetailDto(BaseModel):
-    model_config = ConfigDict(extra="ignore", populate_by_name=True)
-    id: UUID
-    slug: str
-    name: str
-    category: str | None = None
-    official_status_url: Annotated[str | None, Field(alias="officialStatusUrl")] = None
-    developer_context: Annotated[str | None, Field(alias="developerContext")] = None
-    logo_url: Annotated[str | None, Field(alias="logoUrl")] = None
-    adapter_type: Annotated[str, Field(alias="adapterType")]
-    polling_interval_seconds: Annotated[int, Field(alias="pollingIntervalSeconds")]
-    lifecycle_status: Annotated[
-        str,
-        Field(
-            alias="lifecycleStatus",
-            description="Service lifecycle state: ACTIVE, DEGRADED, DEPRECATED, or RETIRED",
-        ),
-    ]
-    enabled: bool
-    created_at: Annotated[AwareDatetime, Field(alias="createdAt")]
-    updated_at: Annotated[AwareDatetime, Field(alias="updatedAt")]
-    current_status: Annotated[ServiceStatusDto | None, Field(alias="currentStatus")] = (
-        None
-    )
-    recent_incidents: Annotated[
-        list[ServiceIncidentDto], Field(alias="recentIncidents")
-    ]
-    components: list[ServiceComponentDto]
-    components_summary: Annotated[
-        ComponentsSummaryDto | None, Field(alias="componentsSummary")
+    uptime24h: Annotated[
+        float | None,
+        Field(description="24h uptime percentage; populated when includeMetrics=true"),
     ] = None
-    uptime: ComponentUptimeSummaryDto | None = None
-    active_maintenances: Annotated[
-        list[ScheduledMaintenanceDto], Field(alias="activeMaintenances")
-    ]
-    data_completeness: Annotated[str, Field(alias="dataCompleteness")]
-    seo_metadata: Annotated[SeoMetadataDto | None, Field(alias="seoMetadata")] = None
-    related_services: Annotated[
-        list[ServiceCatalogDto] | None, Field(alias="relatedServices")
+    chart_data: Annotated[
+        list[float] | None,
+        Field(
+            alias="chartData",
+            description="Uptime tick values (0-100) for last-24h mini chart; populated when includeMetrics=true",
+        ),
+    ] = None
+    avg_latency_ms: Annotated[
+        float | None,
+        Field(
+            alias="avgLatencyMs",
+            description="Average latency in ms (monitors only); populated when includeMetrics=true",
+        ),
+    ] = None
+    p95_latency_ms: Annotated[
+        float | None,
+        Field(
+            alias="p95LatencyMs",
+            description="P95 latency in ms (monitors only); populated when includeMetrics=true",
+        ),
+    ] = None
+    last_checked_at: Annotated[
+        AwareDatetime | None,
+        Field(
+            alias="lastCheckedAt",
+            description="Timestamp of the most recent health check; populated when includeMetrics=true",
+        ),
+    ] = None
+    monitor_type: Annotated[
+        str | None,
+        Field(
+            alias="monitorType",
+            description="Monitor type (HTTP, DNS, TCP, ICMP, HEARTBEAT, MCP); monitors only",
+        ),
+    ] = None
+    environment_name: Annotated[
+        str | None,
+        Field(alias="environmentName", description="Environment name; monitors only"),
+    ] = None
+    group_membership_count: Annotated[
+        int | None,
+        Field(
+            alias="groupMembershipCount",
+            description="Count of resource groups this monitor or service belongs to; detail GET only — omitted on list",
+        ),
+    ] = None
+    failing_since: Annotated[
+        AwareDatetime | None,
+        Field(
+            alias="failingSince",
+            description="Start of the current non-operational stretch; null when operational or unknown (services OK); detail GET only — omitted on list",
+        ),
+    ] = None
+    alert_collapsed: Annotated[
+        bool | None,
+        Field(
+            alias="alertCollapsed",
+            description="True when an active member incident records this group among alertCollapsedByResourceGroupIds; detail GET only — omitted on list",
+        ),
+    ] = None
+    incident_marks: Annotated[
+        list[ResourceGroupMemberIncidentMarkDto] | None,
+        Field(
+            alias="incidentMarks",
+            description="Incident marks for the trailing 24h strip; null when metrics omitted or failed; detail GET only — omitted on list",
+        ),
     ] = None
 
 
@@ -7343,6 +9068,7 @@ class ServiceIncidentDetailDto(BaseModel):
     affected_components: Annotated[
         list[str] | None, Field(alias="affectedComponents")
     ] = None
+    affected_regions: Annotated[list[str] | None, Field(alias="affectedRegions")] = None
     updates: list[ServiceIncidentUpdateDto]
 
 
@@ -7373,6 +9099,11 @@ class ServiceUptimeResponse(BaseModel):
     ] = None
 
 
+class SingleValueResponseAcknowledgeAllIncidentsResponse(BaseModel):
+    model_config = ConfigDict(extra="ignore", populate_by_name=True)
+    data: AcknowledgeAllIncidentsResponse
+
+
 class SingleValueResponseAuthMeResponse(BaseModel):
     model_config = ConfigDict(extra="ignore", populate_by_name=True)
     data: AuthMeResponse
@@ -7391,11 +9122,6 @@ class SingleValueResponseDashboardOverviewDto(BaseModel):
 class SingleValueResponseGlobalStatusSummaryDto(BaseModel):
     model_config = ConfigDict(extra="ignore", populate_by_name=True)
     data: GlobalStatusSummaryDto
-
-
-class SingleValueResponseIncidentDetailDto(BaseModel):
-    model_config = ConfigDict(extra="ignore", populate_by_name=True)
-    data: IncidentDetailDto
 
 
 class SingleValueResponseIncidentPolicyDto(BaseModel):
@@ -7428,14 +9154,9 @@ class SingleValueResponseNotificationPolicyDto(BaseModel):
     data: NotificationPolicyDto
 
 
-class SingleValueResponseResourceGroupDto(BaseModel):
+class SingleValueResponseResourceGroupMemberDto(BaseModel):
     model_config = ConfigDict(extra="ignore", populate_by_name=True)
-    data: ResourceGroupDto
-
-
-class SingleValueResponseServiceDetailDto(BaseModel):
-    model_config = ConfigDict(extra="ignore", populate_by_name=True)
-    data: ServiceDetailDto
+    data: ResourceGroupMemberDto
 
 
 class SingleValueResponseServiceIncidentDetailDto(BaseModel):
@@ -7463,9 +9184,14 @@ class SingleValueResponseStatusPageCustomDomainDto(BaseModel):
     data: StatusPageCustomDomainDto
 
 
-class SingleValueResponseStatusPageDto(BaseModel):
+class SingleValueResponseStatusPageIncidentUpdateDto(BaseModel):
     model_config = ConfigDict(extra="ignore", populate_by_name=True)
-    data: StatusPageDto
+    data: StatusPageIncidentUpdateDto
+
+
+class SingleValueResponseStatusPageNotificationDeliveryDto(BaseModel):
+    model_config = ConfigDict(extra="ignore", populate_by_name=True)
+    data: StatusPageNotificationDeliveryDto
 
 
 class SingleValueResponseStatusPageSubscriberDto(BaseModel):
@@ -7513,6 +9239,77 @@ class SingleValueResponseWorkspaceDto(BaseModel):
     data: WorkspaceDto
 
 
+class SlaDataDto(BaseModel):
+    model_config = ConfigDict(extra="ignore", populate_by_name=True)
+    sla_type: Annotated[
+        str | None,
+        Field(
+            alias="slaType",
+            description="SLA pattern: plan_gated, per_service, no_public_sla, or universal",
+        ),
+    ] = None
+    official_sla: Annotated[OfficialSla | None, Field(alias="officialSla")] = None
+    service_breakdown: Annotated[
+        list[ServiceBreakdown] | None,
+        Field(
+            alias="serviceBreakdown",
+            description="Per-service breakdown for vendors with per_service SLA type",
+        ),
+    ] = None
+    pricing_tiers: Annotated[
+        list[PricingTier] | None,
+        Field(
+            alias="pricingTiers", description="Pricing tiers with associated SLA levels"
+        ),
+    ] = None
+    credit_policy: Annotated[CreditPolicy | None, Field(alias="creditPolicy")] = None
+    no_sla_context: Annotated[NoSlaContext | None, Field(alias="noSlaContext")] = None
+    source_urls: Annotated[SourceUrls | None, Field(alias="sourceUrls")] = None
+    last_researched: Annotated[
+        str | None,
+        Field(
+            alias="lastResearched",
+            description="ISO date when this data was last manually researched",
+        ),
+    ] = None
+    research_notes: Annotated[
+        str | None,
+        Field(
+            alias="researchNotes",
+            description="Freeform operator notes about the research",
+        ),
+    ] = None
+
+
+class StatusPageDto(BaseModel):
+    model_config = ConfigDict(extra="ignore", populate_by_name=True)
+    id: UUID
+    organization_id: Annotated[int, Field(alias="organizationId")]
+    workspace_id: Annotated[int, Field(alias="workspaceId")]
+    name: Annotated[str, Field(min_length=1)]
+    slug: Annotated[str, Field(min_length=1)]
+    description: str | None = None
+    branding: StatusPageBranding
+    visibility: str
+    enabled: bool
+    incident_mode: Annotated[str, Field(alias="incidentMode")]
+    component_count: Annotated[int | None, Field(alias="componentCount")] = None
+    subscriber_count: Annotated[int | None, Field(alias="subscriberCount")] = None
+    overall_status: Annotated[str | None, Field(alias="overallStatus")] = None
+    open_incident: Annotated[
+        StatusPageOpenIncidentSummaryDto | None, Field(alias="openIncident")
+    ] = None
+    managed_by: Annotated[
+        str | None,
+        Field(
+            alias="managedBy",
+            description="Source that created/owns this status page: DASHBOARD, CLI, TERRAFORM, MCP, or API. Null on pages created before this attribution column existed.",
+        ),
+    ] = None
+    created_at: Annotated[AwareDatetime, Field(alias="createdAt")]
+    updated_at: Annotated[AwareDatetime, Field(alias="updatedAt")]
+
+
 class StatusPageIncidentDto(BaseModel):
     model_config = ConfigDict(extra="ignore", populate_by_name=True)
     id: UUID
@@ -7541,6 +9338,39 @@ class StatusPageIncidentDto(BaseModel):
     updated_at: Annotated[AwareDatetime, Field(alias="updatedAt")]
 
 
+class StatusPageMeasuredComponentUptimeDto(BaseModel):
+    model_config = ConfigDict(extra="ignore", populate_by_name=True)
+    source: Annotated[
+        str,
+        Field(
+            description="Uptime source discriminator; always measured for this resource"
+        ),
+    ]
+    component_id: Annotated[
+        UUID, Field(alias="componentId", description="Status-page component ID")
+    ]
+    monitor_id: Annotated[
+        UUID,
+        Field(
+            alias="monitorId",
+            description="Linked monitor whose check rollups feed this series",
+        ),
+    ]
+    tracking_since: Annotated[
+        str | None,
+        Field(
+            alias="trackingSince",
+            description="ISO-8601 date bars start (Camp A tracking-since); null only if unresolved",
+        ),
+    ] = None
+    days: Annotated[
+        list[StatusPageMeasuredUptimeDayDto],
+        Field(
+            description="Dense daily buckets from tracking start through today (oldest → newest)"
+        ),
+    ]
+
+
 class TableValueResultComponentUptimeDayDto(BaseModel):
     model_config = ConfigDict(extra="ignore", populate_by_name=True)
     data: list[ComponentUptimeDayDto]
@@ -7548,6 +9378,17 @@ class TableValueResultComponentUptimeDayDto(BaseModel):
     has_prev: Annotated[bool, Field(alias="hasPrev")]
     total_elements: Annotated[int | None, Field(alias="totalElements")] = None
     total_pages: Annotated[int | None, Field(alias="totalPages")] = None
+    next_cursor: Annotated[str | None, Field(alias="nextCursor")] = None
+
+
+class TableValueResultIncidentDto(BaseModel):
+    model_config = ConfigDict(extra="ignore", populate_by_name=True)
+    data: list[IncidentDto]
+    has_next: Annotated[bool, Field(alias="hasNext")]
+    has_prev: Annotated[bool, Field(alias="hasPrev")]
+    total_elements: Annotated[int | None, Field(alias="totalElements")] = None
+    total_pages: Annotated[int | None, Field(alias="totalPages")] = None
+    next_cursor: Annotated[str | None, Field(alias="nextCursor")] = None
 
 
 class TableValueResultIncidentStateTransitionDto(BaseModel):
@@ -7557,6 +9398,7 @@ class TableValueResultIncidentStateTransitionDto(BaseModel):
     has_prev: Annotated[bool, Field(alias="hasPrev")]
     total_elements: Annotated[int | None, Field(alias="totalElements")] = None
     total_pages: Annotated[int | None, Field(alias="totalPages")] = None
+    next_cursor: Annotated[str | None, Field(alias="nextCursor")] = None
 
 
 class TableValueResultIntegrationDto(BaseModel):
@@ -7566,6 +9408,7 @@ class TableValueResultIntegrationDto(BaseModel):
     has_prev: Annotated[bool, Field(alias="hasPrev")]
     total_elements: Annotated[int | None, Field(alias="totalElements")] = None
     total_pages: Annotated[int | None, Field(alias="totalPages")] = None
+    next_cursor: Annotated[str | None, Field(alias="nextCursor")] = None
 
 
 class TableValueResultMonitorDto(BaseModel):
@@ -7575,6 +9418,7 @@ class TableValueResultMonitorDto(BaseModel):
     has_prev: Annotated[bool, Field(alias="hasPrev")]
     total_elements: Annotated[int | None, Field(alias="totalElements")] = None
     total_pages: Annotated[int | None, Field(alias="totalPages")] = None
+    next_cursor: Annotated[str | None, Field(alias="nextCursor")] = None
 
 
 class TableValueResultMonitorVersionDto(BaseModel):
@@ -7584,6 +9428,7 @@ class TableValueResultMonitorVersionDto(BaseModel):
     has_prev: Annotated[bool, Field(alias="hasPrev")]
     total_elements: Annotated[int | None, Field(alias="totalElements")] = None
     total_pages: Annotated[int | None, Field(alias="totalPages")] = None
+    next_cursor: Annotated[str | None, Field(alias="nextCursor")] = None
 
 
 class TableValueResultNotificationPolicyDto(BaseModel):
@@ -7593,15 +9438,17 @@ class TableValueResultNotificationPolicyDto(BaseModel):
     has_prev: Annotated[bool, Field(alias="hasPrev")]
     total_elements: Annotated[int | None, Field(alias="totalElements")] = None
     total_pages: Annotated[int | None, Field(alias="totalPages")] = None
+    next_cursor: Annotated[str | None, Field(alias="nextCursor")] = None
 
 
-class TableValueResultResourceGroupDto(BaseModel):
+class TableValueResultStatusPageDto(BaseModel):
     model_config = ConfigDict(extra="ignore", populate_by_name=True)
-    data: list[ResourceGroupDto]
+    data: list[StatusPageDto]
     has_next: Annotated[bool, Field(alias="hasNext")]
     has_prev: Annotated[bool, Field(alias="hasPrev")]
     total_elements: Annotated[int | None, Field(alias="totalElements")] = None
     total_pages: Annotated[int | None, Field(alias="totalPages")] = None
+    next_cursor: Annotated[str | None, Field(alias="nextCursor")] = None
 
 
 class TableValueResultStatusPageIncidentDto(BaseModel):
@@ -7611,6 +9458,7 @@ class TableValueResultStatusPageIncidentDto(BaseModel):
     has_prev: Annotated[bool, Field(alias="hasPrev")]
     total_elements: Annotated[int | None, Field(alias="totalElements")] = None
     total_pages: Annotated[int | None, Field(alias="totalPages")] = None
+    next_cursor: Annotated[str | None, Field(alias="nextCursor")] = None
 
 
 class TableValueResultTagDto(BaseModel):
@@ -7620,6 +9468,27 @@ class TableValueResultTagDto(BaseModel):
     has_prev: Annotated[bool, Field(alias="hasPrev")]
     total_elements: Annotated[int | None, Field(alias="totalElements")] = None
     total_pages: Annotated[int | None, Field(alias="totalPages")] = None
+    next_cursor: Annotated[str | None, Field(alias="nextCursor")] = None
+
+
+class TableValueResultTestChannelResult(BaseModel):
+    model_config = ConfigDict(extra="ignore", populate_by_name=True)
+    data: list[TestChannelResult]
+    has_next: Annotated[bool, Field(alias="hasNext")]
+    has_prev: Annotated[bool, Field(alias="hasPrev")]
+    total_elements: Annotated[int | None, Field(alias="totalElements")] = None
+    total_pages: Annotated[int | None, Field(alias="totalPages")] = None
+    next_cursor: Annotated[str | None, Field(alias="nextCursor")] = None
+
+
+class TableValueResultVoiceLanguageDto(BaseModel):
+    model_config = ConfigDict(extra="ignore", populate_by_name=True)
+    data: list[VoiceLanguageDto]
+    has_next: Annotated[bool, Field(alias="hasNext")]
+    has_prev: Annotated[bool, Field(alias="hasPrev")]
+    total_elements: Annotated[int | None, Field(alias="totalElements")] = None
+    total_pages: Annotated[int | None, Field(alias="totalPages")] = None
+    next_cursor: Annotated[str | None, Field(alias="nextCursor")] = None
 
 
 class TableValueResultWebhookDeliveryDto(BaseModel):
@@ -7629,6 +9498,7 @@ class TableValueResultWebhookDeliveryDto(BaseModel):
     has_prev: Annotated[bool, Field(alias="hasPrev")]
     total_elements: Annotated[int | None, Field(alias="totalElements")] = None
     total_pages: Annotated[int | None, Field(alias="totalPages")] = None
+    next_cursor: Annotated[str | None, Field(alias="nextCursor")] = None
 
 
 class TableValueResultWebhookEndpointDto(BaseModel):
@@ -7638,6 +9508,7 @@ class TableValueResultWebhookEndpointDto(BaseModel):
     has_prev: Annotated[bool, Field(alias="hasPrev")]
     total_elements: Annotated[int | None, Field(alias="totalElements")] = None
     total_pages: Annotated[int | None, Field(alias="totalPages")] = None
+    next_cursor: Annotated[str | None, Field(alias="nextCursor")] = None
 
 
 class TableValueResultWorkspaceDto(BaseModel):
@@ -7647,6 +9518,7 @@ class TableValueResultWorkspaceDto(BaseModel):
     has_prev: Annotated[bool, Field(alias="hasPrev")]
     total_elements: Annotated[int | None, Field(alias="totalElements")] = None
     total_pages: Annotated[int | None, Field(alias="totalPages")] = None
+    next_cursor: Annotated[str | None, Field(alias="nextCursor")] = None
 
 
 class TestAlertChannelRequest(BaseModel):
@@ -7663,10 +9535,12 @@ class TestAlertChannelRequest(BaseModel):
         | MattermostChannelConfig
         | OpsGenieChannelConfig
         | PagerDutyChannelConfig
+        | PhoneCallChannelConfig
         | PushbulletChannelConfig
         | PushoverChannelConfig
         | RootlyChannelConfig
         | SlackChannelConfig
+        | SmsChannelConfig
         | SplunkOnCallChannelConfig
         | TeamsChannelConfig
         | TelegramChannelConfig
@@ -7687,26 +9561,28 @@ class UpdateAlertChannelRequest(BaseModel):
         ),
     ]
     config: Annotated[
-        DatadogChannelConfig
-        | DiscordChannelConfig
-        | EmailChannelConfig
-        | GitLabChannelConfig
-        | GoogleChatChannelConfig
-        | IncidentIoChannelConfig
-        | JiraChannelConfig
-        | LinearChannelConfig
-        | MattermostChannelConfig
-        | OpsGenieChannelConfig
-        | PagerDutyChannelConfig
-        | PushbulletChannelConfig
-        | PushoverChannelConfig
-        | RootlyChannelConfig
-        | SlackChannelConfig
-        | SplunkOnCallChannelConfig
-        | TeamsChannelConfig
-        | TelegramChannelConfig
-        | WebhookChannelConfig
-        | ZapierChannelConfig,
+        UpdateDatadogChannelConfig
+        | UpdateDiscordChannelConfig
+        | UpdateEmailChannelConfig
+        | UpdateGitLabChannelConfig
+        | UpdateGoogleChatChannelConfig
+        | UpdateIncidentIoChannelConfig
+        | UpdateJiraChannelConfig
+        | UpdateLinearChannelConfig
+        | UpdateMattermostChannelConfig
+        | UpdateOpsGenieChannelConfig
+        | UpdatePagerDutyChannelConfig
+        | UpdatePhoneCallChannelConfig
+        | UpdatePushbulletChannelConfig
+        | UpdatePushoverChannelConfig
+        | UpdateRootlyChannelConfig
+        | UpdateSlackChannelConfig
+        | UpdateSmsChannelConfig
+        | UpdateSplunkOnCallChannelConfig
+        | UpdateTeamsChannelConfig
+        | UpdateTelegramChannelConfig
+        | UpdateWebhookChannelConfig
+        | UpdateZapierChannelConfig,
         Field(discriminator="channel_type"),
     ]
     managed_by: Annotated[
@@ -7714,6 +9590,12 @@ class UpdateAlertChannelRequest(BaseModel):
         Field(
             alias="managedBy",
             description="New attribution source: DASHBOARD, CLI, TERRAFORM, MCP, or API; null preserves current value.",
+        ),
+    ] = None
+    enabled: Annotated[
+        bool | None,
+        Field(
+            description="Whether this channel is enabled (default: true); null preserves current value"
         ),
     ] = None
 
@@ -7734,6 +9616,7 @@ class UpdateMonitorRequest(BaseModel):
         | HttpMonitorConfig
         | IcmpMonitorConfig
         | McpServerMonitorConfig
+        | ScriptMonitorConfig
         | TcpMonitorConfig
         | None
     ) = None
@@ -7806,6 +9689,14 @@ class UpdateNotificationPolicyRequest(BaseModel):
         Field(
             description="Human-readable name for this policy; null preserves current",
             max_length=255,
+            min_length=0,
+        ),
+    ] = None
+    description: Annotated[
+        str | None,
+        Field(
+            description="New note; null preserves current, empty string clears",
+            max_length=500,
             min_length=0,
         ),
     ] = None
@@ -7907,9 +9798,9 @@ class CheckTraceDto(BaseModel):
     ] = None
 
 
-class CheckTypeDetailsDto(RootModel[Http | Tcp | Icmp | Dns | McpServer]):
+class CheckTypeDetailsDto(RootModel[Http | Tcp | Icmp | Dns | McpServer | Code]):
     root: Annotated[
-        Http | Tcp | Icmp | Dns | McpServer,
+        Http | Tcp | Icmp | Dns | McpServer | Code,
         Field(
             description="Check-type-specific details — polymorphic by check_type discriminator",
             discriminator="check_type",
@@ -7927,6 +9818,14 @@ class CreateNotificationPolicyRequest(BaseModel):
             min_length=0,
         ),
     ]
+    description: Annotated[
+        str | None,
+        Field(
+            description="Optional note; omit or null when unused",
+            max_length=500,
+            min_length=0,
+        ),
+    ] = None
     match_rules: Annotated[
         list[MatchRule] | None,
         Field(
@@ -7946,6 +9845,183 @@ class CreateNotificationPolicyRequest(BaseModel):
     ] = 0
 
 
+class IncidentDetailDto(BaseModel):
+    model_config = ConfigDict(extra="ignore", populate_by_name=True)
+    incident: IncidentDto
+    updates: list[IncidentUpdateDto]
+    status_page_incidents: Annotated[
+        list[LinkedStatusPageIncidentDto] | None, Field(alias="statusPageIncidents")
+    ] = None
+    trigger: IncidentTriggerDto | None = None
+
+
+class ResourceGroupDto(BaseModel):
+    model_config = ConfigDict(extra="ignore", populate_by_name=True)
+    id: Annotated[UUID, Field(description="Unique resource group identifier")]
+    organization_id: Annotated[
+        int,
+        Field(alias="organizationId", description="Organization this group belongs to"),
+    ]
+    name: Annotated[str, Field(description="Human-readable group name", min_length=1)]
+    slug: Annotated[str, Field(description="URL-safe group identifier", min_length=1)]
+    description: Annotated[
+        str | None, Field(description="Optional group description")
+    ] = None
+    alert_policy_id: Annotated[
+        UUID | None,
+        Field(
+            alias="alertPolicyId",
+            description="Notification policy applied to this group",
+        ),
+    ] = None
+    default_frequency: Annotated[
+        int | None,
+        Field(
+            alias="defaultFrequency",
+            description="Default check frequency in seconds for member monitors",
+        ),
+    ] = None
+    default_regions: Annotated[
+        list[str] | None,
+        Field(
+            alias="defaultRegions", description="Default regions for member monitors"
+        ),
+    ] = None
+    default_retry_strategy: Annotated[
+        RetryStrategy | None, Field(alias="defaultRetryStrategy")
+    ] = None
+    default_alert_channels: Annotated[
+        list[UUID] | None,
+        Field(
+            alias="defaultAlertChannels",
+            description="Default alert channel IDs for member monitors",
+        ),
+    ] = None
+    default_environment_id: Annotated[
+        UUID | None,
+        Field(
+            alias="defaultEnvironmentId",
+            description="Default environment ID for member monitors",
+        ),
+    ] = None
+    health_threshold_type: Annotated[
+        str | None,
+        Field(
+            alias="healthThresholdType",
+            description="Health threshold type: COUNT or PERCENTAGE",
+        ),
+    ] = None
+    health_threshold_value: Annotated[
+        float | None,
+        Field(alias="healthThresholdValue", description="Health threshold value"),
+    ] = None
+    suppress_member_alerts: Annotated[
+        bool,
+        Field(
+            alias="suppressMemberAlerts",
+            description="When true, member-level incidents skip notification dispatch; only group alerts fire",
+        ),
+    ]
+    confirmation_delay_seconds: Annotated[
+        int | None,
+        Field(
+            alias="confirmationDelaySeconds",
+            description="Seconds to wait after health threshold breach before creating group incident",
+        ),
+    ] = None
+    recovery_cooldown_minutes: Annotated[
+        int | None,
+        Field(
+            alias="recoveryCooldownMinutes",
+            description="Cooldown minutes after group incident resolves before a new one can open",
+        ),
+    ] = None
+    health: ResourceGroupHealthDto
+    members: Annotated[
+        list[ResourceGroupMemberDto] | None,
+        Field(
+            description="Member list with individual statuses; populated on detail GET only"
+        ),
+    ] = None
+    delete_blocked_by: Annotated[
+        list[ResourceGroupDeleteBlockerDto] | None,
+        Field(
+            alias="deleteBlockedBy",
+            description="Status-page GROUP components that reference this group (delete blockers / public exposure); populated on detail GET only — omitted on list",
+        ),
+    ] = None
+    open_region_incident: Annotated[
+        IncidentDto | None, Field(alias="openRegionIncident")
+    ] = None
+    managed_by: Annotated[
+        str | None,
+        Field(
+            alias="managedBy",
+            description="Source that created/owns this group: DASHBOARD, CLI, TERRAFORM, MCP, or API. Null on groups created before this attribution column existed.",
+        ),
+    ] = None
+    created_at: Annotated[
+        AwareDatetime,
+        Field(alias="createdAt", description="Timestamp when the group was created"),
+    ]
+    updated_at: Annotated[
+        AwareDatetime,
+        Field(
+            alias="updatedAt", description="Timestamp when the group was last updated"
+        ),
+    ]
+
+
+class ServiceDetailDto(BaseModel):
+    model_config = ConfigDict(extra="ignore", populate_by_name=True)
+    id: UUID
+    slug: str
+    name: str
+    category: str | None = None
+    official_status_url: Annotated[str | None, Field(alias="officialStatusUrl")] = None
+    developer_context: Annotated[str | None, Field(alias="developerContext")] = None
+    logo_url: Annotated[str | None, Field(alias="logoUrl")] = None
+    adapter_type: Annotated[str, Field(alias="adapterType")]
+    polling_interval_seconds: Annotated[int, Field(alias="pollingIntervalSeconds")]
+    lifecycle_status: Annotated[
+        str,
+        Field(
+            alias="lifecycleStatus",
+            description="Service lifecycle state: ACTIVE, DEGRADED, DEPRECATED, or RETIRED",
+        ),
+    ]
+    enabled: bool
+    created_at: Annotated[AwareDatetime, Field(alias="createdAt")]
+    updated_at: Annotated[AwareDatetime, Field(alias="updatedAt")]
+    current_status: Annotated[ServiceStatusDto | None, Field(alias="currentStatus")] = (
+        None
+    )
+    recent_incidents: Annotated[
+        list[ServiceIncidentDto], Field(alias="recentIncidents")
+    ]
+    components: list[ServiceComponentDto]
+    components_summary: Annotated[
+        ComponentsSummaryDto | None, Field(alias="componentsSummary")
+    ] = None
+    uptime: ComponentUptimeSummaryDto | None = None
+    active_maintenances: Annotated[
+        list[ScheduledMaintenanceDto], Field(alias="activeMaintenances")
+    ]
+    data_completeness: Annotated[str, Field(alias="dataCompleteness")]
+    sla_published: Annotated[
+        bool,
+        Field(
+            alias="slaPublished",
+            description="Whether the service's SLA page is publicly visible",
+        ),
+    ]
+    seo_metadata: Annotated[SeoMetadataDto | None, Field(alias="seoMetadata")] = None
+    sla_data: Annotated[SlaDataDto | None, Field(alias="slaData")] = None
+    related_services: Annotated[
+        list[ServiceCatalogDto] | None, Field(alias="relatedServices")
+    ] = None
+
+
 class SingleValueResponseBatchComponentUptimeDto(BaseModel):
     model_config = ConfigDict(extra="ignore", populate_by_name=True)
     data: BatchComponentUptimeDto
@@ -7956,9 +10032,34 @@ class SingleValueResponseCheckTraceDto(BaseModel):
     data: CheckTraceDto
 
 
+class SingleValueResponseIncidentDetailDto(BaseModel):
+    model_config = ConfigDict(extra="ignore", populate_by_name=True)
+    data: IncidentDetailDto
+
+
+class SingleValueResponseResourceGroupDto(BaseModel):
+    model_config = ConfigDict(extra="ignore", populate_by_name=True)
+    data: ResourceGroupDto
+
+
+class SingleValueResponseServiceDetailDto(BaseModel):
+    model_config = ConfigDict(extra="ignore", populate_by_name=True)
+    data: ServiceDetailDto
+
+
+class SingleValueResponseStatusPageDto(BaseModel):
+    model_config = ConfigDict(extra="ignore", populate_by_name=True)
+    data: StatusPageDto
+
+
 class SingleValueResponseStatusPageIncidentDto(BaseModel):
     model_config = ConfigDict(extra="ignore", populate_by_name=True)
     data: StatusPageIncidentDto
+
+
+class SingleValueResponseStatusPageMeasuredComponentUptimeDto(BaseModel):
+    model_config = ConfigDict(extra="ignore", populate_by_name=True)
+    data: StatusPageMeasuredComponentUptimeDto
 
 
 class TableValueResultAuditEventDto(BaseModel):
@@ -7968,6 +10069,17 @@ class TableValueResultAuditEventDto(BaseModel):
     has_prev: Annotated[bool, Field(alias="hasPrev")]
     total_elements: Annotated[int | None, Field(alias="totalElements")] = None
     total_pages: Annotated[int | None, Field(alias="totalPages")] = None
+    next_cursor: Annotated[str | None, Field(alias="nextCursor")] = None
+
+
+class TableValueResultResourceGroupDto(BaseModel):
+    model_config = ConfigDict(extra="ignore", populate_by_name=True)
+    data: list[ResourceGroupDto]
+    has_next: Annotated[bool, Field(alias="hasNext")]
+    has_prev: Annotated[bool, Field(alias="hasPrev")]
+    total_elements: Annotated[int | None, Field(alias="totalElements")] = None
+    total_pages: Annotated[int | None, Field(alias="totalPages")] = None
+    next_cursor: Annotated[str | None, Field(alias="nextCursor")] = None
 
 
 class CheckResultDetailsDto(BaseModel):
