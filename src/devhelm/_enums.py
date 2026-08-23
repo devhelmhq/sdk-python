@@ -25,6 +25,7 @@ from typing import Literal
 AddIncidentUpdateRequestNewStatus = Literal[
     "WATCHING", "TRIGGERED", "CONFIRMED", "RESOLVED"
 ]
+AdminAddSubscriberRequestChannel = Literal["EMAIL", "SMS", "WEBHOOK"]
 AffectedComponentStatus = Literal[
     "OPERATIONAL",
     "DEGRADED_PERFORMANCE",
@@ -53,13 +54,23 @@ AlertChannelDtoChannelType = Literal[
     "datadog",
     "jira",
     "gitlab",
+    "sms",
+    "phone_call",
 ]
 AlertChannelDtoManagedBy = Literal["DASHBOARD", "CLI", "TERRAFORM", "MCP", "API"]
 AlertDeliveryDtoEventType = Literal[
     "INCIDENT_CREATED", "INCIDENT_RESOLVED", "INCIDENT_REOPENED"
 ]
 AlertDeliveryDtoStatus = Literal[
-    "PENDING", "DELIVERED", "RETRY_PENDING", "FAILED", "CANCELLED"
+    "PENDING",
+    "DELIVERED",
+    "RETRY_PENDING",
+    "FAILED",
+    "CANCELLED",
+    "SKIPPED_NO_CREDIT",
+    "SKIPPED_UNVERIFIED",
+    "SKIPPED_OPTED_OUT",
+    "SKIPPED_RATE_LIMITED",
 ]
 ApiKeyAuthConfigType = Literal["api_key"]
 AssertionResultDtoSeverity = Literal["fail", "warn"]
@@ -118,6 +129,7 @@ ChangeRoleRequestOrgRole = Literal["OWNER", "ADMIN", "MEMBER"]
 ChangeStatusRequestStatus = Literal[
     "INVITED", "ACTIVE", "SUSPENDED", "LEFT", "REMOVED", "DECLINED"
 ]
+CodeCheckType = Literal["code"]
 ConfirmationPolicyType = Literal["multi_region"]
 CreateAlertChannelRequestManagedBy = Literal[
     "DASHBOARD", "CLI", "TERRAFORM", "MCP", "API"
@@ -127,18 +139,24 @@ CreateInviteRequestRoleOffered = Literal["OWNER", "ADMIN", "MEMBER"]
 CreateManualIncidentRequestSeverity = Literal["DOWN", "DEGRADED", "MAINTENANCE"]
 CreateMonitorRequestManagedBy = Literal["DASHBOARD", "CLI", "TERRAFORM", "MCP", "API"]
 CreateMonitorRequestType = Literal[
-    "HTTP", "DNS", "MCP_SERVER", "TCP", "ICMP", "HEARTBEAT"
+    "HTTP", "DNS", "MCP_SERVER", "TCP", "ICMP", "HEARTBEAT", "BROWSER", "MULTI_STEP_API"
 ]
 CreateResourceGroupRequestHealthThresholdType = Literal["COUNT", "PERCENTAGE"]
 CreateResourceGroupRequestManagedBy = Literal[
     "DASHBOARD", "CLI", "TERRAFORM", "MCP", "API"
 ]
-CreateStatusPageComponentRequestType = Literal["MONITOR", "GROUP", "STATIC"]
+CreateStatusPageComponentRequestType = Literal[
+    "MONITOR", "GROUP", "STATIC", "DEPENDENCY"
+]
 CreateStatusPageIncidentRequestImpact = Literal["NONE", "MINOR", "MAJOR", "CRITICAL"]
 CreateStatusPageIncidentRequestStatus = Literal[
     "INVESTIGATING", "IDENTIFIED", "MONITORING", "RESOLVED"
 ]
 CreateStatusPageIncidentUpdateRequestStatus = Literal[
+    "INVESTIGATING", "IDENTIFIED", "MONITORING", "RESOLVED"
+]
+CreateStatusPageMaintenanceRequestImpact = Literal["NONE", "MINOR", "MAJOR", "CRITICAL"]
+CreateStatusPageMaintenanceRequestStatus = Literal[
     "INVESTIGATING", "IDENTIFIED", "MONITORING", "RESOLVED"
 ]
 CreateStatusPageRequestIncidentMode = Literal["MANUAL", "REVIEW", "AUTOMATIC"]
@@ -198,6 +216,9 @@ IcmpPacketLossAssertionType = Literal["icmp_packet_loss"]
 IcmpReachableAssertionType = Literal["icmp_reachable"]
 IcmpResponseTimeAssertionType = Literal["icmp_response_time"]
 IcmpResponseTimeWarnAssertionType = Literal["icmp_response_time_warn"]
+IncidentActivityEventDtoKind = Literal[
+    "update", "dispatch", "delivery", "forensic_transition", "status_page_update"
+]
 IncidentDtoResolutionReason = Literal["MANUAL", "AUTO_RECOVERED", "AUTO_RESOLVED"]
 IncidentDtoSeverity = Literal["DOWN", "DEGRADED", "MAINTENANCE"]
 IncidentDtoSource = Literal[
@@ -210,6 +231,7 @@ IncidentFilterParamsSource = Literal[
 ]
 IncidentFilterParamsStatus = Literal["WATCHING", "TRIGGERED", "CONFIRMED", "RESOLVED"]
 IncidentIoChannelConfigChannelType = Literal["incident_io"]
+IncidentTriggerDtoSource = Literal["forensics", "checks", "none"]
 IncidentUpdateDtoCreatedBy = Literal["SYSTEM", "USER"]
 IncidentUpdateDtoNewStatus = Literal["WATCHING", "TRIGGERED", "CONFIRMED", "RESOLVED"]
 IncidentUpdateDtoOldStatus = Literal["WATCHING", "TRIGGERED", "CONFIRMED", "RESOLVED"]
@@ -223,7 +245,9 @@ JsonPathAssertionOperator = Literal[
 ]
 JsonPathAssertionType = Literal["json_path"]
 LinearChannelConfigChannelType = Literal["linear"]
+LinkedStatusPageIncidentDtoConnectionMode = Literal["AUTO", "MANUAL"]
 LinkedStatusPageIncidentDtoImpact = Literal["NONE", "MINOR", "MAJOR", "CRITICAL"]
+LinkedStatusPageIncidentDtoPageIncidentMode = Literal["MANUAL", "REVIEW", "AUTOMATIC"]
 LinkedStatusPageIncidentDtoStatus = Literal[
     "INVESTIGATING", "IDENTIFIED", "MONITORING", "RESOLVED"
 ]
@@ -303,9 +327,11 @@ MonitorAssertionDtoSeverity = Literal["fail", "warn"]
 MonitorAuthDtoAuthType = Literal["bearer", "basic", "header", "api_key"]
 MonitorDtoCurrentStatus = Literal["up", "degraded", "down", "paused", "unknown"]
 MonitorDtoManagedBy = Literal["DASHBOARD", "CLI", "TERRAFORM", "MCP", "API"]
-MonitorDtoType = Literal["HTTP", "DNS", "MCP_SERVER", "TCP", "ICMP", "HEARTBEAT"]
+MonitorDtoType = Literal[
+    "HTTP", "DNS", "MCP_SERVER", "TCP", "ICMP", "HEARTBEAT", "BROWSER", "MULTI_STEP_API"
+]
 MonitorTestRequestType = Literal[
-    "HTTP", "DNS", "MCP_SERVER", "TCP", "ICMP", "HEARTBEAT"
+    "HTTP", "DNS", "MCP_SERVER", "TCP", "ICMP", "HEARTBEAT", "BROWSER", "MULTI_STEP_API"
 ]
 MonitorVersionDtoChangedVia = Literal["API", "DASHBOARD", "CLI", "TERRAFORM"]
 NotificationDispatchDtoCompletionReason = Literal["EXHAUSTED", "RESOLVED", "NO_STEPS"]
@@ -313,7 +339,12 @@ NotificationDispatchDtoStatus = Literal[
     "PENDING", "DISPATCHING", "DELIVERED", "ESCALATING", "ACKNOWLEDGED", "COMPLETED"
 ]
 OpsGenieChannelConfigChannelType = Literal["opsgenie"]
+OrgIncidentAnnotationDtoSeverity = Literal["DOWN", "DEGRADED", "MAINTENANCE"]
+OrgIncidentAnnotationDtoStatus = Literal[
+    "WATCHING", "TRIGGERED", "CONFIRMED", "RESOLVED"
+]
 PagerDutyChannelConfigChannelType = Literal["pagerduty"]
+PhoneCallChannelConfigChannelType = Literal["phone_call"]
 PlanInfoTier = Literal["FREE", "STARTER", "PRO", "TEAM", "BUSINESS", "ENTERPRISE"]
 PublishStatusPageIncidentRequestImpact = Literal["NONE", "MINOR", "MAJOR", "CRITICAL"]
 PublishStatusPageIncidentRequestStatus = Literal[
@@ -344,7 +375,18 @@ ServiceDetailDtoLifecycleStatus = Literal["ACTIVE", "DEGRADED", "DEPRECATED", "R
 ServiceSubscriptionDtoAlertSensitivity = Literal[
     "ALL", "AWARENESS", "INCIDENTS_ONLY", "MAJOR_ONLY"
 ]
+SetStatusPageComponentOverrideRequestStatus = Literal[
+    "OPERATIONAL",
+    "DEGRADED_PERFORMANCE",
+    "PARTIAL_OUTAGE",
+    "MAJOR_OUTAGE",
+    "UNDER_MAINTENANCE",
+]
+SkippedDispatchStatus = Literal[
+    "PENDING", "DISPATCHING", "DELIVERED", "ESCALATING", "ACKNOWLEDGED", "COMPLETED"
+]
 SlackChannelConfigChannelType = Literal["slack"]
+SmsChannelConfigChannelType = Literal["sms"]
 SplunkOnCallChannelConfigChannelType = Literal["splunk_oncall"]
 SslExpiryAssertionType = Literal["ssl_expiry"]
 StateTransitionDetailsSource = Literal["pipeline", "public-api"]
@@ -352,6 +394,15 @@ StatusCodeAssertionOperator = Literal[
     "equals", "contains", "less_than", "greater_than", "matches", "range"
 ]
 StatusCodeAssertionType = Literal["status_code"]
+StatusEventDtoType = Literal[
+    "incident.opened",
+    "incident.update",
+    "incident.resolved",
+    "maintenance.scheduled",
+    "maintenance.started",
+    "maintenance.completed",
+    "component.transition",
+]
 StatusPageComponentDtoCurrentStatus = Literal[
     "OPERATIONAL",
     "DEGRADED_PERFORMANCE",
@@ -359,7 +410,14 @@ StatusPageComponentDtoCurrentStatus = Literal[
     "MAJOR_OUTAGE",
     "UNDER_MAINTENANCE",
 ]
-StatusPageComponentDtoType = Literal["MONITOR", "GROUP", "STATIC"]
+StatusPageComponentDtoOverrideStatus = Literal[
+    "OPERATIONAL",
+    "DEGRADED_PERFORMANCE",
+    "PARTIAL_OUTAGE",
+    "MAJOR_OUTAGE",
+    "UNDER_MAINTENANCE",
+]
+StatusPageComponentDtoType = Literal["MONITOR", "GROUP", "STATIC", "DEPENDENCY"]
 StatusPageCustomDomainDtoStatus = Literal[
     "PENDING_VERIFICATION",
     "VERIFICATION_FAILED",
@@ -395,6 +453,28 @@ StatusPageIncidentUpdateDtoCreatedBy = Literal["USER", "SYSTEM"]
 StatusPageIncidentUpdateDtoStatus = Literal[
     "INVESTIGATING", "IDENTIFIED", "MONITORING", "RESOLVED"
 ]
+StatusPageMeasuredComponentUptimeDtoSource = Literal["incident_window", "measured"]
+StatusPageNotificationDeliveryDtoEventType = Literal[
+    "SUBSCRIPTION_CONFIRMATION",
+    "INCIDENT_CREATED",
+    "INCIDENT_UPDATED",
+    "INCIDENT_RESOLVED",
+]
+StatusPageNotificationDeliveryDtoStatus = Literal[
+    "PENDING",
+    "DELIVERED",
+    "RETRY_PENDING",
+    "FAILED",
+    "CANCELLED",
+    "SKIPPED_NO_CREDIT",
+    "SKIPPED_UNVERIFIED",
+    "SKIPPED_OPTED_OUT",
+    "SKIPPED_RATE_LIMITED",
+]
+StatusPageOpenIncidentSummaryDtoStatus = Literal[
+    "INVESTIGATING", "IDENTIFIED", "MONITORING", "RESOLVED"
+]
+StatusPageSubscriberDtoChannel = Literal["EMAIL", "SMS", "WEBHOOK"]
 TcpCheckType = Literal["tcp"]
 TcpConnectsAssertionType = Literal["tcp_connects"]
 TcpResponseTimeAssertionType = Literal["tcp_response_time"]
@@ -409,13 +489,35 @@ UpdateAlertChannelRequestManagedBy = Literal[
     "DASHBOARD", "CLI", "TERRAFORM", "MCP", "API"
 ]
 UpdateAssertionRequestSeverity = Literal["fail", "warn"]
+UpdateDatadogChannelConfigChannelType = Literal["datadog"]
+UpdateDiscordChannelConfigChannelType = Literal["discord"]
+UpdateEmailChannelConfigChannelType = Literal["email"]
+UpdateGitLabChannelConfigChannelType = Literal["gitlab"]
+UpdateGoogleChatChannelConfigChannelType = Literal["google_chat"]
+UpdateIncidentIoChannelConfigChannelType = Literal["incident_io"]
+UpdateIncidentRequestSeverity = Literal["DOWN", "DEGRADED", "MAINTENANCE"]
+UpdateJiraChannelConfigChannelType = Literal["jira"]
+UpdateLinearChannelConfigChannelType = Literal["linear"]
+UpdateMattermostChannelConfigChannelType = Literal["mattermost"]
 UpdateMonitorRequestManagedBy = Literal["DASHBOARD", "CLI", "TERRAFORM", "MCP", "API"]
+UpdateOpsGenieChannelConfigChannelType = Literal["opsgenie"]
+UpdatePagerDutyChannelConfigChannelType = Literal["pagerduty"]
+UpdatePhoneCallChannelConfigChannelType = Literal["phone_call"]
+UpdatePushbulletChannelConfigChannelType = Literal["pushbullet"]
+UpdatePushoverChannelConfigChannelType = Literal["pushover"]
 UpdateResourceGroupRequestHealthThresholdType = Literal["COUNT", "PERCENTAGE"]
 UpdateResourceGroupRequestManagedBy = Literal[
     "DASHBOARD", "CLI", "TERRAFORM", "MCP", "API"
 ]
+UpdateRootlyChannelConfigChannelType = Literal["rootly"]
+UpdateSlackChannelConfigChannelType = Literal["slack"]
+UpdateSmsChannelConfigChannelType = Literal["sms"]
+UpdateSplunkOnCallChannelConfigChannelType = Literal["splunk_oncall"]
 UpdateStatusPageIncidentRequestImpact = Literal["NONE", "MINOR", "MAJOR", "CRITICAL"]
 UpdateStatusPageIncidentRequestStatus = Literal[
+    "INVESTIGATING", "IDENTIFIED", "MONITORING", "RESOLVED"
+]
+UpdateStatusPageIncidentUpdateRequestStatus = Literal[
     "INVESTIGATING", "IDENTIFIED", "MONITORING", "RESOLVED"
 ]
 UpdateStatusPageRequestIncidentMode = Literal["MANUAL", "REVIEW", "AUTOMATIC"]
@@ -423,6 +525,9 @@ UpdateStatusPageRequestManagedBy = Literal[
     "DASHBOARD", "CLI", "TERRAFORM", "MCP", "API"
 ]
 UpdateStatusPageRequestVisibility = Literal["PUBLIC", "PASSWORD", "IP_RESTRICTED"]
+UpdateTeamsChannelConfigChannelType = Literal["teams"]
+UpdateTelegramChannelConfigChannelType = Literal["telegram"]
+UpdateWebhookChannelConfigChannelType = Literal["webhook"]
 UpdateWebhookEndpointRequestSubscribedEventsItem = Literal[
     "monitor.created",
     "monitor.updated",
@@ -436,11 +541,13 @@ UpdateWebhookEndpointRequestSubscribedEventsItem = Literal[
     "service.incident_updated",
     "service.incident_resolved",
 ]
+UpdateZapierChannelConfigChannelType = Literal["zapier"]
 WebhookChannelConfigChannelType = Literal["webhook"]
 ZapierChannelConfigChannelType = Literal["zapier"]
 
 __all__ = [
     "AddIncidentUpdateRequestNewStatus",
+    "AdminAddSubscriberRequestChannel",
     "AffectedComponentStatus",
     "AlertChannelDtoChannelType",
     "AlertChannelDtoManagedBy",
@@ -456,6 +563,7 @@ __all__ = [
     "BulkMonitorActionRequestAction",
     "ChangeRoleRequestOrgRole",
     "ChangeStatusRequestStatus",
+    "CodeCheckType",
     "ConfirmationPolicyType",
     "CreateAlertChannelRequestManagedBy",
     "CreateAssertionRequestSeverity",
@@ -469,6 +577,8 @@ __all__ = [
     "CreateStatusPageIncidentRequestImpact",
     "CreateStatusPageIncidentRequestStatus",
     "CreateStatusPageIncidentUpdateRequestStatus",
+    "CreateStatusPageMaintenanceRequestImpact",
+    "CreateStatusPageMaintenanceRequestStatus",
     "CreateStatusPageRequestIncidentMode",
     "CreateStatusPageRequestManagedBy",
     "CreateStatusPageRequestVisibility",
@@ -508,6 +618,7 @@ __all__ = [
     "IcmpReachableAssertionType",
     "IcmpResponseTimeAssertionType",
     "IcmpResponseTimeWarnAssertionType",
+    "IncidentActivityEventDtoKind",
     "IncidentDtoResolutionReason",
     "IncidentDtoSeverity",
     "IncidentDtoSource",
@@ -516,6 +627,7 @@ __all__ = [
     "IncidentFilterParamsSource",
     "IncidentFilterParamsStatus",
     "IncidentIoChannelConfigChannelType",
+    "IncidentTriggerDtoSource",
     "IncidentUpdateDtoCreatedBy",
     "IncidentUpdateDtoNewStatus",
     "IncidentUpdateDtoOldStatus",
@@ -525,7 +637,9 @@ __all__ = [
     "JsonPathAssertionOperator",
     "JsonPathAssertionType",
     "LinearChannelConfigChannelType",
+    "LinkedStatusPageIncidentDtoConnectionMode",
     "LinkedStatusPageIncidentDtoImpact",
+    "LinkedStatusPageIncidentDtoPageIncidentMode",
     "LinkedStatusPageIncidentDtoStatus",
     "MatchRuleType",
     "MattermostChannelConfigChannelType",
@@ -554,7 +668,10 @@ __all__ = [
     "NotificationDispatchDtoCompletionReason",
     "NotificationDispatchDtoStatus",
     "OpsGenieChannelConfigChannelType",
+    "OrgIncidentAnnotationDtoSeverity",
+    "OrgIncidentAnnotationDtoStatus",
     "PagerDutyChannelConfigChannelType",
+    "PhoneCallChannelConfigChannelType",
     "PlanInfoTier",
     "PublishStatusPageIncidentRequestImpact",
     "PublishStatusPageIncidentRequestStatus",
@@ -577,13 +694,18 @@ __all__ = [
     "ServiceCatalogDtoLifecycleStatus",
     "ServiceDetailDtoLifecycleStatus",
     "ServiceSubscriptionDtoAlertSensitivity",
+    "SetStatusPageComponentOverrideRequestStatus",
+    "SkippedDispatchStatus",
     "SlackChannelConfigChannelType",
+    "SmsChannelConfigChannelType",
     "SplunkOnCallChannelConfigChannelType",
     "SslExpiryAssertionType",
     "StateTransitionDetailsSource",
     "StatusCodeAssertionOperator",
     "StatusCodeAssertionType",
+    "StatusEventDtoType",
     "StatusPageComponentDtoCurrentStatus",
+    "StatusPageComponentDtoOverrideStatus",
     "StatusPageComponentDtoType",
     "StatusPageCustomDomainDtoStatus",
     "StatusPageCustomDomainDtoVerificationMethod",
@@ -596,6 +718,11 @@ __all__ = [
     "StatusPageIncidentDtoStatus",
     "StatusPageIncidentUpdateDtoCreatedBy",
     "StatusPageIncidentUpdateDtoStatus",
+    "StatusPageMeasuredComponentUptimeDtoSource",
+    "StatusPageNotificationDeliveryDtoEventType",
+    "StatusPageNotificationDeliveryDtoStatus",
+    "StatusPageOpenIncidentSummaryDtoStatus",
+    "StatusPageSubscriberDtoChannel",
     "TcpCheckType",
     "TcpConnectsAssertionType",
     "TcpResponseTimeAssertionType",
@@ -608,15 +735,39 @@ __all__ = [
     "TriggerRuleType",
     "UpdateAlertChannelRequestManagedBy",
     "UpdateAssertionRequestSeverity",
+    "UpdateDatadogChannelConfigChannelType",
+    "UpdateDiscordChannelConfigChannelType",
+    "UpdateEmailChannelConfigChannelType",
+    "UpdateGitLabChannelConfigChannelType",
+    "UpdateGoogleChatChannelConfigChannelType",
+    "UpdateIncidentIoChannelConfigChannelType",
+    "UpdateIncidentRequestSeverity",
+    "UpdateJiraChannelConfigChannelType",
+    "UpdateLinearChannelConfigChannelType",
+    "UpdateMattermostChannelConfigChannelType",
     "UpdateMonitorRequestManagedBy",
+    "UpdateOpsGenieChannelConfigChannelType",
+    "UpdatePagerDutyChannelConfigChannelType",
+    "UpdatePhoneCallChannelConfigChannelType",
+    "UpdatePushbulletChannelConfigChannelType",
+    "UpdatePushoverChannelConfigChannelType",
     "UpdateResourceGroupRequestHealthThresholdType",
     "UpdateResourceGroupRequestManagedBy",
+    "UpdateRootlyChannelConfigChannelType",
+    "UpdateSlackChannelConfigChannelType",
+    "UpdateSmsChannelConfigChannelType",
+    "UpdateSplunkOnCallChannelConfigChannelType",
     "UpdateStatusPageIncidentRequestImpact",
     "UpdateStatusPageIncidentRequestStatus",
+    "UpdateStatusPageIncidentUpdateRequestStatus",
     "UpdateStatusPageRequestIncidentMode",
     "UpdateStatusPageRequestManagedBy",
     "UpdateStatusPageRequestVisibility",
+    "UpdateTeamsChannelConfigChannelType",
+    "UpdateTelegramChannelConfigChannelType",
+    "UpdateWebhookChannelConfigChannelType",
     "UpdateWebhookEndpointRequestSubscribedEventsItem",
+    "UpdateZapierChannelConfigChannelType",
     "WebhookChannelConfigChannelType",
     "ZapierChannelConfigChannelType",
 ]
