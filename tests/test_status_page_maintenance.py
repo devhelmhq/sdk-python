@@ -48,8 +48,7 @@ def _stub_transport(captured: list[httpx.Request]) -> httpx.MockTransport:
         prefix = f"/api/v1/status-pages/{_PAGE}/maintenance"
         if method == "GET" and path == prefix:
             return httpx.Response(
-                200,
-                json={"data": [_VALID_WINDOW], "hasNext": False, "hasPrev": False},
+                200, json={"data": [_VALID_WINDOW], "hasNext": False, "hasPrev": False}
             )
         if method == "POST" and path == prefix:
             return httpx.Response(201, json={"data": _VALID_WINDOW})
@@ -101,11 +100,7 @@ class TestStatusPageMaintenance:
         with pytest.raises(DevhelmValidationError, match="scheduledFor"):
             maintenance.create(
                 _PAGE,
-                {
-                    "title": "DB upgrade",
-                    "impact": "MINOR",
-                    "body": "missing schedule",
-                },
+                {"title": "DB upgrade", "impact": "MINOR", "body": "missing schedule"},
             )
         assert captured == []
 

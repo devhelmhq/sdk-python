@@ -176,9 +176,8 @@ class TestAdminAddSubscriberRequest:
         with pytest.raises(ValidationError):
             AdminAddSubscriberRequest.model_validate({"email": ""})
 
-    def test_missing_email_raises(self) -> None:
-        with pytest.raises(ValidationError, match="email"):
-            AdminAddSubscriberRequest.model_validate({})
+    def test_empty_body_is_valid(self) -> None:
+        AdminAddSubscriberRequest.model_validate({})
 
 
 class TestAddCustomDomainRequest:
@@ -328,6 +327,7 @@ def _incident_fixture(**overrides: object) -> dict[str, object]:
         "reopenCount": 0,
         "createdByUserId": None,
         "statusPageVisible": False,
+        "suppressDispatch": False,
         "serviceIncidentId": None,
         "serviceId": None,
         "externalRef": None,
