@@ -23,6 +23,7 @@ class Page(Generic[T]):
     has_prev: bool = False
     total_elements: int | None = None
     total_pages: int | None = None
+    next_cursor: str | None = None
 
 
 @dataclass
@@ -40,17 +41,18 @@ class _PageEnvelope(BaseModel):
     Items are validated separately via ``parse_list(model_class, ...)`` so the
     envelope only describes the surrounding pagination shape; that keeps this
     layer P5-clean (no casts) without forcing every model to be expressed
-    twice. ``extra="forbid"`` so unknown envelope keys surface as a typed
-    ``DevhelmValidationError`` (P1) rather than silently disappearing.
+    twice. ``extra="ignore"`` so additive response fields (``nextCursor``,
+    future envelope keys) cannot break ``list()`` — Postel's Law.
     """
 
-    model_config = ConfigDict(extra="forbid")
+    model_config = ConfigDict(extra="ignore")
 
     data: list[Any] = []  # validated separately
     hasNext: bool = False
     hasPrev: bool = False
     totalElements: int | None = None
     totalPages: int | None = None
+    nextCursor: str | None = None
 
 
 class _CursorPageEnvelope(BaseModel):
@@ -142,6 +144,7 @@ def fetch_page(
         has_prev=envelope.hasPrev,
         total_elements=envelope.totalElements,
         total_pages=envelope.totalPages,
+        next_cursor=envelope.nextCursor,
     )
 
 
