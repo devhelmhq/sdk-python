@@ -46,6 +46,7 @@ from devhelm.resources.status_pages import _Components as StatusPageComponents
 from devhelm.resources.status_pages import _Domains as StatusPageCustomDomains
 from devhelm.resources.status_pages import _Groups as StatusPageComponentGroups
 from devhelm.resources.status_pages import _Incidents as StatusPageIncidents
+from devhelm.resources.status_pages import _Maintenance as StatusPageMaintenance
 from devhelm.resources.status_pages import _Subscribers as StatusPageSubscribers
 from devhelm.resources.tags import Tags
 from devhelm.resources.webhooks import Webhooks
@@ -141,6 +142,7 @@ REQUEST_DTO_NAMES: list[str] = sorted(
         "CreateStatusPageComponentRequest",
         "CreateStatusPageIncidentRequest",
         "CreateStatusPageIncidentUpdateRequest",
+        "CreateStatusPageMaintenanceRequest",
         "CreateStatusPageRequest",
         "CreateTagRequest",
         "CreateWebhookEndpointRequest",
@@ -295,6 +297,14 @@ RESOURCE_BODY_METHODS: list[tuple[type, list[tuple[str, str]]]] = [
         StatusPageIncidents,
         [
             ("create", "CreateStatusPageIncidentRequest"),
+            ("update", "UpdateStatusPageIncidentRequest"),
+            ("post_update", "CreateStatusPageIncidentUpdateRequest"),
+        ],
+    ),
+    (
+        StatusPageMaintenance,
+        [
+            ("create", "CreateStatusPageMaintenanceRequest"),
             ("update", "UpdateStatusPageIncidentRequest"),
             ("post_update", "CreateStatusPageIncidentUpdateRequest"),
         ],

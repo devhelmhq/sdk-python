@@ -22,6 +22,7 @@ from devhelm._generated import (
     CreateStatusPageComponentRequest,
     CreateStatusPageIncidentRequest,
     CreateStatusPageIncidentUpdateRequest,
+    CreateStatusPageMaintenanceRequest,
     CreateStatusPageRequest,
     CreateTagRequest,
     IncidentDetailDto,
@@ -121,6 +122,26 @@ class TestCreateStatusPageIncidentRequest:
         with pytest.raises(ValidationError):
             CreateStatusPageIncidentRequest.model_validate(
                 {"title": "X", "impact": "CATASTROPHIC", "body": "text"}
+            )
+
+
+class TestCreateStatusPageMaintenanceRequest:
+    def test_minimal_valid(self) -> None:
+        r = CreateStatusPageMaintenanceRequest.model_validate(
+            {
+                "title": "DB upgrade",
+                "impact": "MINOR",
+                "body": "Initial update text",
+                "scheduledFor": "2026-08-24T02:00:00Z",
+            }
+        )
+        assert r.title == "DB upgrade"
+        assert r.scheduled_for is not None
+
+    def test_missing_scheduled_for_raises(self) -> None:
+        with pytest.raises(ValidationError, match="scheduledFor"):
+            CreateStatusPageMaintenanceRequest.model_validate(
+                {"title": "DB upgrade", "impact": "MINOR", "body": "text"}
             )
 
 
