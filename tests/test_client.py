@@ -151,6 +151,17 @@ class TestStatusPagesResource:
         assert callable(i.dismiss)
         assert callable(i.delete)
 
+    def test_maintenance_sub_resource(self, client: Devhelm) -> None:
+        m = client.status_pages.maintenance
+        assert callable(m.list)
+        assert callable(m.get)
+        assert callable(m.create)
+        assert callable(m.update)
+        assert callable(m.post_update)
+        assert callable(m.publish)
+        assert callable(m.dismiss)
+        assert callable(m.delete)
+
     def test_subscribers_sub_resource(self, client: Devhelm) -> None:
         s = client.status_pages.subscribers
         assert callable(s.list)

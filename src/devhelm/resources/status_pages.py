@@ -9,6 +9,7 @@ from devhelm._generated import (
     CreateStatusPageComponentRequest,
     CreateStatusPageIncidentRequest,
     CreateStatusPageIncidentUpdateRequest,
+    CreateStatusPageMaintenanceRequest,
     CreateStatusPageRequest,
     ReorderComponentsRequest,
     ReorderPageLayoutRequest,
@@ -258,6 +259,117 @@ class _Incidents:
         )
 
 
+class _Maintenance:
+    """Status page maintenance window operations."""
+
+    def __init__(self, client: httpx.Client) -> None:
+        self._client = client
+
+    def list(
+        self, page_id: int | str, *, page: int = 0, size: int = 20
+    ) -> Page[StatusPageIncidentDto]:
+        """List maintenance windows on a status page (paginated)."""
+        return fetch_page(
+            self._client,
+            f"{_page_path(page_id)}/maintenance",
+            StatusPageIncidentDto,
+            page,
+            size,
+        )
+
+    def get(self, page_id: int | str, window_id: int | str) -> StatusPageIncidentDto:
+        """Get a single maintenance window with timeline."""
+        return parse_single(
+            StatusPageIncidentDto,
+            api_get(
+                self._client,
+                f"{_page_path(page_id)}/maintenance/{path_param(window_id)}",
+            ),
+            f"GET {_page_path(page_id)}/maintenance/{window_id}",
+        )
+
+    def create(
+        self, page_id: int | str, body: RequestBody[CreateStatusPageMaintenanceRequest]
+    ) -> StatusPageIncidentDto:
+        """Schedule a maintenance window on a status page."""
+        body = validate_request(
+            CreateStatusPageMaintenanceRequest, body, "statusPages.maintenance.create"
+        )
+        return parse_single(
+            StatusPageIncidentDto,
+            api_post(self._client, f"{_page_path(page_id)}/maintenance", body),
+            f"POST {_page_path(page_id)}/maintenance",
+        )
+
+    def update(
+        self,
+        page_id: int | str,
+        window_id: int | str,
+        body: RequestBody[UpdateStatusPageIncidentRequest],
+    ) -> StatusPageIncidentDto:
+        """Update a maintenance window."""
+        body = validate_request(
+            UpdateStatusPageIncidentRequest, body, "statusPages.maintenance.update"
+        )
+        return parse_single(
+            StatusPageIncidentDto,
+            api_put(
+                self._client,
+                f"{_page_path(page_id)}/maintenance/{path_param(window_id)}",
+                body,
+            ),
+            f"PUT {_page_path(page_id)}/maintenance/{window_id}",
+        )
+
+    def post_update(
+        self,
+        page_id: int | str,
+        window_id: int | str,
+        body: RequestBody[CreateStatusPageIncidentUpdateRequest],
+    ) -> StatusPageIncidentDto:
+        """Post a timeline update on a maintenance window."""
+        body = validate_request(
+            CreateStatusPageIncidentUpdateRequest,
+            body,
+            "statusPages.maintenance.postUpdate",
+        )
+        return parse_single(
+            StatusPageIncidentDto,
+            api_post(
+                self._client,
+                f"{_page_path(page_id)}/maintenance/{path_param(window_id)}/updates",
+                body,
+            ),
+            f"POST {_page_path(page_id)}/maintenance/{window_id}/updates",
+        )
+
+    def publish(
+        self, page_id: int | str, window_id: int | str
+    ) -> StatusPageIncidentDto:
+        """Publish a draft maintenance window."""
+        return parse_single(
+            StatusPageIncidentDto,
+            api_post(
+                self._client,
+                f"{_page_path(page_id)}/maintenance/{path_param(window_id)}/publish",
+            ),
+            f"POST {_page_path(page_id)}/maintenance/{window_id}/publish",
+        )
+
+    def dismiss(self, page_id: int | str, window_id: int | str) -> None:
+        """Dismiss a draft maintenance window."""
+        api_post(
+            self._client,
+            f"{_page_path(page_id)}/maintenance/{path_param(window_id)}/dismiss",
+        )
+
+    def delete(self, page_id: int | str, window_id: int | str) -> None:
+        """Delete a maintenance window."""
+        api_delete(
+            self._client, f"{_page_path(page_id)}/maintenance/{path_param(window_id)}"
+        )
+
+
 class _Subscribers:
     """Status page subscriber operations."""
 
@@ -342,11 +454,12 @@ class _Domains:
 
 class StatusPages:
     """Status page management with sub-resources for components, groups,
-    incidents, subscribers, and custom domains."""
+    incidents, maintenance windows, subscribers, and custom domains."""
 
     components: _Components
     groups: _Groups
     incidents: _Incidents
+    maintenance: _Maintenance
     subscribers: _Subscribers
     domains: _Domains
 
@@ -355,6 +468,7 @@ class StatusPages:
         self.components = _Components(client)
         self.groups = _Groups(client)
         self.incidents = _Incidents(client)
+        self.maintenance = _Maintenance(client)
         self.subscribers = _Subscribers(client)
         self.domains = _Domains(client)
 

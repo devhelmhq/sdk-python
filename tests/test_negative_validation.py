@@ -121,6 +121,7 @@ def _incident(**kw: object) -> dict[str, Any]:
         "affectedRegions": [],
         "reopenCount": 0,
         "statusPageVisible": False,
+        "suppressDispatch": False,
         "startedAt": NOW,
         "createdAt": NOW,
         "updatedAt": NOW,
@@ -134,6 +135,7 @@ def _alert_channel(**kw: object) -> dict[str, Any]:
         "id": UID,
         "name": "ch",
         "channelType": "slack",
+        "enabled": True,
         "createdAt": NOW,
         "updatedAt": NOW,
     }
@@ -340,6 +342,8 @@ def _sp_subscriber(**kw: object) -> dict[str, Any]:
     base: dict[str, Any] = {
         "id": UID,
         "email": "a@b.com",
+        "channel": "EMAIL",
+        "destination": "a@b.com",
         "confirmed": True,
         "createdAt": NOW,
     }
@@ -2113,9 +2117,15 @@ class TestStatusPageSubscriberDtoNegative:
         with pytest.raises(ValidationError, match="id"):
             StatusPageSubscriberDto.model_validate(_del(_sp_subscriber(), "id"))
 
-    def test_missing_email(self) -> None:
-        with pytest.raises(ValidationError, match="email"):
-            StatusPageSubscriberDto.model_validate(_del(_sp_subscriber(), "email"))
+    def test_missing_channel(self) -> None:
+        with pytest.raises(ValidationError, match="channel"):
+            StatusPageSubscriberDto.model_validate(_del(_sp_subscriber(), "channel"))
+
+    def test_missing_destination(self) -> None:
+        with pytest.raises(ValidationError, match="destination"):
+            StatusPageSubscriberDto.model_validate(
+                _del(_sp_subscriber(), "destination")
+            )
 
     def test_missing_confirmed(self) -> None:
         with pytest.raises(ValidationError, match="confirmed"):
@@ -2237,9 +2247,8 @@ class TestAddCustomDomainRequestNegative:
 
 
 class TestAdminAddSubscriberRequestNegative:
-    def test_missing_email(self) -> None:
-        with pytest.raises(ValidationError, match="email"):
-            AdminAddSubscriberRequest.model_validate({})
+    def test_empty_body_is_valid(self) -> None:
+        AdminAddSubscriberRequest.model_validate({})
 
     def test_invalid_email(self) -> None:
         with pytest.raises(ValidationError):
@@ -2249,9 +2258,8 @@ class TestAdminAddSubscriberRequestNegative:
         with pytest.raises(ValidationError):
             AdminAddSubscriberRequest.model_validate({"email": ""})
 
-    def test_null_email(self) -> None:
-        with pytest.raises(ValidationError):
-            AdminAddSubscriberRequest.model_validate({"email": None})
+    def test_null_email_is_valid(self) -> None:
+        AdminAddSubscriberRequest.model_validate({"email": None})
 
 
 # ===================================================================
