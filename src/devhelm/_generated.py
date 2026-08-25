@@ -5766,7 +5766,6 @@ class TableValueResultAlertChannelDto(BaseModel):
     has_prev: Annotated[bool, Field(alias="hasPrev")]
     total_elements: Annotated[int | None, Field(alias="totalElements")] = None
     total_pages: Annotated[int | None, Field(alias="totalPages")] = None
-    next_cursor: Annotated[str | None, Field(alias="nextCursor")] = None
 
 
 class TableValueResultAlertDeliveryDto(BaseModel):
@@ -5776,7 +5775,6 @@ class TableValueResultAlertDeliveryDto(BaseModel):
     has_prev: Annotated[bool, Field(alias="hasPrev")]
     total_elements: Annotated[int | None, Field(alias="totalElements")] = None
     total_pages: Annotated[int | None, Field(alias="totalPages")] = None
-    next_cursor: Annotated[str | None, Field(alias="nextCursor")] = None
 
 
 class TableValueResultApiKeyDto(BaseModel):
@@ -5786,7 +5784,6 @@ class TableValueResultApiKeyDto(BaseModel):
     has_prev: Annotated[bool, Field(alias="hasPrev")]
     total_elements: Annotated[int | None, Field(alias="totalElements")] = None
     total_pages: Annotated[int | None, Field(alias="totalPages")] = None
-    next_cursor: Annotated[str | None, Field(alias="nextCursor")] = None
 
 
 class TableValueResultCategoryDto(BaseModel):
@@ -5796,7 +5793,6 @@ class TableValueResultCategoryDto(BaseModel):
     has_prev: Annotated[bool, Field(alias="hasPrev")]
     total_elements: Annotated[int | None, Field(alias="totalElements")] = None
     total_pages: Annotated[int | None, Field(alias="totalPages")] = None
-    next_cursor: Annotated[str | None, Field(alias="nextCursor")] = None
 
 
 class TableValueResultDeliveryAttemptDto(BaseModel):
@@ -5806,7 +5802,6 @@ class TableValueResultDeliveryAttemptDto(BaseModel):
     has_prev: Annotated[bool, Field(alias="hasPrev")]
     total_elements: Annotated[int | None, Field(alias="totalElements")] = None
     total_pages: Annotated[int | None, Field(alias="totalPages")] = None
-    next_cursor: Annotated[str | None, Field(alias="nextCursor")] = None
 
 
 class TableValueResultEnvironmentDto(BaseModel):
@@ -5816,7 +5811,6 @@ class TableValueResultEnvironmentDto(BaseModel):
     has_prev: Annotated[bool, Field(alias="hasPrev")]
     total_elements: Annotated[int | None, Field(alias="totalElements")] = None
     total_pages: Annotated[int | None, Field(alias="totalPages")] = None
-    next_cursor: Annotated[str | None, Field(alias="nextCursor")] = None
 
 
 class TableValueResultInviteDto(BaseModel):
@@ -5826,7 +5820,6 @@ class TableValueResultInviteDto(BaseModel):
     has_prev: Annotated[bool, Field(alias="hasPrev")]
     total_elements: Annotated[int | None, Field(alias="totalElements")] = None
     total_pages: Annotated[int | None, Field(alias="totalPages")] = None
-    next_cursor: Annotated[str | None, Field(alias="nextCursor")] = None
 
 
 class TableValueResultMaintenanceWindowDto(BaseModel):
@@ -5836,7 +5829,6 @@ class TableValueResultMaintenanceWindowDto(BaseModel):
     has_prev: Annotated[bool, Field(alias="hasPrev")]
     total_elements: Annotated[int | None, Field(alias="totalElements")] = None
     total_pages: Annotated[int | None, Field(alias="totalPages")] = None
-    next_cursor: Annotated[str | None, Field(alias="nextCursor")] = None
 
 
 class TableValueResultMemberDto(BaseModel):
@@ -5846,7 +5838,6 @@ class TableValueResultMemberDto(BaseModel):
     has_prev: Annotated[bool, Field(alias="hasPrev")]
     total_elements: Annotated[int | None, Field(alias="totalElements")] = None
     total_pages: Annotated[int | None, Field(alias="totalPages")] = None
-    next_cursor: Annotated[str | None, Field(alias="nextCursor")] = None
 
 
 class TableValueResultNotificationDispatchDto(BaseModel):
@@ -5856,7 +5847,6 @@ class TableValueResultNotificationDispatchDto(BaseModel):
     has_prev: Annotated[bool, Field(alias="hasPrev")]
     total_elements: Annotated[int | None, Field(alias="totalElements")] = None
     total_pages: Annotated[int | None, Field(alias="totalPages")] = None
-    next_cursor: Annotated[str | None, Field(alias="nextCursor")] = None
 
 
 class TableValueResultNotificationDto(BaseModel):
@@ -5866,7 +5856,6 @@ class TableValueResultNotificationDto(BaseModel):
     has_prev: Annotated[bool, Field(alias="hasPrev")]
     total_elements: Annotated[int | None, Field(alias="totalElements")] = None
     total_pages: Annotated[int | None, Field(alias="totalPages")] = None
-    next_cursor: Annotated[str | None, Field(alias="nextCursor")] = None
 
 
 class TableValueResultRuleEvaluationDto(BaseModel):
@@ -5876,7 +5865,6 @@ class TableValueResultRuleEvaluationDto(BaseModel):
     has_prev: Annotated[bool, Field(alias="hasPrev")]
     total_elements: Annotated[int | None, Field(alias="totalElements")] = None
     total_pages: Annotated[int | None, Field(alias="totalPages")] = None
-    next_cursor: Annotated[str | None, Field(alias="nextCursor")] = None
 
 
 class TableValueResultScheduledMaintenanceDto(BaseModel):
@@ -5886,7 +5874,6 @@ class TableValueResultScheduledMaintenanceDto(BaseModel):
     has_prev: Annotated[bool, Field(alias="hasPrev")]
     total_elements: Annotated[int | None, Field(alias="totalElements")] = None
     total_pages: Annotated[int | None, Field(alias="totalPages")] = None
-    next_cursor: Annotated[str | None, Field(alias="nextCursor")] = None
 
 
 class TableValueResultSecretDto(BaseModel):
@@ -5896,7 +5883,6 @@ class TableValueResultSecretDto(BaseModel):
     has_prev: Annotated[bool, Field(alias="hasPrev")]
     total_elements: Annotated[int | None, Field(alias="totalElements")] = None
     total_pages: Annotated[int | None, Field(alias="totalPages")] = None
-    next_cursor: Annotated[str | None, Field(alias="nextCursor")] = None
 
 
 class TableValueResultServiceComponentDto(BaseModel):
@@ -5906,7 +5892,6 @@ class TableValueResultServiceComponentDto(BaseModel):
     has_prev: Annotated[bool, Field(alias="hasPrev")]
     total_elements: Annotated[int | None, Field(alias="totalElements")] = None
     total_pages: Annotated[int | None, Field(alias="totalPages")] = None
-    next_cursor: Annotated[str | None, Field(alias="nextCursor")] = None
 
 
 class TableValueResultServiceIncidentDto(BaseModel):
@@ -5916,7 +5901,6 @@ class TableValueResultServiceIncidentDto(BaseModel):
     has_prev: Annotated[bool, Field(alias="hasPrev")]
     total_elements: Annotated[int | None, Field(alias="totalElements")] = None
     total_pages: Annotated[int | None, Field(alias="totalPages")] = None
-    next_cursor: Annotated[str | None, Field(alias="nextCursor")] = None
 
 
 class TableValueResultServiceSubscriptionDto(BaseModel):
@@ -5926,7 +5910,6 @@ class TableValueResultServiceSubscriptionDto(BaseModel):
     has_prev: Annotated[bool, Field(alias="hasPrev")]
     total_elements: Annotated[int | None, Field(alias="totalElements")] = None
     total_pages: Annotated[int | None, Field(alias="totalPages")] = None
-    next_cursor: Annotated[str | None, Field(alias="nextCursor")] = None
 
 
 class TableValueResultStatusPageComponentDto(BaseModel):
@@ -5936,7 +5919,6 @@ class TableValueResultStatusPageComponentDto(BaseModel):
     has_prev: Annotated[bool, Field(alias="hasPrev")]
     total_elements: Annotated[int | None, Field(alias="totalElements")] = None
     total_pages: Annotated[int | None, Field(alias="totalPages")] = None
-    next_cursor: Annotated[str | None, Field(alias="nextCursor")] = None
 
 
 class TableValueResultStatusPageComponentGroupDto(BaseModel):
@@ -5946,7 +5928,6 @@ class TableValueResultStatusPageComponentGroupDto(BaseModel):
     has_prev: Annotated[bool, Field(alias="hasPrev")]
     total_elements: Annotated[int | None, Field(alias="totalElements")] = None
     total_pages: Annotated[int | None, Field(alias="totalPages")] = None
-    next_cursor: Annotated[str | None, Field(alias="nextCursor")] = None
 
 
 class TableValueResultStatusPageCustomDomainDto(BaseModel):
@@ -5956,7 +5937,6 @@ class TableValueResultStatusPageCustomDomainDto(BaseModel):
     has_prev: Annotated[bool, Field(alias="hasPrev")]
     total_elements: Annotated[int | None, Field(alias="totalElements")] = None
     total_pages: Annotated[int | None, Field(alias="totalPages")] = None
-    next_cursor: Annotated[str | None, Field(alias="nextCursor")] = None
 
 
 class TableValueResultStatusPageNotificationDeliveryDto(BaseModel):
@@ -5966,7 +5946,6 @@ class TableValueResultStatusPageNotificationDeliveryDto(BaseModel):
     has_prev: Annotated[bool, Field(alias="hasPrev")]
     total_elements: Annotated[int | None, Field(alias="totalElements")] = None
     total_pages: Annotated[int | None, Field(alias="totalPages")] = None
-    next_cursor: Annotated[str | None, Field(alias="nextCursor")] = None
 
 
 class TableValueResultStatusPageSubscriberDto(BaseModel):
@@ -5976,7 +5955,6 @@ class TableValueResultStatusPageSubscriberDto(BaseModel):
     has_prev: Annotated[bool, Field(alias="hasPrev")]
     total_elements: Annotated[int | None, Field(alias="totalElements")] = None
     total_pages: Annotated[int | None, Field(alias="totalPages")] = None
-    next_cursor: Annotated[str | None, Field(alias="nextCursor")] = None
 
 
 class TagDto(BaseModel):
@@ -8192,6 +8170,26 @@ class CreditPolicy(BaseModel):
     ] = None
 
 
+class CursorPageNotificationDispatchDto(BaseModel):
+    model_config = ConfigDict(extra="ignore", populate_by_name=True)
+    data: Annotated[
+        list[NotificationDispatchDto], Field(description="Items on this page")
+    ]
+    next_cursor: Annotated[
+        str | None,
+        Field(
+            alias="nextCursor",
+            description="Opaque cursor for the next page; null when there are no more results",
+        ),
+    ] = None
+    has_more: Annotated[
+        bool,
+        Field(
+            alias="hasMore", description="Whether more results exist beyond this page"
+        ),
+    ]
+
+
 class CursorPageServiceCatalogDto(BaseModel):
     model_config = ConfigDict(extra="ignore", populate_by_name=True)
     data: Annotated[list[ServiceCatalogDto], Field(description="Items on this page")]
@@ -9503,7 +9501,6 @@ class TableValueResultComponentUptimeDayDto(BaseModel):
     has_prev: Annotated[bool, Field(alias="hasPrev")]
     total_elements: Annotated[int | None, Field(alias="totalElements")] = None
     total_pages: Annotated[int | None, Field(alias="totalPages")] = None
-    next_cursor: Annotated[str | None, Field(alias="nextCursor")] = None
 
 
 class TableValueResultIncidentDto(BaseModel):
@@ -9513,7 +9510,6 @@ class TableValueResultIncidentDto(BaseModel):
     has_prev: Annotated[bool, Field(alias="hasPrev")]
     total_elements: Annotated[int | None, Field(alias="totalElements")] = None
     total_pages: Annotated[int | None, Field(alias="totalPages")] = None
-    next_cursor: Annotated[str | None, Field(alias="nextCursor")] = None
 
 
 class TableValueResultIncidentStateTransitionDto(BaseModel):
@@ -9523,7 +9519,6 @@ class TableValueResultIncidentStateTransitionDto(BaseModel):
     has_prev: Annotated[bool, Field(alias="hasPrev")]
     total_elements: Annotated[int | None, Field(alias="totalElements")] = None
     total_pages: Annotated[int | None, Field(alias="totalPages")] = None
-    next_cursor: Annotated[str | None, Field(alias="nextCursor")] = None
 
 
 class TableValueResultIntegrationDto(BaseModel):
@@ -9533,7 +9528,6 @@ class TableValueResultIntegrationDto(BaseModel):
     has_prev: Annotated[bool, Field(alias="hasPrev")]
     total_elements: Annotated[int | None, Field(alias="totalElements")] = None
     total_pages: Annotated[int | None, Field(alias="totalPages")] = None
-    next_cursor: Annotated[str | None, Field(alias="nextCursor")] = None
 
 
 class TableValueResultMonitorDto(BaseModel):
@@ -9543,7 +9537,6 @@ class TableValueResultMonitorDto(BaseModel):
     has_prev: Annotated[bool, Field(alias="hasPrev")]
     total_elements: Annotated[int | None, Field(alias="totalElements")] = None
     total_pages: Annotated[int | None, Field(alias="totalPages")] = None
-    next_cursor: Annotated[str | None, Field(alias="nextCursor")] = None
 
 
 class TableValueResultMonitorVersionDto(BaseModel):
@@ -9553,7 +9546,6 @@ class TableValueResultMonitorVersionDto(BaseModel):
     has_prev: Annotated[bool, Field(alias="hasPrev")]
     total_elements: Annotated[int | None, Field(alias="totalElements")] = None
     total_pages: Annotated[int | None, Field(alias="totalPages")] = None
-    next_cursor: Annotated[str | None, Field(alias="nextCursor")] = None
 
 
 class TableValueResultNotificationPolicyDto(BaseModel):
@@ -9563,7 +9555,6 @@ class TableValueResultNotificationPolicyDto(BaseModel):
     has_prev: Annotated[bool, Field(alias="hasPrev")]
     total_elements: Annotated[int | None, Field(alias="totalElements")] = None
     total_pages: Annotated[int | None, Field(alias="totalPages")] = None
-    next_cursor: Annotated[str | None, Field(alias="nextCursor")] = None
 
 
 class TableValueResultStatusPageDto(BaseModel):
@@ -9573,7 +9564,6 @@ class TableValueResultStatusPageDto(BaseModel):
     has_prev: Annotated[bool, Field(alias="hasPrev")]
     total_elements: Annotated[int | None, Field(alias="totalElements")] = None
     total_pages: Annotated[int | None, Field(alias="totalPages")] = None
-    next_cursor: Annotated[str | None, Field(alias="nextCursor")] = None
 
 
 class TableValueResultStatusPageIncidentDto(BaseModel):
@@ -9583,7 +9573,6 @@ class TableValueResultStatusPageIncidentDto(BaseModel):
     has_prev: Annotated[bool, Field(alias="hasPrev")]
     total_elements: Annotated[int | None, Field(alias="totalElements")] = None
     total_pages: Annotated[int | None, Field(alias="totalPages")] = None
-    next_cursor: Annotated[str | None, Field(alias="nextCursor")] = None
 
 
 class TableValueResultTagDto(BaseModel):
@@ -9593,7 +9582,6 @@ class TableValueResultTagDto(BaseModel):
     has_prev: Annotated[bool, Field(alias="hasPrev")]
     total_elements: Annotated[int | None, Field(alias="totalElements")] = None
     total_pages: Annotated[int | None, Field(alias="totalPages")] = None
-    next_cursor: Annotated[str | None, Field(alias="nextCursor")] = None
 
 
 class TableValueResultTestChannelResult(BaseModel):
@@ -9603,7 +9591,6 @@ class TableValueResultTestChannelResult(BaseModel):
     has_prev: Annotated[bool, Field(alias="hasPrev")]
     total_elements: Annotated[int | None, Field(alias="totalElements")] = None
     total_pages: Annotated[int | None, Field(alias="totalPages")] = None
-    next_cursor: Annotated[str | None, Field(alias="nextCursor")] = None
 
 
 class TableValueResultVoiceLanguageDto(BaseModel):
@@ -9613,7 +9600,6 @@ class TableValueResultVoiceLanguageDto(BaseModel):
     has_prev: Annotated[bool, Field(alias="hasPrev")]
     total_elements: Annotated[int | None, Field(alias="totalElements")] = None
     total_pages: Annotated[int | None, Field(alias="totalPages")] = None
-    next_cursor: Annotated[str | None, Field(alias="nextCursor")] = None
 
 
 class TableValueResultWebhookDeliveryDto(BaseModel):
@@ -9623,7 +9609,6 @@ class TableValueResultWebhookDeliveryDto(BaseModel):
     has_prev: Annotated[bool, Field(alias="hasPrev")]
     total_elements: Annotated[int | None, Field(alias="totalElements")] = None
     total_pages: Annotated[int | None, Field(alias="totalPages")] = None
-    next_cursor: Annotated[str | None, Field(alias="nextCursor")] = None
 
 
 class TableValueResultWebhookEndpointDto(BaseModel):
@@ -9633,7 +9618,6 @@ class TableValueResultWebhookEndpointDto(BaseModel):
     has_prev: Annotated[bool, Field(alias="hasPrev")]
     total_elements: Annotated[int | None, Field(alias="totalElements")] = None
     total_pages: Annotated[int | None, Field(alias="totalPages")] = None
-    next_cursor: Annotated[str | None, Field(alias="nextCursor")] = None
 
 
 class TableValueResultWorkspaceDto(BaseModel):
@@ -9643,7 +9627,6 @@ class TableValueResultWorkspaceDto(BaseModel):
     has_prev: Annotated[bool, Field(alias="hasPrev")]
     total_elements: Annotated[int | None, Field(alias="totalElements")] = None
     total_pages: Annotated[int | None, Field(alias="totalPages")] = None
-    next_cursor: Annotated[str | None, Field(alias="nextCursor")] = None
 
 
 class TestAlertChannelRequest(BaseModel):
@@ -10214,7 +10197,6 @@ class TableValueResultAuditEventDto(BaseModel):
     has_prev: Annotated[bool, Field(alias="hasPrev")]
     total_elements: Annotated[int | None, Field(alias="totalElements")] = None
     total_pages: Annotated[int | None, Field(alias="totalPages")] = None
-    next_cursor: Annotated[str | None, Field(alias="nextCursor")] = None
 
 
 class TableValueResultResourceGroupDto(BaseModel):
@@ -10224,7 +10206,6 @@ class TableValueResultResourceGroupDto(BaseModel):
     has_prev: Annotated[bool, Field(alias="hasPrev")]
     total_elements: Annotated[int | None, Field(alias="totalElements")] = None
     total_pages: Annotated[int | None, Field(alias="totalPages")] = None
-    next_cursor: Annotated[str | None, Field(alias="nextCursor")] = None
 
 
 class CheckResultDetailsDto(BaseModel):
