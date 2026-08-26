@@ -3,7 +3,7 @@
 
 from __future__ import annotations
 from typing import Annotated, Any, Literal
-from pydantic import ConfigDict, AwareDatetime, BaseModel, EmailStr, Field, RootModel
+from pydantic import AwareDatetime, BaseModel, ConfigDict, EmailStr, Field, RootModel
 from enum import StrEnum
 from uuid import UUID
 from datetime import date as date_aliased
@@ -987,6 +987,18 @@ class Type(StrEnum):
     heartbeat = "HEARTBEAT"
     browser = "BROWSER"
     multi_step_api = "MULTI_STEP_API"
+
+
+class CreatePackageUploadRequest(BaseModel):
+    model_config = ConfigDict(extra="forbid", populate_by_name=True)
+    digest: Annotated[
+        str,
+        Field(
+            description="SHA-256 hex digest of the package zip to upload (64 chars)",
+            max_length=64,
+            min_length=64,
+        ),
+    ]
 
 
 class HealthThresholdType(StrEnum):
@@ -3237,6 +3249,142 @@ class MonitorAuthDto(BaseModel):
     config: ApiKeyAuthConfig | BasicAuthConfig | BearerAuthConfig | HeaderAuthConfig
 
 
+class MonitorOverlayRequest(BaseModel):
+    model_config = ConfigDict(extra="forbid", populate_by_name=True)
+    reason: Annotated[
+        str | None,
+        Field(
+            description="Optional human-readable reason (max 280)",
+            max_length=280,
+            min_length=0,
+        ),
+    ] = None
+    expires_at: Annotated[
+        AwareDatetime | None,
+        Field(
+            alias="expiresAt",
+            description="Optional expiry; sweeper clears the overlay after this time",
+        ),
+    ] = None
+
+
+class Screenshots(StrEnum):
+    always = "always"
+    on_failure = "on_failure"
+    off = "off"
+
+
+class Trace(StrEnum):
+    always = "always"
+    on_failure = "on_failure"
+    off = "off"
+
+
+class Video(StrEnum):
+    always = "always"
+    on_failure = "on_failure"
+    off = "off"
+
+
+class CapturePolicy(BaseModel):
+    model_config = ConfigDict(extra="ignore", populate_by_name=True)
+    screenshots: Annotated[
+        Screenshots | None, Field(description="When to capture screenshots")
+    ] = None
+    trace: Annotated[
+        Trace | None, Field(description="When to capture a Playwright trace")
+    ] = None
+    video: Annotated[Video | None, Field(description="When to capture video")] = None
+
+
+class File(RootModel[str]):
+    root: Annotated[
+        str,
+        Field(
+            description="Relative file paths included in the zip",
+            max_length=512,
+            min_length=0,
+        ),
+    ]
+
+
+class Key(RootModel[str]):
+    root: Annotated[
+        str,
+        Field(
+            description="Secret names the package referenced. Stored as name-match requests",
+            max_length=255,
+            min_length=0,
+        ),
+    ]
+
+
+class MonitorPackageSpec(BaseModel):
+    model_config = ConfigDict(extra="ignore", populate_by_name=True)
+    digest: Annotated[
+        str,
+        Field(
+            description="SHA-256 hex digest of the package zip (64 characters)",
+            max_length=64,
+            min_length=64,
+        ),
+    ]
+    entrypoint: Annotated[
+        str,
+        Field(
+            description="Entrypoint path inside the zip, e.g. tests/login.spec.ts",
+            max_length=512,
+            min_length=0,
+        ),
+    ]
+    files: Annotated[
+        list[File],
+        Field(description="Relative file paths included in the zip", min_length=1),
+    ]
+    keys: Annotated[
+        list[Key] | None,
+        Field(
+            description="Secret names the package referenced. Stored as name-match requests"
+        ),
+    ] = None
+    git_sha: Annotated[
+        str | None,
+        Field(
+            alias="gitSha",
+            description="Commit SHA from the repo that produced this zip. Client-supplied provenance only",
+            max_length=64,
+            min_length=0,
+        ),
+    ] = None
+    git_message: Annotated[
+        str | None,
+        Field(
+            alias="gitMessage",
+            description="Commit message from the repo that produced this zip",
+            max_length=1024,
+            min_length=0,
+        ),
+    ] = None
+    git_file: Annotated[
+        str | None,
+        Field(
+            alias="gitFile",
+            description="Path of the declaring file in that repo",
+            max_length=512,
+            min_length=0,
+        ),
+    ] = None
+    authored_by: Annotated[
+        str | None,
+        Field(
+            alias="authoredBy",
+            description="Author attribution supplied with the package",
+            max_length=255,
+            min_length=0,
+        ),
+    ] = None
+
+
 class MonitorReference(BaseModel):
     model_config = ConfigDict(extra="ignore", populate_by_name=True)
     id: Annotated[UUID, Field(description="Monitor identifier")]
@@ -3634,6 +3782,22 @@ class OrgInfo(BaseModel):
     name: Annotated[str, Field(description="Organization name")]
 
 
+class PackageUploadDto(BaseModel):
+    model_config = ConfigDict(extra="ignore", populate_by_name=True)
+    put_url: Annotated[
+        str,
+        Field(
+            alias="putUrl",
+            description="Presigned PUT URL for the zip bytes",
+            min_length=1,
+        ),
+    ]
+    expires_at: Annotated[
+        AwareDatetime,
+        Field(alias="expiresAt", description="When the signed URL expires"),
+    ]
+
+
 class Pageable(BaseModel):
     model_config = ConfigDict(extra="ignore", populate_by_name=True)
     page: Annotated[int, Field(ge=0)]
@@ -3932,6 +4096,19 @@ class PushoverChannelConfig(BaseModel):
     sound: Annotated[str | None, Field(description="Notification sound override")] = (
         None
     )
+
+
+class QuarantineMonitorRequest(BaseModel):
+    model_config = ConfigDict(extra="forbid", populate_by_name=True)
+    reason: Annotated[
+        str,
+        Field(
+            description="Reason for this hold (max 280)", max_length=280, min_length=0
+        ),
+    ]
+    expires_at: Annotated[
+        AwareDatetime, Field(alias="expiresAt", description="When the hold expires")
+    ]
 
 
 class RateLimitInfo(BaseModel):
@@ -4475,13 +4652,13 @@ class ScheduledMaintenanceDto(BaseModel):
 class ScriptMonitorConfig(BaseModel):
     model_config = ConfigDict(extra="ignore", populate_by_name=True)
     script: Annotated[
-        str,
+        str | None,
         Field(
-            description="Playwright test script source code",
+            description="Legacy inline script on existing rows",
             max_length=65536,
-            min_length=1,
+            min_length=0,
         ),
-    ]
+    ] = None
     timeout_seconds: Annotated[
         int | None,
         Field(
@@ -5097,6 +5274,11 @@ class SingleValueResponseNotificationDispatchDto(BaseModel):
 class SingleValueResponseOrganizationDto(BaseModel):
     model_config = ConfigDict(extra="ignore", populate_by_name=True)
     data: OrganizationDto
+
+
+class SingleValueResponsePackageUploadDto(BaseModel):
+    model_config = ConfigDict(extra="ignore", populate_by_name=True)
+    data: PackageUploadDto
 
 
 class SingleValueResponsePolicySnapshotDto(BaseModel):
@@ -5766,7 +5948,6 @@ class TableValueResultAlertChannelDto(BaseModel):
     has_prev: Annotated[bool, Field(alias="hasPrev")]
     total_elements: Annotated[int | None, Field(alias="totalElements")] = None
     total_pages: Annotated[int | None, Field(alias="totalPages")] = None
-    next_cursor: Annotated[str | None, Field(alias="nextCursor")] = None
 
 
 class TableValueResultAlertDeliveryDto(BaseModel):
@@ -5776,7 +5957,6 @@ class TableValueResultAlertDeliveryDto(BaseModel):
     has_prev: Annotated[bool, Field(alias="hasPrev")]
     total_elements: Annotated[int | None, Field(alias="totalElements")] = None
     total_pages: Annotated[int | None, Field(alias="totalPages")] = None
-    next_cursor: Annotated[str | None, Field(alias="nextCursor")] = None
 
 
 class TableValueResultApiKeyDto(BaseModel):
@@ -5786,7 +5966,6 @@ class TableValueResultApiKeyDto(BaseModel):
     has_prev: Annotated[bool, Field(alias="hasPrev")]
     total_elements: Annotated[int | None, Field(alias="totalElements")] = None
     total_pages: Annotated[int | None, Field(alias="totalPages")] = None
-    next_cursor: Annotated[str | None, Field(alias="nextCursor")] = None
 
 
 class TableValueResultCategoryDto(BaseModel):
@@ -5796,7 +5975,6 @@ class TableValueResultCategoryDto(BaseModel):
     has_prev: Annotated[bool, Field(alias="hasPrev")]
     total_elements: Annotated[int | None, Field(alias="totalElements")] = None
     total_pages: Annotated[int | None, Field(alias="totalPages")] = None
-    next_cursor: Annotated[str | None, Field(alias="nextCursor")] = None
 
 
 class TableValueResultDeliveryAttemptDto(BaseModel):
@@ -5806,7 +5984,6 @@ class TableValueResultDeliveryAttemptDto(BaseModel):
     has_prev: Annotated[bool, Field(alias="hasPrev")]
     total_elements: Annotated[int | None, Field(alias="totalElements")] = None
     total_pages: Annotated[int | None, Field(alias="totalPages")] = None
-    next_cursor: Annotated[str | None, Field(alias="nextCursor")] = None
 
 
 class TableValueResultEnvironmentDto(BaseModel):
@@ -5816,7 +5993,6 @@ class TableValueResultEnvironmentDto(BaseModel):
     has_prev: Annotated[bool, Field(alias="hasPrev")]
     total_elements: Annotated[int | None, Field(alias="totalElements")] = None
     total_pages: Annotated[int | None, Field(alias="totalPages")] = None
-    next_cursor: Annotated[str | None, Field(alias="nextCursor")] = None
 
 
 class TableValueResultInviteDto(BaseModel):
@@ -5826,7 +6002,6 @@ class TableValueResultInviteDto(BaseModel):
     has_prev: Annotated[bool, Field(alias="hasPrev")]
     total_elements: Annotated[int | None, Field(alias="totalElements")] = None
     total_pages: Annotated[int | None, Field(alias="totalPages")] = None
-    next_cursor: Annotated[str | None, Field(alias="nextCursor")] = None
 
 
 class TableValueResultMaintenanceWindowDto(BaseModel):
@@ -5836,7 +6011,6 @@ class TableValueResultMaintenanceWindowDto(BaseModel):
     has_prev: Annotated[bool, Field(alias="hasPrev")]
     total_elements: Annotated[int | None, Field(alias="totalElements")] = None
     total_pages: Annotated[int | None, Field(alias="totalPages")] = None
-    next_cursor: Annotated[str | None, Field(alias="nextCursor")] = None
 
 
 class TableValueResultMemberDto(BaseModel):
@@ -5846,7 +6020,6 @@ class TableValueResultMemberDto(BaseModel):
     has_prev: Annotated[bool, Field(alias="hasPrev")]
     total_elements: Annotated[int | None, Field(alias="totalElements")] = None
     total_pages: Annotated[int | None, Field(alias="totalPages")] = None
-    next_cursor: Annotated[str | None, Field(alias="nextCursor")] = None
 
 
 class TableValueResultNotificationDispatchDto(BaseModel):
@@ -5856,7 +6029,6 @@ class TableValueResultNotificationDispatchDto(BaseModel):
     has_prev: Annotated[bool, Field(alias="hasPrev")]
     total_elements: Annotated[int | None, Field(alias="totalElements")] = None
     total_pages: Annotated[int | None, Field(alias="totalPages")] = None
-    next_cursor: Annotated[str | None, Field(alias="nextCursor")] = None
 
 
 class TableValueResultNotificationDto(BaseModel):
@@ -5866,7 +6038,6 @@ class TableValueResultNotificationDto(BaseModel):
     has_prev: Annotated[bool, Field(alias="hasPrev")]
     total_elements: Annotated[int | None, Field(alias="totalElements")] = None
     total_pages: Annotated[int | None, Field(alias="totalPages")] = None
-    next_cursor: Annotated[str | None, Field(alias="nextCursor")] = None
 
 
 class TableValueResultRuleEvaluationDto(BaseModel):
@@ -5876,7 +6047,6 @@ class TableValueResultRuleEvaluationDto(BaseModel):
     has_prev: Annotated[bool, Field(alias="hasPrev")]
     total_elements: Annotated[int | None, Field(alias="totalElements")] = None
     total_pages: Annotated[int | None, Field(alias="totalPages")] = None
-    next_cursor: Annotated[str | None, Field(alias="nextCursor")] = None
 
 
 class TableValueResultScheduledMaintenanceDto(BaseModel):
@@ -5886,7 +6056,6 @@ class TableValueResultScheduledMaintenanceDto(BaseModel):
     has_prev: Annotated[bool, Field(alias="hasPrev")]
     total_elements: Annotated[int | None, Field(alias="totalElements")] = None
     total_pages: Annotated[int | None, Field(alias="totalPages")] = None
-    next_cursor: Annotated[str | None, Field(alias="nextCursor")] = None
 
 
 class TableValueResultSecretDto(BaseModel):
@@ -5896,7 +6065,6 @@ class TableValueResultSecretDto(BaseModel):
     has_prev: Annotated[bool, Field(alias="hasPrev")]
     total_elements: Annotated[int | None, Field(alias="totalElements")] = None
     total_pages: Annotated[int | None, Field(alias="totalPages")] = None
-    next_cursor: Annotated[str | None, Field(alias="nextCursor")] = None
 
 
 class TableValueResultServiceComponentDto(BaseModel):
@@ -5906,7 +6074,6 @@ class TableValueResultServiceComponentDto(BaseModel):
     has_prev: Annotated[bool, Field(alias="hasPrev")]
     total_elements: Annotated[int | None, Field(alias="totalElements")] = None
     total_pages: Annotated[int | None, Field(alias="totalPages")] = None
-    next_cursor: Annotated[str | None, Field(alias="nextCursor")] = None
 
 
 class TableValueResultServiceIncidentDto(BaseModel):
@@ -5916,7 +6083,6 @@ class TableValueResultServiceIncidentDto(BaseModel):
     has_prev: Annotated[bool, Field(alias="hasPrev")]
     total_elements: Annotated[int | None, Field(alias="totalElements")] = None
     total_pages: Annotated[int | None, Field(alias="totalPages")] = None
-    next_cursor: Annotated[str | None, Field(alias="nextCursor")] = None
 
 
 class TableValueResultServiceSubscriptionDto(BaseModel):
@@ -5926,7 +6092,6 @@ class TableValueResultServiceSubscriptionDto(BaseModel):
     has_prev: Annotated[bool, Field(alias="hasPrev")]
     total_elements: Annotated[int | None, Field(alias="totalElements")] = None
     total_pages: Annotated[int | None, Field(alias="totalPages")] = None
-    next_cursor: Annotated[str | None, Field(alias="nextCursor")] = None
 
 
 class TableValueResultStatusPageComponentDto(BaseModel):
@@ -5936,7 +6101,6 @@ class TableValueResultStatusPageComponentDto(BaseModel):
     has_prev: Annotated[bool, Field(alias="hasPrev")]
     total_elements: Annotated[int | None, Field(alias="totalElements")] = None
     total_pages: Annotated[int | None, Field(alias="totalPages")] = None
-    next_cursor: Annotated[str | None, Field(alias="nextCursor")] = None
 
 
 class TableValueResultStatusPageComponentGroupDto(BaseModel):
@@ -5946,7 +6110,6 @@ class TableValueResultStatusPageComponentGroupDto(BaseModel):
     has_prev: Annotated[bool, Field(alias="hasPrev")]
     total_elements: Annotated[int | None, Field(alias="totalElements")] = None
     total_pages: Annotated[int | None, Field(alias="totalPages")] = None
-    next_cursor: Annotated[str | None, Field(alias="nextCursor")] = None
 
 
 class TableValueResultStatusPageCustomDomainDto(BaseModel):
@@ -5956,7 +6119,6 @@ class TableValueResultStatusPageCustomDomainDto(BaseModel):
     has_prev: Annotated[bool, Field(alias="hasPrev")]
     total_elements: Annotated[int | None, Field(alias="totalElements")] = None
     total_pages: Annotated[int | None, Field(alias="totalPages")] = None
-    next_cursor: Annotated[str | None, Field(alias="nextCursor")] = None
 
 
 class TableValueResultStatusPageNotificationDeliveryDto(BaseModel):
@@ -5966,7 +6128,6 @@ class TableValueResultStatusPageNotificationDeliveryDto(BaseModel):
     has_prev: Annotated[bool, Field(alias="hasPrev")]
     total_elements: Annotated[int | None, Field(alias="totalElements")] = None
     total_pages: Annotated[int | None, Field(alias="totalPages")] = None
-    next_cursor: Annotated[str | None, Field(alias="nextCursor")] = None
 
 
 class TableValueResultStatusPageSubscriberDto(BaseModel):
@@ -5976,7 +6137,6 @@ class TableValueResultStatusPageSubscriberDto(BaseModel):
     has_prev: Annotated[bool, Field(alias="hasPrev")]
     total_elements: Annotated[int | None, Field(alias="totalElements")] = None
     total_pages: Annotated[int | None, Field(alias="totalPages")] = None
-    next_cursor: Annotated[str | None, Field(alias="nextCursor")] = None
 
 
 class TagDto(BaseModel):
@@ -7952,7 +8112,8 @@ class CreateMonitorRequest(BaseModel):
         | McpServerMonitorConfig
         | ScriptMonitorConfig
         | TcpMonitorConfig
-    )
+        | None
+    ) = None
     frequency_seconds: Annotated[
         int | None,
         Field(
@@ -7982,7 +8143,7 @@ class CreateMonitorRequest(BaseModel):
         UUID | None,
         Field(
             alias="environmentId",
-            description="Environment to associate with this monitor",
+            description="Environment to associate with this monitor; required for code types",
         ),
     ] = None
     assertions: Annotated[
@@ -8001,6 +8162,30 @@ class CreateMonitorRequest(BaseModel):
         ),
     ] = None
     tags: AddMonitorTagsRequest | None = None
+    capture_policy: Annotated[
+        CapturePolicy | None,
+        Field(
+            alias="capturePolicy",
+            description="When to capture screenshots, traces, and video. Omit for probe monitors",
+        ),
+    ] = None
+    fast_retry_max_attempts: Annotated[
+        int | None,
+        Field(
+            alias="fastRetryMaxAttempts",
+            description="Fast-retry attempts after failure; null/0 disables",
+            ge=0,
+            le=10,
+        ),
+    ] = None
+    definition_id: Annotated[
+        UUID | None,
+        Field(
+            alias="definitionId",
+            description="Existing definition to reuse for a sibling monitor. Do not send together with package",
+        ),
+    ] = None
+    package: MonitorPackageSpec | None = None
 
 
 class CreateResourceGroupRequest(BaseModel):
@@ -8190,6 +8375,26 @@ class CreditPolicy(BaseModel):
     tiers: Annotated[
         list[CreditTier] | None, Field(description="Credit tiers by uptime threshold")
     ] = None
+
+
+class CursorPageNotificationDispatchDto(BaseModel):
+    model_config = ConfigDict(extra="ignore", populate_by_name=True)
+    data: Annotated[
+        list[NotificationDispatchDto], Field(description="Items on this page")
+    ]
+    next_cursor: Annotated[
+        str | None,
+        Field(
+            alias="nextCursor",
+            description="Opaque cursor for the next page; null when there are no more results",
+        ),
+    ] = None
+    has_more: Annotated[
+        bool,
+        Field(
+            alias="hasMore", description="Whether more results exist beyond this page"
+        ),
+    ]
 
 
 class CursorPageServiceCatalogDto(BaseModel):
@@ -8922,9 +9127,66 @@ class MonitorDto(BaseModel):
         str | None,
         Field(
             alias="currentStatus",
-            description="Current operational state — UP, DOWN, DEGRADED, PAUSED, or UNKNOWN if no probe data yet",
+            description="Current operational state. One of UP, DOWN, DEGRADED, PAUSED, or UNKNOWN",
         ),
     ] = None
+    definition_id: Annotated[
+        UUID | None,
+        Field(
+            alias="definitionId",
+            description="Definition id for a browser or multi-step monitor. Null on probe monitors",
+        ),
+    ] = None
+    capture_policy: Annotated[
+        CapturePolicy | None,
+        Field(
+            alias="capturePolicy",
+            description="When screenshots, traces, and video are captured",
+        ),
+    ] = None
+    fast_retry_max_attempts: Annotated[
+        int | None,
+        Field(
+            alias="fastRetryMaxAttempts",
+            description="Fast-retry max attempts; null/0 = off",
+        ),
+    ] = None
+    muted: Annotated[bool, Field(description="Whether alert delivery is muted")]
+    muted_until: Annotated[
+        AwareDatetime | None,
+        Field(
+            alias="mutedUntil",
+            description="Mute expiry; null means indefinite while muted",
+        ),
+    ] = None
+    mute_reason: Annotated[
+        str | None, Field(alias="muteReason", description="Optional mute reason")
+    ] = None
+    paused_at: Annotated[
+        AwareDatetime | None,
+        Field(alias="pausedAt", description="When the monitor was paused"),
+    ] = None
+    pause_reason: Annotated[
+        str | None, Field(alias="pauseReason", description="Optional pause reason")
+    ] = None
+    pause_expires_at: Annotated[
+        AwareDatetime | None, Field(alias="pauseExpiresAt", description="Pause expiry")
+    ] = None
+    quarantine_owner_id: Annotated[
+        str | None,
+        Field(alias="quarantineOwnerId", description="Quarantine person owner id"),
+    ] = None
+    quarantine_until: Annotated[
+        AwareDatetime | None,
+        Field(
+            alias="quarantineUntil",
+            description="Quarantine expiry; non-null means quarantined",
+        ),
+    ] = None
+    quarantine_reason: Annotated[
+        str | None, Field(alias="quarantineReason", description="Quarantine reason")
+    ] = None
+    upload: PackageUploadDto | None = None
 
 
 class MonitorTestRequest(BaseModel):
@@ -9503,7 +9765,6 @@ class TableValueResultComponentUptimeDayDto(BaseModel):
     has_prev: Annotated[bool, Field(alias="hasPrev")]
     total_elements: Annotated[int | None, Field(alias="totalElements")] = None
     total_pages: Annotated[int | None, Field(alias="totalPages")] = None
-    next_cursor: Annotated[str | None, Field(alias="nextCursor")] = None
 
 
 class TableValueResultIncidentDto(BaseModel):
@@ -9513,7 +9774,6 @@ class TableValueResultIncidentDto(BaseModel):
     has_prev: Annotated[bool, Field(alias="hasPrev")]
     total_elements: Annotated[int | None, Field(alias="totalElements")] = None
     total_pages: Annotated[int | None, Field(alias="totalPages")] = None
-    next_cursor: Annotated[str | None, Field(alias="nextCursor")] = None
 
 
 class TableValueResultIncidentStateTransitionDto(BaseModel):
@@ -9523,7 +9783,6 @@ class TableValueResultIncidentStateTransitionDto(BaseModel):
     has_prev: Annotated[bool, Field(alias="hasPrev")]
     total_elements: Annotated[int | None, Field(alias="totalElements")] = None
     total_pages: Annotated[int | None, Field(alias="totalPages")] = None
-    next_cursor: Annotated[str | None, Field(alias="nextCursor")] = None
 
 
 class TableValueResultIntegrationDto(BaseModel):
@@ -9533,7 +9792,6 @@ class TableValueResultIntegrationDto(BaseModel):
     has_prev: Annotated[bool, Field(alias="hasPrev")]
     total_elements: Annotated[int | None, Field(alias="totalElements")] = None
     total_pages: Annotated[int | None, Field(alias="totalPages")] = None
-    next_cursor: Annotated[str | None, Field(alias="nextCursor")] = None
 
 
 class TableValueResultMonitorDto(BaseModel):
@@ -9543,7 +9801,6 @@ class TableValueResultMonitorDto(BaseModel):
     has_prev: Annotated[bool, Field(alias="hasPrev")]
     total_elements: Annotated[int | None, Field(alias="totalElements")] = None
     total_pages: Annotated[int | None, Field(alias="totalPages")] = None
-    next_cursor: Annotated[str | None, Field(alias="nextCursor")] = None
 
 
 class TableValueResultMonitorVersionDto(BaseModel):
@@ -9553,7 +9810,6 @@ class TableValueResultMonitorVersionDto(BaseModel):
     has_prev: Annotated[bool, Field(alias="hasPrev")]
     total_elements: Annotated[int | None, Field(alias="totalElements")] = None
     total_pages: Annotated[int | None, Field(alias="totalPages")] = None
-    next_cursor: Annotated[str | None, Field(alias="nextCursor")] = None
 
 
 class TableValueResultNotificationPolicyDto(BaseModel):
@@ -9563,7 +9819,6 @@ class TableValueResultNotificationPolicyDto(BaseModel):
     has_prev: Annotated[bool, Field(alias="hasPrev")]
     total_elements: Annotated[int | None, Field(alias="totalElements")] = None
     total_pages: Annotated[int | None, Field(alias="totalPages")] = None
-    next_cursor: Annotated[str | None, Field(alias="nextCursor")] = None
 
 
 class TableValueResultStatusPageDto(BaseModel):
@@ -9573,7 +9828,6 @@ class TableValueResultStatusPageDto(BaseModel):
     has_prev: Annotated[bool, Field(alias="hasPrev")]
     total_elements: Annotated[int | None, Field(alias="totalElements")] = None
     total_pages: Annotated[int | None, Field(alias="totalPages")] = None
-    next_cursor: Annotated[str | None, Field(alias="nextCursor")] = None
 
 
 class TableValueResultStatusPageIncidentDto(BaseModel):
@@ -9583,7 +9837,6 @@ class TableValueResultStatusPageIncidentDto(BaseModel):
     has_prev: Annotated[bool, Field(alias="hasPrev")]
     total_elements: Annotated[int | None, Field(alias="totalElements")] = None
     total_pages: Annotated[int | None, Field(alias="totalPages")] = None
-    next_cursor: Annotated[str | None, Field(alias="nextCursor")] = None
 
 
 class TableValueResultTagDto(BaseModel):
@@ -9593,7 +9846,6 @@ class TableValueResultTagDto(BaseModel):
     has_prev: Annotated[bool, Field(alias="hasPrev")]
     total_elements: Annotated[int | None, Field(alias="totalElements")] = None
     total_pages: Annotated[int | None, Field(alias="totalPages")] = None
-    next_cursor: Annotated[str | None, Field(alias="nextCursor")] = None
 
 
 class TableValueResultTestChannelResult(BaseModel):
@@ -9603,7 +9855,6 @@ class TableValueResultTestChannelResult(BaseModel):
     has_prev: Annotated[bool, Field(alias="hasPrev")]
     total_elements: Annotated[int | None, Field(alias="totalElements")] = None
     total_pages: Annotated[int | None, Field(alias="totalPages")] = None
-    next_cursor: Annotated[str | None, Field(alias="nextCursor")] = None
 
 
 class TableValueResultVoiceLanguageDto(BaseModel):
@@ -9613,7 +9864,6 @@ class TableValueResultVoiceLanguageDto(BaseModel):
     has_prev: Annotated[bool, Field(alias="hasPrev")]
     total_elements: Annotated[int | None, Field(alias="totalElements")] = None
     total_pages: Annotated[int | None, Field(alias="totalPages")] = None
-    next_cursor: Annotated[str | None, Field(alias="nextCursor")] = None
 
 
 class TableValueResultWebhookDeliveryDto(BaseModel):
@@ -9623,7 +9873,6 @@ class TableValueResultWebhookDeliveryDto(BaseModel):
     has_prev: Annotated[bool, Field(alias="hasPrev")]
     total_elements: Annotated[int | None, Field(alias="totalElements")] = None
     total_pages: Annotated[int | None, Field(alias="totalPages")] = None
-    next_cursor: Annotated[str | None, Field(alias="nextCursor")] = None
 
 
 class TableValueResultWebhookEndpointDto(BaseModel):
@@ -9633,7 +9882,6 @@ class TableValueResultWebhookEndpointDto(BaseModel):
     has_prev: Annotated[bool, Field(alias="hasPrev")]
     total_elements: Annotated[int | None, Field(alias="totalElements")] = None
     total_pages: Annotated[int | None, Field(alias="totalPages")] = None
-    next_cursor: Annotated[str | None, Field(alias="nextCursor")] = None
 
 
 class TableValueResultWorkspaceDto(BaseModel):
@@ -9643,7 +9891,6 @@ class TableValueResultWorkspaceDto(BaseModel):
     has_prev: Annotated[bool, Field(alias="hasPrev")]
     total_elements: Annotated[int | None, Field(alias="totalElements")] = None
     total_pages: Annotated[int | None, Field(alias="totalPages")] = None
-    next_cursor: Annotated[str | None, Field(alias="nextCursor")] = None
 
 
 class TestAlertChannelRequest(BaseModel):
@@ -9756,7 +10003,9 @@ class UpdateMonitorRequest(BaseModel):
     ] = None
     enabled: Annotated[
         bool | None,
-        Field(description="Enable or disable the monitor; null preserves current"),
+        Field(
+            description="Enable or disable the monitor (pause/resume alias); null preserves current"
+        ),
     ] = None
     regions: Annotated[
         list[str] | None,
@@ -9782,7 +10031,7 @@ class UpdateMonitorRequest(BaseModel):
         bool | None,
         Field(
             alias="clearEnvironmentId",
-            description="Set to true to remove the environment association",
+            description="Set to true to remove the environment association; 409 on code types",
         ),
     ] = None
     assertions: Annotated[
@@ -9805,6 +10054,23 @@ class UpdateMonitorRequest(BaseModel):
         ),
     ] = None
     tags: AddMonitorTagsRequest | None = None
+    capture_policy: Annotated[
+        CapturePolicy | None,
+        Field(
+            alias="capturePolicy",
+            description="When to capture screenshots, traces, and video. Null preserves current",
+        ),
+    ] = None
+    fast_retry_max_attempts: Annotated[
+        int | None,
+        Field(
+            alias="fastRetryMaxAttempts",
+            description="Fast-retry attempts after failure; null preserves; 0 disables",
+            ge=0,
+            le=10,
+        ),
+    ] = None
+    package: MonitorPackageSpec | None = None
 
 
 class UpdateNotificationPolicyRequest(BaseModel):
@@ -10214,7 +10480,6 @@ class TableValueResultAuditEventDto(BaseModel):
     has_prev: Annotated[bool, Field(alias="hasPrev")]
     total_elements: Annotated[int | None, Field(alias="totalElements")] = None
     total_pages: Annotated[int | None, Field(alias="totalPages")] = None
-    next_cursor: Annotated[str | None, Field(alias="nextCursor")] = None
 
 
 class TableValueResultResourceGroupDto(BaseModel):
@@ -10224,7 +10489,6 @@ class TableValueResultResourceGroupDto(BaseModel):
     has_prev: Annotated[bool, Field(alias="hasPrev")]
     total_elements: Annotated[int | None, Field(alias="totalElements")] = None
     total_pages: Annotated[int | None, Field(alias="totalPages")] = None
-    next_cursor: Annotated[str | None, Field(alias="nextCursor")] = None
 
 
 class CheckResultDetailsDto(BaseModel):
