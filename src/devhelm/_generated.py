@@ -3,7 +3,7 @@
 
 from __future__ import annotations
 from typing import Annotated, Any, Literal
-from pydantic import ConfigDict, AwareDatetime, BaseModel, EmailStr, Field, RootModel
+from pydantic import AwareDatetime, BaseModel, ConfigDict, EmailStr, Field, RootModel
 from enum import StrEnum
 from uuid import UUID
 from datetime import date as date_aliased
@@ -538,6 +538,35 @@ class Action(StrEnum):
     remove_tag = "REMOVE_TAG"
 
 
+class Screenshots(StrEnum):
+    always = "always"
+    on_failure = "on_failure"
+    off = "off"
+
+
+class Trace(StrEnum):
+    always = "always"
+    on_failure = "on_failure"
+    off = "off"
+
+
+class Video(StrEnum):
+    always = "always"
+    on_failure = "on_failure"
+    off = "off"
+
+
+class CapturePolicy(BaseModel):
+    model_config = ConfigDict(extra="ignore", populate_by_name=True)
+    screenshots: Annotated[
+        Screenshots | None, Field(description="When to capture screenshots")
+    ] = None
+    trace: Annotated[
+        Trace | None, Field(description="When to capture a Playwright trace")
+    ] = None
+    video: Annotated[Video | None, Field(description="When to capture video")] = None
+
+
 class CategoryDto(BaseModel):
     model_config = ConfigDict(extra="ignore", populate_by_name=True)
     category: Annotated[
@@ -989,6 +1018,18 @@ class Type(StrEnum):
     multi_step_api = "MULTI_STEP_API"
 
 
+class CreatePackageUploadRequest(BaseModel):
+    model_config = ConfigDict(extra="forbid", populate_by_name=True)
+    digest: Annotated[
+        str,
+        Field(
+            description="SHA-256 hex digest of the package zip to upload (64 chars)",
+            max_length=64,
+            min_length=64,
+        ),
+    ]
+
+
 class HealthThresholdType(StrEnum):
     count = "COUNT"  # type: ignore[assignment]
     percentage = "PERCENTAGE"
@@ -1384,6 +1425,31 @@ class DayIncident(BaseModel):
             alias="affectedComponentIds",
             description="UUIDs of components this incident affected",
         ),
+    ]
+
+
+class DefinitionDto(BaseModel):
+    model_config = ConfigDict(extra="ignore", populate_by_name=True)
+    id: Annotated[UUID, Field(description="Definition identifier")]
+    organization_id: Annotated[
+        int,
+        Field(
+            alias="organizationId",
+            description="Organization this definition belongs to",
+        ),
+    ]
+    name: Annotated[str, Field(description="Human-readable name", min_length=1)]
+    slug: Annotated[
+        str,
+        Field(description="URL-safe slug unique within the organization", min_length=1),
+    ]
+    created_at: Annotated[
+        AwareDatetime,
+        Field(alias="createdAt", description="When the definition was created"),
+    ]
+    updated_at: Annotated[
+        AwareDatetime,
+        Field(alias="updatedAt", description="When the definition was last updated"),
     ]
 
 
@@ -3237,10 +3303,159 @@ class MonitorAuthDto(BaseModel):
     config: ApiKeyAuthConfig | BasicAuthConfig | BearerAuthConfig | HeaderAuthConfig
 
 
+class MonitorOverlayRequest(BaseModel):
+    model_config = ConfigDict(extra="forbid", populate_by_name=True)
+    reason: Annotated[
+        str | None,
+        Field(
+            description="Optional human-readable reason (max 280)",
+            max_length=280,
+            min_length=0,
+        ),
+    ] = None
+    expires_at: Annotated[
+        AwareDatetime | None,
+        Field(alias="expiresAt", description="When this overlay expires"),
+    ] = None
+
+
+class File(RootModel[str]):
+    root: Annotated[
+        str,
+        Field(
+            description="Relative file paths included in the zip",
+            max_length=512,
+            min_length=0,
+        ),
+    ]
+
+
+class Key(RootModel[str]):
+    root: Annotated[
+        str,
+        Field(
+            description="Secret names the zip demanded. PUT: null preserves, [] clears",
+            max_length=255,
+            min_length=0,
+        ),
+    ]
+
+
+class MonitorPackageSpec(BaseModel):
+    model_config = ConfigDict(extra="ignore", populate_by_name=True)
+    digest: Annotated[
+        str,
+        Field(
+            description="SHA-256 hex digest of the package zip (64 characters)",
+            max_length=64,
+            min_length=64,
+        ),
+    ]
+    entrypoint: Annotated[
+        str,
+        Field(
+            description="Entrypoint path inside the zip, e.g. tests/login.spec.ts",
+            max_length=512,
+            min_length=0,
+        ),
+    ]
+    files: Annotated[
+        list[File],
+        Field(
+            description="Relative file paths included in the zip",
+            max_length=256,
+            min_length=0,
+        ),
+    ]
+    keys: Annotated[
+        list[Key] | None,
+        Field(
+            description="Secret names the zip demanded. PUT: null preserves, [] clears",
+            max_length=64,
+            min_length=0,
+        ),
+    ] = None
+    git_sha: Annotated[
+        str | None,
+        Field(
+            alias="gitSha",
+            description="Commit SHA from the repo that produced this zip. Client-supplied provenance only",
+            max_length=64,
+            min_length=0,
+        ),
+    ] = None
+    git_message: Annotated[
+        str | None,
+        Field(
+            alias="gitMessage",
+            description="Commit message from the repo that produced this zip",
+            max_length=1024,
+            min_length=0,
+        ),
+    ] = None
+    git_file: Annotated[
+        str | None,
+        Field(
+            alias="gitFile",
+            description="Path of the declaring file in that repo",
+            max_length=512,
+            min_length=0,
+        ),
+    ] = None
+    authored_by: Annotated[
+        str | None,
+        Field(
+            alias="authoredBy",
+            description="Author attribution supplied with the package",
+            max_length=255,
+            min_length=0,
+        ),
+    ] = None
+
+
 class MonitorReference(BaseModel):
     model_config = ConfigDict(extra="ignore", populate_by_name=True)
     id: Annotated[UUID, Field(description="Monitor identifier")]
     name: Annotated[str, Field(description="Monitor name")]
+
+
+class MonitorSessionDto(BaseModel):
+    model_config = ConfigDict(extra="ignore", populate_by_name=True)
+    lifecycle: Annotated[str, Field(description="Current session cache state")]
+    reuse_policy: Annotated[
+        str,
+        Field(
+            alias="reusePolicy",
+            description="When the cached session is reused across runs",
+        ),
+    ]
+    setup_file: Annotated[
+        str,
+        Field(alias="setupFile", description="Setup file path inside the package zip"),
+    ]
+    expires_at: Annotated[
+        AwareDatetime | None,
+        Field(alias="expiresAt", description="When the cached session expires"),
+    ] = None
+    cookie_names: Annotated[
+        list[str],
+        Field(alias="cookieNames", description="Cookie names in the cached session"),
+    ]
+    storage_keys: Annotated[
+        list[str],
+        Field(
+            alias="storageKeys", description="Storage key names in the cached session"
+        ),
+    ]
+    size_bytes: Annotated[
+        int | None, Field(alias="sizeBytes", description="Cached session size in bytes")
+    ] = None
+    last_rejected_run_id: Annotated[
+        UUID | None,
+        Field(
+            alias="lastRejectedRunId", description="Run that last rejected this cache"
+        ),
+    ] = None
 
 
 class MonitorsSummaryDto(BaseModel):
@@ -3634,6 +3849,29 @@ class OrgInfo(BaseModel):
     name: Annotated[str, Field(description="Organization name")]
 
 
+class PackageUploadDto(BaseModel):
+    model_config = ConfigDict(extra="ignore", populate_by_name=True)
+    put_url: Annotated[
+        str,
+        Field(
+            alias="putUrl",
+            description="Presigned PUT URL for the zip bytes",
+            min_length=1,
+        ),
+    ]
+    expires_at: Annotated[
+        AwareDatetime,
+        Field(alias="expiresAt", description="When the signed URL expires"),
+    ]
+    required_headers: Annotated[
+        dict[str, str],
+        Field(
+            alias="requiredHeaders",
+            description="Must send Content-Type: application/zip and If-None-Match: *",
+        ),
+    ]
+
+
 class Pageable(BaseModel):
     model_config = ConfigDict(extra="ignore", populate_by_name=True)
     page: Annotated[int, Field(ge=0)]
@@ -3848,6 +4086,17 @@ class PricingTier(BaseModel):
     ] = None
 
 
+class PublishRevisionRequest(BaseModel):
+    model_config = ConfigDict(extra="forbid", populate_by_name=True)
+    revision_id: Annotated[
+        UUID,
+        Field(
+            alias="revisionId",
+            description="Existing revision to activate as Head for this monitor's environment",
+        ),
+    ]
+
+
 class Status7(StrEnum):
     investigating = "INVESTIGATING"
     identified = "IDENTIFIED"
@@ -3932,6 +4181,19 @@ class PushoverChannelConfig(BaseModel):
     sound: Annotated[str | None, Field(description="Notification sound override")] = (
         None
     )
+
+
+class QuarantineMonitorRequest(BaseModel):
+    model_config = ConfigDict(extra="forbid", populate_by_name=True)
+    reason: Annotated[
+        str,
+        Field(
+            description="Reason for this hold (max 280)", max_length=280, min_length=0
+        ),
+    ]
+    expires_at: Annotated[
+        AwareDatetime, Field(alias="expiresAt", description="When the hold expires")
+    ]
 
 
 class RateLimitInfo(BaseModel):
@@ -4039,6 +4301,16 @@ class RegionStatusDto(BaseModel):
         Field(
             alias="severityHint",
             description="Severity hint: 'down' for hard failures, 'degraded' for warn-only failures, null when passing",
+        ),
+    ] = None
+
+
+class RemapSecretRequest(BaseModel):
+    model_config = ConfigDict(extra="forbid", populate_by_name=True)
+    secret_id: Annotated[
+        UUID | None,
+        Field(
+            alias="secretId", description="Secret to attach; null restores name-match"
         ),
     ] = None
 
@@ -4301,6 +4573,83 @@ class RetryStrategy(BaseModel):
     ]
 
 
+class RevisionDiffHunkDto(BaseModel):
+    model_config = ConfigDict(extra="ignore", populate_by_name=True)
+    path: Annotated[
+        str,
+        Field(
+            description="Path or field name (entrypoint, keys, or file path)",
+            min_length=1,
+        ),
+    ]
+    change: Annotated[
+        str, Field(description="Whether this path was added, removed, or changed")
+    ]
+    left: Annotated[str | None, Field(description="Left value when present")] = None
+    right: Annotated[str | None, Field(description="Right value when present")] = None
+
+
+class RevisionDto(BaseModel):
+    model_config = ConfigDict(extra="ignore", populate_by_name=True)
+    id: Annotated[UUID, Field(description="Revision identifier")]
+    definition_id: Annotated[
+        UUID, Field(alias="definitionId", description="Parent definition")
+    ]
+    number: Annotated[
+        int, Field(description="Monotonic revision number within the definition")
+    ]
+    digest: Annotated[
+        str, Field(description="SHA-256 hex digest of the zip", min_length=1)
+    ]
+    entrypoint: Annotated[
+        str, Field(description="Entrypoint file that runs", min_length=1)
+    ]
+    files: Annotated[list[str], Field(description="Paths present in the zip")]
+    keys: Annotated[list[str], Field(description="Secret key names the code demands")]
+    download_until: Annotated[
+        AwareDatetime | None,
+        Field(
+            alias="downloadUntil", description="When package bytes expire for download"
+        ),
+    ] = None
+    git_sha: Annotated[
+        str | None,
+        Field(alias="gitSha", description="Git commit SHA when sourced from Git"),
+    ] = None
+    git_message: Annotated[
+        str | None, Field(alias="gitMessage", description="Git commit message")
+    ] = None
+    git_file: Annotated[
+        str | None, Field(alias="gitFile", description="Declaring Git file path")
+    ] = None
+    authored_by: Annotated[
+        str | None, Field(alias="authoredBy", description="Who authored this package")
+    ] = None
+    created_at: Annotated[
+        AwareDatetime,
+        Field(alias="createdAt", description="When the revision was minted"),
+    ]
+
+
+class RollbackRevisionRequest(BaseModel):
+    model_config = ConfigDict(extra="forbid", populate_by_name=True)
+    revision_id: Annotated[
+        UUID,
+        Field(
+            alias="revisionId",
+            description="Existing revision to restore as Head for this monitor's environment",
+        ),
+    ]
+    reason: Annotated[
+        str,
+        Field(
+            description="Why this rollback was performed (1–280 chars)",
+            max_length=280,
+            min_length=0,
+        ),
+    ]
+
+
 class RootlyChannelConfig(BaseModel):
     model_config = ConfigDict(extra="ignore", populate_by_name=True)
     channel_type: Annotated[Literal["rootly"], Field(alias="channelType")] = "rootly"
@@ -4410,6 +4759,34 @@ class RuleEvaluationDto(BaseModel):
     ] = None
 
 
+class RunDto(BaseModel):
+    model_config = ConfigDict(extra="ignore", populate_by_name=True)
+    id: Annotated[UUID, Field(description="Unique run identifier")]
+    monitor_id: Annotated[
+        UUID, Field(alias="monitorId", description="Monitor this run belongs to")
+    ]
+    organization_id: Annotated[
+        int,
+        Field(alias="organizationId", description="Organization this run belongs to"),
+    ]
+    revision_id: Annotated[
+        UUID, Field(alias="revisionId", description="Revision this run executed")
+    ]
+    source: Annotated[str, Field(description="What triggered this run")]
+    phase: Annotated[str, Field(description="Current run phase")]
+    execution_class: Annotated[
+        str,
+        Field(
+            alias="executionClass",
+            description="Whether this run is scheduled, retry, manual, or candidate",
+        ),
+    ]
+    enqueued_at: Annotated[
+        AwareDatetime,
+        Field(alias="enqueuedAt", description="When this run was enqueued"),
+    ]
+
+
 class ScheduledMaintenanceDto(BaseModel):
     model_config = ConfigDict(extra="ignore", populate_by_name=True)
     id: Annotated[UUID, Field(description="Unique maintenance record identifier")]
@@ -4475,13 +4852,13 @@ class ScheduledMaintenanceDto(BaseModel):
 class ScriptMonitorConfig(BaseModel):
     model_config = ConfigDict(extra="ignore", populate_by_name=True)
     script: Annotated[
-        str,
+        str | None,
         Field(
-            description="Playwright test script source code",
+            description="Legacy inline script on existing rows",
             max_length=65536,
-            min_length=1,
+            min_length=0,
         ),
-    ]
+    ] = None
     timeout_seconds: Annotated[
         int | None,
         Field(
@@ -4526,7 +4903,23 @@ class SecretDto(BaseModel):
         list[MonitorReference] | None,
         Field(
             alias="usedByMonitors",
-            description="Monitors that reference this secret; null on create/update responses",
+            description="Monitors that reference this secret for authentication",
+        ),
+    ] = None
+
+
+class SecretRequestDto(BaseModel):
+    model_config = ConfigDict(extra="ignore", populate_by_name=True)
+    key: Annotated[str, Field(description="Secret key this monitor requires")]
+    secret: SecretDto | None = None
+    readiness: Annotated[
+        str, Field(description="Whether this key is resolved or missing")
+    ]
+    fulfilled_by: Annotated[
+        str | None,
+        Field(
+            alias="fulfilledBy",
+            description="Fulfilled from environment variables or a secret",
         ),
     ] = None
 
@@ -5084,6 +5477,11 @@ class SingleValueResponseMonitorAuthDto(BaseModel):
     data: MonitorAuthDto
 
 
+class SingleValueResponseMonitorSessionDto(BaseModel):
+    model_config = ConfigDict(extra="ignore", populate_by_name=True)
+    data: MonitorSessionDto
+
+
 class SingleValueResponseMonitorTestResultDto(BaseModel):
     model_config = ConfigDict(extra="ignore", populate_by_name=True)
     data: MonitorTestResultDto
@@ -5099,6 +5497,11 @@ class SingleValueResponseOrganizationDto(BaseModel):
     data: OrganizationDto
 
 
+class SingleValueResponsePackageUploadDto(BaseModel):
+    model_config = ConfigDict(extra="ignore", populate_by_name=True)
+    data: PackageUploadDto
+
+
 class SingleValueResponsePolicySnapshotDto(BaseModel):
     model_config = ConfigDict(extra="ignore", populate_by_name=True)
     data: PolicySnapshotDto
@@ -5112,6 +5515,16 @@ class SingleValueResponseResourceGroupHealthDto(BaseModel):
 class SingleValueResponseResultSummaryDto(BaseModel):
     model_config = ConfigDict(extra="ignore", populate_by_name=True)
     data: ResultSummaryDto
+
+
+class SingleValueResponseRevisionDto(BaseModel):
+    model_config = ConfigDict(extra="ignore", populate_by_name=True)
+    data: RevisionDto
+
+
+class SingleValueResponseRunDto(BaseModel):
+    model_config = ConfigDict(extra="ignore", populate_by_name=True)
+    data: RunDto
 
 
 class SingleValueResponseSecretDto(BaseModel):
@@ -5766,7 +6179,6 @@ class TableValueResultAlertChannelDto(BaseModel):
     has_prev: Annotated[bool, Field(alias="hasPrev")]
     total_elements: Annotated[int | None, Field(alias="totalElements")] = None
     total_pages: Annotated[int | None, Field(alias="totalPages")] = None
-    next_cursor: Annotated[str | None, Field(alias="nextCursor")] = None
 
 
 class TableValueResultAlertDeliveryDto(BaseModel):
@@ -5776,7 +6188,6 @@ class TableValueResultAlertDeliveryDto(BaseModel):
     has_prev: Annotated[bool, Field(alias="hasPrev")]
     total_elements: Annotated[int | None, Field(alias="totalElements")] = None
     total_pages: Annotated[int | None, Field(alias="totalPages")] = None
-    next_cursor: Annotated[str | None, Field(alias="nextCursor")] = None
 
 
 class TableValueResultApiKeyDto(BaseModel):
@@ -5786,7 +6197,6 @@ class TableValueResultApiKeyDto(BaseModel):
     has_prev: Annotated[bool, Field(alias="hasPrev")]
     total_elements: Annotated[int | None, Field(alias="totalElements")] = None
     total_pages: Annotated[int | None, Field(alias="totalPages")] = None
-    next_cursor: Annotated[str | None, Field(alias="nextCursor")] = None
 
 
 class TableValueResultCategoryDto(BaseModel):
@@ -5796,7 +6206,15 @@ class TableValueResultCategoryDto(BaseModel):
     has_prev: Annotated[bool, Field(alias="hasPrev")]
     total_elements: Annotated[int | None, Field(alias="totalElements")] = None
     total_pages: Annotated[int | None, Field(alias="totalPages")] = None
-    next_cursor: Annotated[str | None, Field(alias="nextCursor")] = None
+
+
+class TableValueResultDefinitionDto(BaseModel):
+    model_config = ConfigDict(extra="ignore", populate_by_name=True)
+    data: list[DefinitionDto]
+    has_next: Annotated[bool, Field(alias="hasNext")]
+    has_prev: Annotated[bool, Field(alias="hasPrev")]
+    total_elements: Annotated[int | None, Field(alias="totalElements")] = None
+    total_pages: Annotated[int | None, Field(alias="totalPages")] = None
 
 
 class TableValueResultDeliveryAttemptDto(BaseModel):
@@ -5806,7 +6224,6 @@ class TableValueResultDeliveryAttemptDto(BaseModel):
     has_prev: Annotated[bool, Field(alias="hasPrev")]
     total_elements: Annotated[int | None, Field(alias="totalElements")] = None
     total_pages: Annotated[int | None, Field(alias="totalPages")] = None
-    next_cursor: Annotated[str | None, Field(alias="nextCursor")] = None
 
 
 class TableValueResultEnvironmentDto(BaseModel):
@@ -5816,7 +6233,6 @@ class TableValueResultEnvironmentDto(BaseModel):
     has_prev: Annotated[bool, Field(alias="hasPrev")]
     total_elements: Annotated[int | None, Field(alias="totalElements")] = None
     total_pages: Annotated[int | None, Field(alias="totalPages")] = None
-    next_cursor: Annotated[str | None, Field(alias="nextCursor")] = None
 
 
 class TableValueResultInviteDto(BaseModel):
@@ -5826,7 +6242,6 @@ class TableValueResultInviteDto(BaseModel):
     has_prev: Annotated[bool, Field(alias="hasPrev")]
     total_elements: Annotated[int | None, Field(alias="totalElements")] = None
     total_pages: Annotated[int | None, Field(alias="totalPages")] = None
-    next_cursor: Annotated[str | None, Field(alias="nextCursor")] = None
 
 
 class TableValueResultMaintenanceWindowDto(BaseModel):
@@ -5836,7 +6251,6 @@ class TableValueResultMaintenanceWindowDto(BaseModel):
     has_prev: Annotated[bool, Field(alias="hasPrev")]
     total_elements: Annotated[int | None, Field(alias="totalElements")] = None
     total_pages: Annotated[int | None, Field(alias="totalPages")] = None
-    next_cursor: Annotated[str | None, Field(alias="nextCursor")] = None
 
 
 class TableValueResultMemberDto(BaseModel):
@@ -5846,7 +6260,6 @@ class TableValueResultMemberDto(BaseModel):
     has_prev: Annotated[bool, Field(alias="hasPrev")]
     total_elements: Annotated[int | None, Field(alias="totalElements")] = None
     total_pages: Annotated[int | None, Field(alias="totalPages")] = None
-    next_cursor: Annotated[str | None, Field(alias="nextCursor")] = None
 
 
 class TableValueResultNotificationDispatchDto(BaseModel):
@@ -5856,7 +6269,6 @@ class TableValueResultNotificationDispatchDto(BaseModel):
     has_prev: Annotated[bool, Field(alias="hasPrev")]
     total_elements: Annotated[int | None, Field(alias="totalElements")] = None
     total_pages: Annotated[int | None, Field(alias="totalPages")] = None
-    next_cursor: Annotated[str | None, Field(alias="nextCursor")] = None
 
 
 class TableValueResultNotificationDto(BaseModel):
@@ -5866,7 +6278,15 @@ class TableValueResultNotificationDto(BaseModel):
     has_prev: Annotated[bool, Field(alias="hasPrev")]
     total_elements: Annotated[int | None, Field(alias="totalElements")] = None
     total_pages: Annotated[int | None, Field(alias="totalPages")] = None
-    next_cursor: Annotated[str | None, Field(alias="nextCursor")] = None
+
+
+class TableValueResultRevisionDto(BaseModel):
+    model_config = ConfigDict(extra="ignore", populate_by_name=True)
+    data: list[RevisionDto]
+    has_next: Annotated[bool, Field(alias="hasNext")]
+    has_prev: Annotated[bool, Field(alias="hasPrev")]
+    total_elements: Annotated[int | None, Field(alias="totalElements")] = None
+    total_pages: Annotated[int | None, Field(alias="totalPages")] = None
 
 
 class TableValueResultRuleEvaluationDto(BaseModel):
@@ -5876,7 +6296,6 @@ class TableValueResultRuleEvaluationDto(BaseModel):
     has_prev: Annotated[bool, Field(alias="hasPrev")]
     total_elements: Annotated[int | None, Field(alias="totalElements")] = None
     total_pages: Annotated[int | None, Field(alias="totalPages")] = None
-    next_cursor: Annotated[str | None, Field(alias="nextCursor")] = None
 
 
 class TableValueResultScheduledMaintenanceDto(BaseModel):
@@ -5886,7 +6305,6 @@ class TableValueResultScheduledMaintenanceDto(BaseModel):
     has_prev: Annotated[bool, Field(alias="hasPrev")]
     total_elements: Annotated[int | None, Field(alias="totalElements")] = None
     total_pages: Annotated[int | None, Field(alias="totalPages")] = None
-    next_cursor: Annotated[str | None, Field(alias="nextCursor")] = None
 
 
 class TableValueResultSecretDto(BaseModel):
@@ -5896,7 +6314,6 @@ class TableValueResultSecretDto(BaseModel):
     has_prev: Annotated[bool, Field(alias="hasPrev")]
     total_elements: Annotated[int | None, Field(alias="totalElements")] = None
     total_pages: Annotated[int | None, Field(alias="totalPages")] = None
-    next_cursor: Annotated[str | None, Field(alias="nextCursor")] = None
 
 
 class TableValueResultServiceComponentDto(BaseModel):
@@ -5906,7 +6323,6 @@ class TableValueResultServiceComponentDto(BaseModel):
     has_prev: Annotated[bool, Field(alias="hasPrev")]
     total_elements: Annotated[int | None, Field(alias="totalElements")] = None
     total_pages: Annotated[int | None, Field(alias="totalPages")] = None
-    next_cursor: Annotated[str | None, Field(alias="nextCursor")] = None
 
 
 class TableValueResultServiceIncidentDto(BaseModel):
@@ -5916,7 +6332,6 @@ class TableValueResultServiceIncidentDto(BaseModel):
     has_prev: Annotated[bool, Field(alias="hasPrev")]
     total_elements: Annotated[int | None, Field(alias="totalElements")] = None
     total_pages: Annotated[int | None, Field(alias="totalPages")] = None
-    next_cursor: Annotated[str | None, Field(alias="nextCursor")] = None
 
 
 class TableValueResultServiceSubscriptionDto(BaseModel):
@@ -5926,7 +6341,6 @@ class TableValueResultServiceSubscriptionDto(BaseModel):
     has_prev: Annotated[bool, Field(alias="hasPrev")]
     total_elements: Annotated[int | None, Field(alias="totalElements")] = None
     total_pages: Annotated[int | None, Field(alias="totalPages")] = None
-    next_cursor: Annotated[str | None, Field(alias="nextCursor")] = None
 
 
 class TableValueResultStatusPageComponentDto(BaseModel):
@@ -5936,7 +6350,6 @@ class TableValueResultStatusPageComponentDto(BaseModel):
     has_prev: Annotated[bool, Field(alias="hasPrev")]
     total_elements: Annotated[int | None, Field(alias="totalElements")] = None
     total_pages: Annotated[int | None, Field(alias="totalPages")] = None
-    next_cursor: Annotated[str | None, Field(alias="nextCursor")] = None
 
 
 class TableValueResultStatusPageComponentGroupDto(BaseModel):
@@ -5946,7 +6359,6 @@ class TableValueResultStatusPageComponentGroupDto(BaseModel):
     has_prev: Annotated[bool, Field(alias="hasPrev")]
     total_elements: Annotated[int | None, Field(alias="totalElements")] = None
     total_pages: Annotated[int | None, Field(alias="totalPages")] = None
-    next_cursor: Annotated[str | None, Field(alias="nextCursor")] = None
 
 
 class TableValueResultStatusPageCustomDomainDto(BaseModel):
@@ -5956,7 +6368,6 @@ class TableValueResultStatusPageCustomDomainDto(BaseModel):
     has_prev: Annotated[bool, Field(alias="hasPrev")]
     total_elements: Annotated[int | None, Field(alias="totalElements")] = None
     total_pages: Annotated[int | None, Field(alias="totalPages")] = None
-    next_cursor: Annotated[str | None, Field(alias="nextCursor")] = None
 
 
 class TableValueResultStatusPageNotificationDeliveryDto(BaseModel):
@@ -5966,7 +6377,6 @@ class TableValueResultStatusPageNotificationDeliveryDto(BaseModel):
     has_prev: Annotated[bool, Field(alias="hasPrev")]
     total_elements: Annotated[int | None, Field(alias="totalElements")] = None
     total_pages: Annotated[int | None, Field(alias="totalPages")] = None
-    next_cursor: Annotated[str | None, Field(alias="nextCursor")] = None
 
 
 class TableValueResultStatusPageSubscriberDto(BaseModel):
@@ -5976,7 +6386,6 @@ class TableValueResultStatusPageSubscriberDto(BaseModel):
     has_prev: Annotated[bool, Field(alias="hasPrev")]
     total_elements: Annotated[int | None, Field(alias="totalElements")] = None
     total_pages: Annotated[int | None, Field(alias="totalPages")] = None
-    next_cursor: Annotated[str | None, Field(alias="nextCursor")] = None
 
 
 class TagDto(BaseModel):
@@ -7400,6 +7809,35 @@ class UpdateZapierChannelConfig(BaseModel):
     ] = None
 
 
+class ReusePolicy(StrEnum):
+    reuse = "reuse"
+    every_run = "every_run"
+    on_failure = "on_failure"
+
+
+class UpsertMonitorSessionRequest(BaseModel):
+    model_config = ConfigDict(extra="forbid", populate_by_name=True)
+    reuse_policy: Annotated[
+        ReusePolicy,
+        Field(
+            alias="reusePolicy",
+            description="When to reuse the cached session across runs",
+        ),
+    ]
+    setup_file: Annotated[
+        str,
+        Field(
+            alias="setupFile",
+            description="Setup file path inside the package zip",
+            min_length=1,
+        ),
+    ]
+    expires_at: Annotated[
+        AwareDatetime | None,
+        Field(alias="expiresAt", description="When the cached session expires"),
+    ] = None
+
+
 class UptimeBucketDto(BaseModel):
     model_config = ConfigDict(extra="ignore", populate_by_name=True)
     timestamp: Annotated[
@@ -7483,6 +7921,46 @@ class UptimeDto(BaseModel):
             alias="incidentCount",
             description="Number of incidents that started within the requested window",
             examples=[2],
+        ),
+    ]
+
+
+class UserDto(BaseModel):
+    model_config = ConfigDict(extra="ignore", populate_by_name=True)
+    id: Annotated[int, Field(description="Unique user identifier")]
+    email: Annotated[str, Field(description="User email address")]
+    email_verified: Annotated[
+        bool,
+        Field(
+            alias="emailVerified",
+            description="Whether the email address has been verified",
+        ),
+    ]
+    name: Annotated[str | None, Field(description="Display name; null if not set")] = (
+        None
+    )
+    user_role: Annotated[
+        str, Field(alias="userRole", description="Platform role: USER or SUPERADMIN")
+    ]
+    onboarding_stage: Annotated[
+        str | None,
+        Field(
+            alias="onboardingStage",
+            description="Current onboarding progress stage; null when completed",
+        ),
+    ] = None
+    image_url: Annotated[
+        str | None,
+        Field(alias="imageUrl", description="Profile image URL; null if not set"),
+    ] = None
+    created_at: Annotated[
+        AwareDatetime,
+        Field(alias="createdAt", description="Timestamp when the account was created"),
+    ]
+    updated_at: Annotated[
+        AwareDatetime,
+        Field(
+            alias="updatedAt", description="Timestamp when the account was last updated"
         ),
     ]
 
@@ -7651,6 +8129,16 @@ class WorkspaceDto(BaseModel):
     name: Annotated[str, Field(description="Workspace name", min_length=1)]
     org_id: Annotated[
         int, Field(alias="orgId", description="Organization this workspace belongs to")
+    ]
+
+
+class WriteSecretEnvironmentValueRequest(BaseModel):
+    model_config = ConfigDict(extra="forbid", populate_by_name=True)
+    value: Annotated[
+        str,
+        Field(
+            description="Plaintext value to encrypt for this environment", min_length=1
+        ),
     ]
 
 
@@ -7952,12 +8440,13 @@ class CreateMonitorRequest(BaseModel):
         | McpServerMonitorConfig
         | ScriptMonitorConfig
         | TcpMonitorConfig
-    )
+        | None
+    ) = None
     frequency_seconds: Annotated[
         int | None,
         Field(
             alias="frequencySeconds",
-            description="Check frequency in seconds (10–86400); null defaults to plan minimum (60s on most paid plans)",
+            description="Check frequency in seconds (10–86400). Null defaults to the plan minimum",
             ge=10,
             le=86400,
         ),
@@ -7968,21 +8457,21 @@ class CreateMonitorRequest(BaseModel):
     regions: Annotated[
         list[str] | None,
         Field(
-            description="Probe regions to run checks from. Allowed values are deployment-dependent; production: us-east, us-west, eu-west, ap-south."
+            description="Probe regions to run checks from. Allowed values are deployment-dependent. Production: us-east, us-west, eu-west, ap-south"
         ),
     ] = None
     managed_by: Annotated[
         ManagedBy | None,
         Field(
             alias="managedBy",
-            description="Source that created/owns this monitor: DASHBOARD, CLI, TERRAFORM, MCP, or API. Defaults to API when omitted; set to your surface so audit logs, drift detection, and analytics attribute correctly.",
+            description="Source that created this monitor: DASHBOARD, CLI, TERRAFORM, MCP, or API. Defaults to API",
         ),
     ] = None
     environment_id: Annotated[
         UUID | None,
         Field(
             alias="environmentId",
-            description="Environment to associate with this monitor",
+            description="Environment to associate with this monitor. Required for browser and multi-step monitors",
         ),
     ] = None
     assertions: Annotated[
@@ -8001,6 +8490,24 @@ class CreateMonitorRequest(BaseModel):
         ),
     ] = None
     tags: AddMonitorTagsRequest | None = None
+    capture_policy: Annotated[CapturePolicy | None, Field(alias="capturePolicy")] = None
+    fast_retry_max_attempts: Annotated[
+        int | None,
+        Field(
+            alias="fastRetryMaxAttempts",
+            description="Fast-retry attempts after failure. Null or 0 disables",
+            ge=0,
+            le=10,
+        ),
+    ] = None
+    definition_id: Annotated[
+        UUID | None,
+        Field(
+            alias="definitionId",
+            description="Existing definition to reuse for a sibling monitor",
+        ),
+    ] = None
+    package: MonitorPackageSpec | None = None
 
 
 class CreateResourceGroupRequest(BaseModel):
@@ -8192,6 +8699,26 @@ class CreditPolicy(BaseModel):
     ] = None
 
 
+class CursorPageNotificationDispatchDto(BaseModel):
+    model_config = ConfigDict(extra="ignore", populate_by_name=True)
+    data: Annotated[
+        list[NotificationDispatchDto], Field(description="Items on this page")
+    ]
+    next_cursor: Annotated[
+        str | None,
+        Field(
+            alias="nextCursor",
+            description="Opaque cursor for the next page; null when there are no more results",
+        ),
+    ] = None
+    has_more: Annotated[
+        bool,
+        Field(
+            alias="hasMore", description="Whether more results exist beyond this page"
+        ),
+    ]
+
+
 class CursorPageServiceCatalogDto(BaseModel):
     model_config = ConfigDict(extra="ignore", populate_by_name=True)
     data: Annotated[list[ServiceCatalogDto], Field(description="Items on this page")]
@@ -8250,6 +8777,26 @@ class DashboardOverviewDto(BaseModel):
     model_config = ConfigDict(extra="ignore", populate_by_name=True)
     monitors: MonitorsSummaryDto
     incidents: IncidentsSummaryDto
+
+
+class DefinitionHeadDto(BaseModel):
+    model_config = ConfigDict(extra="ignore", populate_by_name=True)
+    definition_id: Annotated[
+        UUID, Field(alias="definitionId", description="Definition this Head belongs to")
+    ]
+    environment: EnvironmentDto
+    revision: RevisionDto
+    activated_at: Annotated[
+        AwareDatetime,
+        Field(alias="activatedAt", description="When this Head last activated"),
+    ]
+    activated_by: Annotated[
+        str | None,
+        Field(alias="activatedBy", description="Who last activated this Head"),
+    ] = None
+    reason: Annotated[
+        str | None, Field(description="Rollback reason when this Head was restored")
+    ] = None
 
 
 class EscalationChain(BaseModel):
@@ -8922,9 +9469,69 @@ class MonitorDto(BaseModel):
         str | None,
         Field(
             alias="currentStatus",
-            description="Current operational state — UP, DOWN, DEGRADED, PAUSED, or UNKNOWN if no probe data yet",
+            description="Current operational state. One of UP, DOWN, DEGRADED, PAUSED, or UNKNOWN",
         ),
     ] = None
+    definition_id: Annotated[
+        UUID | None,
+        Field(
+            alias="definitionId",
+            description="Definition id for a browser or multi-step monitor. Null on probe monitors",
+        ),
+    ] = None
+    capture_policy: Annotated[CapturePolicy | None, Field(alias="capturePolicy")] = None
+    fast_retry_max_attempts: Annotated[
+        int | None,
+        Field(
+            alias="fastRetryMaxAttempts",
+            description="Fast-retry max attempts; null/0 = off",
+        ),
+    ] = None
+    muted: Annotated[bool, Field(description="Whether alert delivery is muted")]
+    muted_until: Annotated[
+        AwareDatetime | None,
+        Field(
+            alias="mutedUntil",
+            description="Mute expiry; null means indefinite while muted",
+        ),
+    ] = None
+    mute_reason: Annotated[
+        str | None, Field(alias="muteReason", description="Optional mute reason")
+    ] = None
+    paused_at: Annotated[
+        AwareDatetime | None,
+        Field(alias="pausedAt", description="When the monitor was paused"),
+    ] = None
+    pause_reason: Annotated[
+        str | None, Field(alias="pauseReason", description="Optional pause reason")
+    ] = None
+    pause_expires_at: Annotated[
+        AwareDatetime | None, Field(alias="pauseExpiresAt", description="Pause expiry")
+    ] = None
+    quarantine_owner_id: Annotated[
+        str | None,
+        Field(alias="quarantineOwnerId", description="Quarantine person owner id"),
+    ] = None
+    quarantine_until: Annotated[
+        AwareDatetime | None,
+        Field(
+            alias="quarantineUntil",
+            description="Quarantine expiry; non-null means quarantined",
+        ),
+    ] = None
+    quarantine_reason: Annotated[
+        str | None, Field(alias="quarantineReason", description="Quarantine reason")
+    ] = None
+    upload: PackageUploadDto | None = None
+
+
+class MonitorSecretRequestsDto(BaseModel):
+    model_config = ConfigDict(extra="ignore", populate_by_name=True)
+    environment: EnvironmentDto
+    requests: Annotated[
+        list[SecretRequestDto],
+        Field(description="Secret keys this monitor requires and their resolve state"),
+    ]
 
 
 class MonitorTestRequest(BaseModel):
@@ -9180,6 +9787,45 @@ class ResourceGroupMemberDto(BaseModel):
     ] = None
 
 
+class RevisionDiffDto(BaseModel):
+    model_config = ConfigDict(extra="ignore", populate_by_name=True)
+    left: RevisionDto
+    right: RevisionDto
+    hunks: Annotated[
+        list[RevisionDiffHunkDto],
+        Field(description="File and field-level hunks (bounded)"),
+    ]
+
+
+class RollbackPreviewDto(BaseModel):
+    model_config = ConfigDict(extra="ignore", populate_by_name=True)
+    target: RevisionDto
+    current: DefinitionHeadDto | None = None
+    affected_monitors: Annotated[
+        list[MonitorDto],
+        Field(
+            alias="affectedMonitors",
+            description="Monitors sharing this definition and environment",
+        ),
+    ]
+
+
+class SecretAuditDto(BaseModel):
+    model_config = ConfigDict(extra="ignore", populate_by_name=True)
+    updated_at: Annotated[
+        AwareDatetime | None,
+        Field(alias="updatedAt", description="When this secret was last updated"),
+    ] = None
+    updated_by: Annotated[UserDto | None, Field(alias="updatedBy")] = None
+
+
+class SecretUsageDto(BaseModel):
+    model_config = ConfigDict(extra="ignore", populate_by_name=True)
+    monitors: Annotated[
+        list[MonitorDto], Field(description="Monitors that reference this secret")
+    ]
+
+
 class ServiceIncidentDetailDto(BaseModel):
     model_config = ConfigDict(extra="ignore", populate_by_name=True)
     id: UUID
@@ -9244,6 +9890,11 @@ class SingleValueResponseDashboardOverviewDto(BaseModel):
     data: DashboardOverviewDto
 
 
+class SingleValueResponseDefinitionHeadDto(BaseModel):
+    model_config = ConfigDict(extra="ignore", populate_by_name=True)
+    data: DefinitionHeadDto
+
+
 class SingleValueResponseGlobalStatusSummaryDto(BaseModel):
     model_config = ConfigDict(extra="ignore", populate_by_name=True)
     data: GlobalStatusSummaryDto
@@ -9269,6 +9920,11 @@ class SingleValueResponseMonitorDto(BaseModel):
     data: MonitorDto
 
 
+class SingleValueResponseMonitorSecretRequestsDto(BaseModel):
+    model_config = ConfigDict(extra="ignore", populate_by_name=True)
+    data: MonitorSecretRequestsDto
+
+
 class SingleValueResponseMonitorVersionDto(BaseModel):
     model_config = ConfigDict(extra="ignore", populate_by_name=True)
     data: MonitorVersionDto
@@ -9282,6 +9938,26 @@ class SingleValueResponseNotificationPolicyDto(BaseModel):
 class SingleValueResponseResourceGroupMemberDto(BaseModel):
     model_config = ConfigDict(extra="ignore", populate_by_name=True)
     data: ResourceGroupMemberDto
+
+
+class SingleValueResponseRevisionDiffDto(BaseModel):
+    model_config = ConfigDict(extra="ignore", populate_by_name=True)
+    data: RevisionDiffDto
+
+
+class SingleValueResponseRollbackPreviewDto(BaseModel):
+    model_config = ConfigDict(extra="ignore", populate_by_name=True)
+    data: RollbackPreviewDto
+
+
+class SingleValueResponseSecretAuditDto(BaseModel):
+    model_config = ConfigDict(extra="ignore", populate_by_name=True)
+    data: SecretAuditDto
+
+
+class SingleValueResponseSecretUsageDto(BaseModel):
+    model_config = ConfigDict(extra="ignore", populate_by_name=True)
+    data: SecretUsageDto
 
 
 class SingleValueResponseServiceIncidentDetailDto(BaseModel):
@@ -9503,7 +10179,6 @@ class TableValueResultComponentUptimeDayDto(BaseModel):
     has_prev: Annotated[bool, Field(alias="hasPrev")]
     total_elements: Annotated[int | None, Field(alias="totalElements")] = None
     total_pages: Annotated[int | None, Field(alias="totalPages")] = None
-    next_cursor: Annotated[str | None, Field(alias="nextCursor")] = None
 
 
 class TableValueResultIncidentDto(BaseModel):
@@ -9513,7 +10188,6 @@ class TableValueResultIncidentDto(BaseModel):
     has_prev: Annotated[bool, Field(alias="hasPrev")]
     total_elements: Annotated[int | None, Field(alias="totalElements")] = None
     total_pages: Annotated[int | None, Field(alias="totalPages")] = None
-    next_cursor: Annotated[str | None, Field(alias="nextCursor")] = None
 
 
 class TableValueResultIncidentStateTransitionDto(BaseModel):
@@ -9523,7 +10197,6 @@ class TableValueResultIncidentStateTransitionDto(BaseModel):
     has_prev: Annotated[bool, Field(alias="hasPrev")]
     total_elements: Annotated[int | None, Field(alias="totalElements")] = None
     total_pages: Annotated[int | None, Field(alias="totalPages")] = None
-    next_cursor: Annotated[str | None, Field(alias="nextCursor")] = None
 
 
 class TableValueResultIntegrationDto(BaseModel):
@@ -9533,7 +10206,6 @@ class TableValueResultIntegrationDto(BaseModel):
     has_prev: Annotated[bool, Field(alias="hasPrev")]
     total_elements: Annotated[int | None, Field(alias="totalElements")] = None
     total_pages: Annotated[int | None, Field(alias="totalPages")] = None
-    next_cursor: Annotated[str | None, Field(alias="nextCursor")] = None
 
 
 class TableValueResultMonitorDto(BaseModel):
@@ -9543,7 +10215,6 @@ class TableValueResultMonitorDto(BaseModel):
     has_prev: Annotated[bool, Field(alias="hasPrev")]
     total_elements: Annotated[int | None, Field(alias="totalElements")] = None
     total_pages: Annotated[int | None, Field(alias="totalPages")] = None
-    next_cursor: Annotated[str | None, Field(alias="nextCursor")] = None
 
 
 class TableValueResultMonitorVersionDto(BaseModel):
@@ -9553,7 +10224,6 @@ class TableValueResultMonitorVersionDto(BaseModel):
     has_prev: Annotated[bool, Field(alias="hasPrev")]
     total_elements: Annotated[int | None, Field(alias="totalElements")] = None
     total_pages: Annotated[int | None, Field(alias="totalPages")] = None
-    next_cursor: Annotated[str | None, Field(alias="nextCursor")] = None
 
 
 class TableValueResultNotificationPolicyDto(BaseModel):
@@ -9563,7 +10233,6 @@ class TableValueResultNotificationPolicyDto(BaseModel):
     has_prev: Annotated[bool, Field(alias="hasPrev")]
     total_elements: Annotated[int | None, Field(alias="totalElements")] = None
     total_pages: Annotated[int | None, Field(alias="totalPages")] = None
-    next_cursor: Annotated[str | None, Field(alias="nextCursor")] = None
 
 
 class TableValueResultStatusPageDto(BaseModel):
@@ -9573,7 +10242,6 @@ class TableValueResultStatusPageDto(BaseModel):
     has_prev: Annotated[bool, Field(alias="hasPrev")]
     total_elements: Annotated[int | None, Field(alias="totalElements")] = None
     total_pages: Annotated[int | None, Field(alias="totalPages")] = None
-    next_cursor: Annotated[str | None, Field(alias="nextCursor")] = None
 
 
 class TableValueResultStatusPageIncidentDto(BaseModel):
@@ -9583,7 +10251,6 @@ class TableValueResultStatusPageIncidentDto(BaseModel):
     has_prev: Annotated[bool, Field(alias="hasPrev")]
     total_elements: Annotated[int | None, Field(alias="totalElements")] = None
     total_pages: Annotated[int | None, Field(alias="totalPages")] = None
-    next_cursor: Annotated[str | None, Field(alias="nextCursor")] = None
 
 
 class TableValueResultTagDto(BaseModel):
@@ -9593,7 +10260,6 @@ class TableValueResultTagDto(BaseModel):
     has_prev: Annotated[bool, Field(alias="hasPrev")]
     total_elements: Annotated[int | None, Field(alias="totalElements")] = None
     total_pages: Annotated[int | None, Field(alias="totalPages")] = None
-    next_cursor: Annotated[str | None, Field(alias="nextCursor")] = None
 
 
 class TableValueResultTestChannelResult(BaseModel):
@@ -9603,7 +10269,6 @@ class TableValueResultTestChannelResult(BaseModel):
     has_prev: Annotated[bool, Field(alias="hasPrev")]
     total_elements: Annotated[int | None, Field(alias="totalElements")] = None
     total_pages: Annotated[int | None, Field(alias="totalPages")] = None
-    next_cursor: Annotated[str | None, Field(alias="nextCursor")] = None
 
 
 class TableValueResultVoiceLanguageDto(BaseModel):
@@ -9613,7 +10278,6 @@ class TableValueResultVoiceLanguageDto(BaseModel):
     has_prev: Annotated[bool, Field(alias="hasPrev")]
     total_elements: Annotated[int | None, Field(alias="totalElements")] = None
     total_pages: Annotated[int | None, Field(alias="totalPages")] = None
-    next_cursor: Annotated[str | None, Field(alias="nextCursor")] = None
 
 
 class TableValueResultWebhookDeliveryDto(BaseModel):
@@ -9623,7 +10287,6 @@ class TableValueResultWebhookDeliveryDto(BaseModel):
     has_prev: Annotated[bool, Field(alias="hasPrev")]
     total_elements: Annotated[int | None, Field(alias="totalElements")] = None
     total_pages: Annotated[int | None, Field(alias="totalPages")] = None
-    next_cursor: Annotated[str | None, Field(alias="nextCursor")] = None
 
 
 class TableValueResultWebhookEndpointDto(BaseModel):
@@ -9633,7 +10296,6 @@ class TableValueResultWebhookEndpointDto(BaseModel):
     has_prev: Annotated[bool, Field(alias="hasPrev")]
     total_elements: Annotated[int | None, Field(alias="totalElements")] = None
     total_pages: Annotated[int | None, Field(alias="totalPages")] = None
-    next_cursor: Annotated[str | None, Field(alias="nextCursor")] = None
 
 
 class TableValueResultWorkspaceDto(BaseModel):
@@ -9643,7 +10305,6 @@ class TableValueResultWorkspaceDto(BaseModel):
     has_prev: Annotated[bool, Field(alias="hasPrev")]
     total_elements: Annotated[int | None, Field(alias="totalElements")] = None
     total_pages: Annotated[int | None, Field(alias="totalPages")] = None
-    next_cursor: Annotated[str | None, Field(alias="nextCursor")] = None
 
 
 class TestAlertChannelRequest(BaseModel):
@@ -9730,7 +10391,7 @@ class UpdateMonitorRequest(BaseModel):
     name: Annotated[
         str | None,
         Field(
-            description="New monitor name; null preserves current",
+            description="New monitor name. Null preserves current",
             max_length=255,
             min_length=0,
         ),
@@ -9749,33 +10410,34 @@ class UpdateMonitorRequest(BaseModel):
         int | None,
         Field(
             alias="frequencySeconds",
-            description="New check frequency in seconds (10–86400); null preserves current",
+            description="New check frequency in seconds (10–86400). Null preserves current",
             ge=10,
             le=86400,
         ),
     ] = None
     enabled: Annotated[
         bool | None,
-        Field(description="Enable or disable the monitor; null preserves current"),
+        Field(
+            description="Enable or disable the monitor (pause or resume). Null preserves current"
+        ),
     ] = None
     regions: Annotated[
         list[str] | None,
         Field(
-            description="New probe regions; null preserves current. Allowed values are deployment-dependent."
+            description="New probe regions. Null preserves current. Allowed values are deployment-dependent"
         ),
     ] = None
     managed_by: Annotated[
         ManagedBy | None,
         Field(
             alias="managedBy",
-            description="New ownership source: DASHBOARD, CLI, TERRAFORM, MCP, or API; null preserves current value",
+            description="New ownership source: DASHBOARD, CLI, TERRAFORM, MCP, or API. Null preserves current",
         ),
     ] = None
     environment_id: Annotated[
         UUID | None,
         Field(
-            alias="environmentId",
-            description="New environment ID; null preserves current (use clearEnvironmentId to unset)",
+            alias="environmentId", description="New environment; null preserves current"
         ),
     ] = None
     clear_environment_id: Annotated[
@@ -9787,7 +10449,7 @@ class UpdateMonitorRequest(BaseModel):
     ] = None
     assertions: Annotated[
         list[CreateAssertionRequest] | None,
-        Field(description="Replace all assertions; null preserves current"),
+        Field(description="Replace all assertions. Null preserves current"),
     ] = None
     auth: MonitorAuthConfig | None = None
     clear_auth: Annotated[
@@ -9801,10 +10463,24 @@ class UpdateMonitorRequest(BaseModel):
         list[UUID] | None,
         Field(
             alias="alertChannelIds",
-            description="Replace alert channel list; null preserves current",
+            description="Replace alert channel list. Null preserves current",
         ),
     ] = None
     tags: AddMonitorTagsRequest | None = None
+    capture_policy: Annotated[CapturePolicy | None, Field(alias="capturePolicy")] = None
+    fast_retry_max_attempts: Annotated[
+        int | None,
+        Field(
+            alias="fastRetryMaxAttempts",
+            description="Fast-retry attempts after failure. Null preserves current. 0 disables",
+            ge=0,
+            le=10,
+        ),
+    ] = None
+    package: MonitorPackageSpec | None = None
+    status: Annotated[
+        str | None, Field(description="Not writable; use pause or resume")
+    ] = None
 
 
 class UpdateNotificationPolicyRequest(BaseModel):
@@ -9987,6 +10663,14 @@ class CursorPageIncidentActivityEventDto(BaseModel):
         Field(
             alias="hasMore", description="Whether more results exist beyond this page"
         ),
+    ]
+
+
+class DefinitionDetailDto(BaseModel):
+    model_config = ConfigDict(extra="ignore", populate_by_name=True)
+    definition: DefinitionDto
+    heads: Annotated[
+        list[DefinitionHeadDto], Field(description="Active Heads per environment")
     ]
 
 
@@ -10177,6 +10861,11 @@ class SingleValueResponseCheckTraceDto(BaseModel):
     data: CheckTraceDto
 
 
+class SingleValueResponseDefinitionDetailDto(BaseModel):
+    model_config = ConfigDict(extra="ignore", populate_by_name=True)
+    data: DefinitionDetailDto
+
+
 class SingleValueResponseIncidentDetailDto(BaseModel):
     model_config = ConfigDict(extra="ignore", populate_by_name=True)
     data: IncidentDetailDto
@@ -10214,7 +10903,6 @@ class TableValueResultAuditEventDto(BaseModel):
     has_prev: Annotated[bool, Field(alias="hasPrev")]
     total_elements: Annotated[int | None, Field(alias="totalElements")] = None
     total_pages: Annotated[int | None, Field(alias="totalPages")] = None
-    next_cursor: Annotated[str | None, Field(alias="nextCursor")] = None
 
 
 class TableValueResultResourceGroupDto(BaseModel):
@@ -10224,7 +10912,6 @@ class TableValueResultResourceGroupDto(BaseModel):
     has_prev: Annotated[bool, Field(alias="hasPrev")]
     total_elements: Annotated[int | None, Field(alias="totalElements")] = None
     total_pages: Annotated[int | None, Field(alias="totalPages")] = None
-    next_cursor: Annotated[str | None, Field(alias="nextCursor")] = None
 
 
 class CheckResultDetailsDto(BaseModel):
