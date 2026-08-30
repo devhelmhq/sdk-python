@@ -7256,6 +7256,14 @@ class UpdateStatusPageRequest(BaseModel):
             description="New name; null preserves current", max_length=255, min_length=0
         ),
     ] = None
+    slug: Annotated[
+        str | None,
+        Field(
+            description="URL-safe slug used in the public URL; null preserves current",
+            max_length=63,
+            min_length=3,
+        ),
+    ] = None
     description: Annotated[
         str | None,
         Field(
