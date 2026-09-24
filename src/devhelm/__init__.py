@@ -21,8 +21,10 @@ from devhelm.resources.alert_channels import AlertChannels
 from devhelm.resources.api_keys import ApiKeys
 from devhelm.resources.dependencies import Dependencies
 from devhelm.resources.deploy_lock import DeployLock
+from devhelm.resources.email import Email
 from devhelm.resources.environments import Environments
 from devhelm.resources.forensics import Forensics
+from devhelm.resources.inboxes import Inboxes
 from devhelm.resources.incidents import Incidents
 from devhelm.resources.maintenance_windows import MaintenanceWindows
 from devhelm.resources.monitors import Monitors
@@ -55,6 +57,7 @@ from devhelm.types import (
     ConfirmationPolicyType,
     CreateAlertChannelRequest,
     CreateApiKeyRequest,
+    CreateEmailDomainRequest,
     CreateEnvironmentRequest,
     CreateMaintenanceWindowRequest,
     CreateManualIncidentRequest,
@@ -70,9 +73,12 @@ from devhelm.types import (
     CreateStatusPageRequest,
     CreateTagRequest,
     CreateWebhookEndpointRequest,
+    CreateWebhookInboxRequest,
     CustomDomainStatus,
     DashboardOverviewDto,
     DeployLockDto,
+    EmailDomainDto,
+    EmailMessageDto,
     EnvironmentDto,
     GlobalStatusSummaryDto,
     IncidentDetailDto,
@@ -84,6 +90,7 @@ from devhelm.types import (
     IncidentStatus,
     IncidentTimelineDto,
     IncidentUpdateCreatedBy,
+    InjectEmailMessageResponse,
     LifecycleStatus,
     LinkedIncidentStatus,
     MaintenanceWindowDto,
@@ -118,6 +125,7 @@ from devhelm.types import (
     ServiceSubscribeRequest,
     ServiceSubscriptionDto,
     ServiceUptimeResponse,
+    SignedDownload,
     StatusPageBranding,
     StatusPageComponentCurrentStatus,
     StatusPageComponentDto,
@@ -143,6 +151,7 @@ from devhelm.types import (
     UpdateAlertChannelRequest,
     UpdateAlertSensitivityRequest,
     UpdateAssertionSeverity,
+    UpdateEmailDomainRequest,
     UpdateEnvironmentRequest,
     UpdateMaintenanceWindowRequest,
     UpdateMonitorRequest,
@@ -155,7 +164,10 @@ from devhelm.types import (
     UpdateStatusPageRequest,
     UpdateTagRequest,
     UpdateWebhookEndpointRequest,
+    UpdateWebhookInboxRequest,
     WebhookEndpointDto,
+    WebhookEventDto,
+    WebhookInboxDto,
     WebhookTestResult,
 )
 
@@ -198,6 +210,8 @@ __all__ = [
     "Tags",
     "ResourceGroups",
     "Webhooks",
+    "Inboxes",
+    "Email",
     "ApiKeys",
     "Dependencies",
     "DeployLock",
@@ -232,6 +246,12 @@ __all__ = [
     "ResourceGroupDto",
     "ResourceGroupMemberDto",
     "WebhookEndpointDto",
+    "WebhookEventDto",
+    "WebhookInboxDto",
+    "EmailDomainDto",
+    "EmailMessageDto",
+    "SignedDownload",
+    "InjectEmailMessageResponse",
     "ApiKeyDto",
     "ApiKeyCreateResponse",
     "ServiceSubscriptionDto",
@@ -292,6 +312,10 @@ __all__ = [
     "AddResourceGroupMemberRequest",
     "CreateWebhookEndpointRequest",
     "UpdateWebhookEndpointRequest",
+    "CreateEmailDomainRequest",
+    "CreateWebhookInboxRequest",
+    "UpdateEmailDomainRequest",
+    "UpdateWebhookInboxRequest",
     "CreateApiKeyRequest",
     "AcquireDeployLockRequest",
     "ServiceSubscribeRequest",

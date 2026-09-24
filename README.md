@@ -37,6 +37,16 @@ monitor = client.monitors.create({
 # Get a single monitor
 monitor = client.monitors.get(monitor.id)
 
+# Inbound testing. `webhooks` stays outbound alert delivery.
+inbox = client.inboxes.create(name="stripe")
+event = inbox.wait(timeout_ms=30_000, http={"method": "POST"})
+raw = event.raw()
+
+to = client.email.address(label="signup")
+message = to.wait(timeout_ms=60_000, subject_contains="code")
+code = message.otp[0].value if message.otp else None
+pdf = message.attachments[0].bytes() if message.attachments else None
+
 # Pause / resume
 client.monitors.pause(monitor.id)
 client.monitors.resume(monitor.id)
@@ -81,6 +91,8 @@ The client exposes the following resource modules:
 | `client.tags`           | Organize monitors with tags      |
 | `client.resource_groups`| Logical resource groups           |
 | `client.webhooks`       | Outgoing webhook endpoints        |
+| `client.inboxes`        | Inbound HTTP capture URLs         |
+| `client.email`          | Inbound mailboxes and custom domains |
 | `client.api_keys`       | API key management                |
 | `client.dependencies`   | Service dependency tracking       |
 | `client.deploy_lock`    | Deploy lock for safe deployments  |

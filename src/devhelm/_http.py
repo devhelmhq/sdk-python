@@ -222,14 +222,26 @@ def api_get(
 
 
 def api_post(
-    client: httpx.Client, path: str, body: BaseModel | dict[str, object] | None = None
+    client: httpx.Client,
+    path: str,
+    body: BaseModel | dict[str, object] | None = None,
+    *,
+    timeout: float | None = None,
 ) -> _JsonResponse:
     if body is None:
-        return checked_fetch(_wrap_transport_errors(lambda: client.post(path)))
+        send = (
+            (lambda: client.post(path))
+            if timeout is None
+            else (lambda: client.post(path, timeout=timeout))
+        )
+        return checked_fetch(_wrap_transport_errors(send))
     payload = _serialize_body(body)
-    return checked_fetch(
-        _wrap_transport_errors(lambda: client.post(path, json=payload))
+    send = (
+        (lambda: client.post(path, json=payload))
+        if timeout is None
+        else (lambda: client.post(path, json=payload, timeout=timeout))
     )
+    return checked_fetch(_wrap_transport_errors(send))
 
 
 def api_put(

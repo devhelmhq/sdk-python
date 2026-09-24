@@ -135,6 +135,7 @@ CreateAlertChannelRequestManagedBy = Literal[
     "DASHBOARD", "CLI", "TERRAFORM", "MCP", "API"
 ]
 CreateAssertionRequestSeverity = Literal["fail", "warn"]
+CreateEmailDomainRequestKind = Literal["assigned", "custom"]
 CreateInviteRequestRoleOffered = Literal["OWNER", "ADMIN", "MEMBER"]
 CreateManualIncidentRequestSeverity = Literal["DOWN", "DEGRADED", "MAINTENANCE"]
 CreateMonitorRequestManagedBy = Literal["DASHBOARD", "CLI", "TERRAFORM", "MCP", "API"]
@@ -177,6 +178,7 @@ CreateWebhookEndpointRequestSubscribedEventsItem = Literal[
     "service.incident_updated",
     "service.incident_resolved",
 ]
+CreateWebhookInboxRequestStatus = Literal["active", "disabled"]
 DatadogChannelConfigChannelType = Literal["datadog"]
 DayIncidentImpact = Literal["NONE", "MINOR", "MAJOR", "CRITICAL"]
 DayIncidentStatus = Literal["INVESTIGATING", "IDENTIFIED", "MONITORING", "RESOLVED"]
@@ -198,6 +200,10 @@ DnsTtlHighAssertionType = Literal["dns_ttl_high"]
 DnsTtlLowAssertionType = Literal["dns_ttl_low"]
 DnsTxtContainsAssertionType = Literal["dns_txt_contains"]
 EmailChannelConfigChannelType = Literal["email"]
+EmailDomainDtoKind = Literal["assigned", "custom"]
+EmailDomainDtoStatus = Literal[
+    "active", "disabled", "pending_dns", "verification_failed"
+]
 GitLabChannelConfigChannelType = Literal["gitlab"]
 GoogleChatChannelConfigChannelType = Literal["google_chat"]
 HeaderAuthConfigType = Literal["header"]
@@ -216,6 +222,7 @@ IcmpPacketLossAssertionType = Literal["icmp_packet_loss"]
 IcmpReachableAssertionType = Literal["icmp_reachable"]
 IcmpResponseTimeAssertionType = Literal["icmp_response_time"]
 IcmpResponseTimeWarnAssertionType = Literal["icmp_response_time_warn"]
+InboundOtpCodeSource = Literal["text", "html"]
 IncidentActivityEventDtoKind = Literal[
     "update", "dispatch", "delivery", "forensic_transition", "status_page_update"
 ]
@@ -492,6 +499,9 @@ UpdateAssertionRequestSeverity = Literal["fail", "warn"]
 UpdateDatadogChannelConfigChannelType = Literal["datadog"]
 UpdateDiscordChannelConfigChannelType = Literal["discord"]
 UpdateEmailChannelConfigChannelType = Literal["email"]
+UpdateEmailDomainRequestStatus = Literal[
+    "active", "disabled", "pending_dns", "verification_failed"
+]
 UpdateGitLabChannelConfigChannelType = Literal["gitlab"]
 UpdateGoogleChatChannelConfigChannelType = Literal["google_chat"]
 UpdateIncidentIoChannelConfigChannelType = Literal["incident_io"]
@@ -541,8 +551,10 @@ UpdateWebhookEndpointRequestSubscribedEventsItem = Literal[
     "service.incident_updated",
     "service.incident_resolved",
 ]
+UpdateWebhookInboxRequestStatus = Literal["active", "disabled"]
 UpdateZapierChannelConfigChannelType = Literal["zapier"]
 WebhookChannelConfigChannelType = Literal["webhook"]
+WebhookInboxDtoStatus = Literal["active", "disabled"]
 ZapierChannelConfigChannelType = Literal["zapier"]
 
 __all__ = [
@@ -567,6 +579,7 @@ __all__ = [
     "ConfirmationPolicyType",
     "CreateAlertChannelRequestManagedBy",
     "CreateAssertionRequestSeverity",
+    "CreateEmailDomainRequestKind",
     "CreateInviteRequestRoleOffered",
     "CreateManualIncidentRequestSeverity",
     "CreateMonitorRequestManagedBy",
@@ -583,6 +596,7 @@ __all__ = [
     "CreateStatusPageRequestManagedBy",
     "CreateStatusPageRequestVisibility",
     "CreateWebhookEndpointRequestSubscribedEventsItem",
+    "CreateWebhookInboxRequestStatus",
     "DatadogChannelConfigChannelType",
     "DayIncidentImpact",
     "DayIncidentStatus",
@@ -602,6 +616,8 @@ __all__ = [
     "DnsTtlLowAssertionType",
     "DnsTxtContainsAssertionType",
     "EmailChannelConfigChannelType",
+    "EmailDomainDtoKind",
+    "EmailDomainDtoStatus",
     "GitLabChannelConfigChannelType",
     "GoogleChatChannelConfigChannelType",
     "HeaderAuthConfigType",
@@ -618,6 +634,7 @@ __all__ = [
     "IcmpReachableAssertionType",
     "IcmpResponseTimeAssertionType",
     "IcmpResponseTimeWarnAssertionType",
+    "InboundOtpCodeSource",
     "IncidentActivityEventDtoKind",
     "IncidentDtoResolutionReason",
     "IncidentDtoSeverity",
@@ -738,6 +755,7 @@ __all__ = [
     "UpdateDatadogChannelConfigChannelType",
     "UpdateDiscordChannelConfigChannelType",
     "UpdateEmailChannelConfigChannelType",
+    "UpdateEmailDomainRequestStatus",
     "UpdateGitLabChannelConfigChannelType",
     "UpdateGoogleChatChannelConfigChannelType",
     "UpdateIncidentIoChannelConfigChannelType",
@@ -767,7 +785,9 @@ __all__ = [
     "UpdateTelegramChannelConfigChannelType",
     "UpdateWebhookChannelConfigChannelType",
     "UpdateWebhookEndpointRequestSubscribedEventsItem",
+    "UpdateWebhookInboxRequestStatus",
     "UpdateZapierChannelConfigChannelType",
     "WebhookChannelConfigChannelType",
+    "WebhookInboxDtoStatus",
     "ZapierChannelConfigChannelType",
 ]

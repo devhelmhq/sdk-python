@@ -7,8 +7,10 @@ from devhelm.resources.alert_channels import AlertChannels
 from devhelm.resources.api_keys import ApiKeys
 from devhelm.resources.dependencies import Dependencies
 from devhelm.resources.deploy_lock import DeployLock
+from devhelm.resources.email import Email
 from devhelm.resources.environments import Environments
 from devhelm.resources.forensics import Forensics
+from devhelm.resources.inboxes import Inboxes
 from devhelm.resources.incidents import Incidents
 from devhelm.resources.maintenance_windows import MaintenanceWindows
 from devhelm.resources.monitors import Monitors
@@ -50,6 +52,8 @@ class Devhelm:
     tags: Tags
     resource_groups: ResourceGroups
     webhooks: Webhooks
+    inboxes: Inboxes
+    email: Email
     api_keys: ApiKeys
     dependencies: Dependencies
     deploy_lock: DeployLock
@@ -97,6 +101,8 @@ class Devhelm:
         self.tags = Tags(client)
         self.resource_groups = ResourceGroups(client)
         self.webhooks = Webhooks(client)
+        self.inboxes = Inboxes(client)
+        self.email = Email(client)
         self.api_keys = ApiKeys(client)
         self.dependencies = Dependencies(client)
         self.deploy_lock = DeployLock(client)

@@ -66,6 +66,23 @@ def parse_single(model_class: type[M], data: Any, context: str = "") -> M:
     return parse_model(model_class, data, context)
 
 
+def parse_keyed_envelope(
+    model_class: type[M], data: Any, key: str, context: str = ""
+) -> M:
+    """Parse a one-key envelope such as ``{"event": T}`` or ``{"message": T}``."""
+    ctx = f" ({context})" if context else ""
+    if not isinstance(data, dict):
+        raise DevhelmValidationError(
+            f"Expected envelope dict, got {type(data).__name__}{ctx}"
+        )
+    extra = set(data.keys()) - {key}
+    if extra or key not in data:
+        raise DevhelmValidationError(
+            f"Expected envelope with only `{key}`{ctx}, got {sorted(data.keys())}"
+        )
+    return parse_model(model_class, data[key], context)
+
+
 def parse_strict_envelope(
     model_class: type[M], data: Any, *, optional: bool = False, context: str = ""
 ) -> M | None:

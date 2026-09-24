@@ -7667,6 +7667,525 @@ class ZapierChannelConfig(BaseModel):
     ]
 
 
+class Kind(StrEnum):
+    assigned = "assigned"
+    custom = "custom"
+
+
+class CreateEmailDomainRequest(BaseModel):
+    model_config = ConfigDict(extra="forbid", populate_by_name=True)
+    kind: Annotated[
+        Kind | None,
+        Field(
+            description="assigned allocates a host under the DevHelm mail zone. custom uses name"
+        ),
+    ] = None
+    name: Annotated[
+        str | None, Field(description="Custom FQDN. Required when kind is custom")
+    ] = None
+
+
+class Status12(StrEnum):
+    active = "active"
+    disabled = "disabled"
+
+
+class EmailDnsRecordDto(BaseModel):
+    model_config = ConfigDict(extra="ignore", populate_by_name=True)
+    label: Annotated[str, Field(description="Record purpose label", min_length=1)]
+    type: Annotated[str, Field(description="DNS record type", min_length=1)]
+    name: Annotated[str, Field(description="DNS owner name", min_length=1)]
+    value: Annotated[str, Field(description="Record value", min_length=1)]
+    priority: Annotated[
+        int | None, Field(description="MX priority when type is MX")
+    ] = None
+    required: Annotated[
+        bool, Field(description="Whether this record is required for verification")
+    ]
+
+
+class EmailDomainDto(BaseModel):
+    model_config = ConfigDict(extra="ignore", populate_by_name=True)
+    id: Annotated[UUID, Field(description="Domain id")]
+    name: Annotated[str, Field(description="FQDN mail is sent to", min_length=1)]
+    workspace_id: Annotated[
+        int, Field(alias="workspaceId", description="Workspace this domain belongs to")
+    ]
+    kind: Annotated[str, Field(description="How the domain was obtained")]
+    status: Annotated[str, Field(description="Domain lifecycle")]
+    mx_verified: Annotated[
+        bool,
+        Field(
+            alias="mxVerified",
+            description="Whether MX currently matches the published exchange",
+        ),
+    ]
+    verification_token: Annotated[
+        UUID | None,
+        Field(
+            alias="verificationToken", description="Custom-domain verification token"
+        ),
+    ] = None
+    verification_error: Annotated[
+        str | None,
+        Field(alias="verificationError", description="Last verification error"),
+    ] = None
+    verified_at: Annotated[
+        AwareDatetime | None,
+        Field(alias="verifiedAt", description="When MX+TXT last passed"),
+    ] = None
+    dns_records: Annotated[
+        list[EmailDnsRecordDto],
+        Field(
+            alias="dnsRecords", description="Derived DNS records to publish; not stored"
+        ),
+    ]
+    created_at: Annotated[
+        AwareDatetime,
+        Field(alias="createdAt", description="When the domain was created"),
+    ]
+    updated_at: Annotated[
+        AwareDatetime,
+        Field(alias="updatedAt", description="When the domain was last updated"),
+    ]
+
+
+class InboundEmailAttachment(BaseModel):
+    model_config = ConfigDict(extra="ignore", populate_by_name=True)
+    id: Annotated[UUID, Field(description="Attachment id used on the download path")]
+    filename: Annotated[
+        str, Field(description="Original filename from the MIME part", min_length=1)
+    ]
+    content_type: Annotated[
+        str,
+        Field(
+            alias="contentType", description="MIME type of the attachment", min_length=1
+        ),
+    ]
+    size_bytes: Annotated[
+        int, Field(alias="sizeBytes", description="Attachment size in bytes")
+    ]
+    object_key: Annotated[
+        str,
+        Field(
+            alias="objectKey",
+            description="Spaces key for the attachment bytes",
+            min_length=1,
+        ),
+    ]
+
+
+class InboundEmailLink(BaseModel):
+    model_config = ConfigDict(extra="ignore", populate_by_name=True)
+    href: Annotated[
+        str, Field(description="Link URL extracted from the message", min_length=1)
+    ]
+    text: Annotated[str | None, Field(description="Visible link text when present")] = (
+        None
+    )
+
+
+class Source2(StrEnum):
+    text = "text"
+    html = "html"
+
+
+class InboundOtpCode(BaseModel):
+    model_config = ConfigDict(extra="ignore", populate_by_name=True)
+    value: Annotated[
+        str, Field(description="Extracted one-time code digits", min_length=1)
+    ]
+    source: Annotated[
+        Source2, Field(description="MIME part the code was found in (text or html)")
+    ]
+
+
+class InboundWebhookHttpResponse(BaseModel):
+    model_config = ConfigDict(extra="ignore", populate_by_name=True)
+    status: Annotated[
+        int,
+        Field(
+            description="HTTP status of the mock reply (200–599, default 200)",
+            ge=200,
+            le=599,
+        ),
+    ]
+    headers: Annotated[dict[str, str], Field(description="Headers on the mock reply")]
+    body: Annotated[
+        str,
+        Field(
+            description="Mock reply body (at most 65536 characters). Captured requests live in object storage",
+            max_length=65536,
+            min_length=0,
+        ),
+    ]
+    content_type: Annotated[
+        str,
+        Field(
+            alias="contentType",
+            description="Content-Type of the mock reply (default text/plain)",
+        ),
+    ]
+    delay_ms: Annotated[
+        int,
+        Field(
+            alias="delayMs",
+            description="Milliseconds to wait before sending the mock reply (0–30000)",
+            ge=0,
+            le=30000,
+        ),
+    ]
+
+
+class InboundWebhookHttpResponsePatch(BaseModel):
+    model_config = ConfigDict(extra="ignore", populate_by_name=True)
+    status: Annotated[
+        int | None,
+        Field(
+            description="HTTP status returned to the sender (200–599)", ge=200, le=599
+        ),
+    ] = None
+    headers: Annotated[
+        dict[str, str] | None, Field(description="Headers on the mock reply")
+    ] = None
+    body: Annotated[
+        str | None,
+        Field(
+            description="Mock reply body (at most 65536 characters). Not the captured request",
+            max_length=65536,
+            min_length=0,
+        ),
+    ] = None
+    content_type: Annotated[
+        str | None,
+        Field(alias="contentType", description="Content-Type of the mock reply"),
+    ] = None
+    delay_ms: Annotated[
+        int | None,
+        Field(
+            alias="delayMs",
+            description="Milliseconds to wait before sending the mock reply (0–30000)",
+            ge=0,
+            le=30000,
+        ),
+    ] = None
+
+
+class InjectEmailMessageRequest(BaseModel):
+    model_config = ConfigDict(extra="forbid", populate_by_name=True)
+    to: Annotated[
+        str, Field(description="Recipient local-part or full mailbox", min_length=1)
+    ]
+    from_: Annotated[
+        str, Field(alias="from", description="Sender mailbox", min_length=1)
+    ]
+    subject: Annotated[str | None, Field(description="Subject line")] = None
+    text: Annotated[str | None, Field(description="Plain-text body")] = None
+    html: Annotated[str | None, Field(description="HTML body")] = None
+    headers: Annotated[
+        dict[str, list[str]] | None, Field(description="Extra MIME headers as received")
+    ] = None
+
+
+class InjectEmailMessageResponse(BaseModel):
+    model_config = ConfigDict(extra="ignore", populate_by_name=True)
+    event_id: Annotated[
+        UUID, Field(alias="eventId", description="Ingest event id on the NATS pointer")
+    ]
+    received_at: Annotated[
+        AwareDatetime,
+        Field(alias="receivedAt", description="When the inject was accepted"),
+    ]
+    inbox: Annotated[str, Field(description="Inbox local-part parsed from to")]
+
+
+class SignedDownload(BaseModel):
+    model_config = ConfigDict(extra="ignore", populate_by_name=True)
+    url: Annotated[
+        str,
+        Field(
+            description="HTTPS URL that returns the object. Valid for 60 seconds",
+            min_length=1,
+        ),
+    ]
+    expires_at: Annotated[
+        AwareDatetime,
+        Field(alias="expiresAt", description="When the URL stops working"),
+    ]
+    filename: Annotated[
+        str, Field(description="Filename for the download", min_length=1)
+    ]
+    content_type: Annotated[
+        str,
+        Field(
+            alias="contentType", description="Media type of the object", min_length=1
+        ),
+    ]
+    size_bytes: Annotated[
+        int, Field(alias="sizeBytes", description="Object size in bytes")
+    ]
+
+
+class SingleValueResponseEmailDomainDto(BaseModel):
+    model_config = ConfigDict(extra="ignore", populate_by_name=True)
+    data: EmailDomainDto
+
+
+class SingleValueResponseInjectEmailMessageResponse(BaseModel):
+    model_config = ConfigDict(extra="ignore", populate_by_name=True)
+    data: InjectEmailMessageResponse
+
+
+class SingleValueResponseSignedDownload(BaseModel):
+    model_config = ConfigDict(extra="ignore", populate_by_name=True)
+    data: SignedDownload
+
+
+class TableValueResultEmailDomainDto(BaseModel):
+    model_config = ConfigDict(extra="ignore", populate_by_name=True)
+    data: list[EmailDomainDto]
+    has_next: Annotated[bool, Field(alias="hasNext")]
+    has_prev: Annotated[bool, Field(alias="hasPrev")]
+    total_elements: Annotated[int | None, Field(alias="totalElements")] = None
+    total_pages: Annotated[int | None, Field(alias="totalPages")] = None
+
+
+class TableValueResultInboundEmailLink(BaseModel):
+    model_config = ConfigDict(extra="ignore", populate_by_name=True)
+    data: list[InboundEmailLink]
+    has_next: Annotated[bool, Field(alias="hasNext")]
+    has_prev: Annotated[bool, Field(alias="hasPrev")]
+    total_elements: Annotated[int | None, Field(alias="totalElements")] = None
+    total_pages: Annotated[int | None, Field(alias="totalPages")] = None
+
+
+class TableValueResultInboundOtpCode(BaseModel):
+    model_config = ConfigDict(extra="ignore", populate_by_name=True)
+    data: list[InboundOtpCode]
+    has_next: Annotated[bool, Field(alias="hasNext")]
+    has_prev: Annotated[bool, Field(alias="hasPrev")]
+    total_elements: Annotated[int | None, Field(alias="totalElements")] = None
+    total_pages: Annotated[int | None, Field(alias="totalPages")] = None
+
+
+class Status13(StrEnum):
+    active = "active"
+    disabled = "disabled"
+    pending_dns = "pending_dns"
+    verification_failed = "verification_failed"
+
+
+class UpdateEmailDomainRequest(BaseModel):
+    model_config = ConfigDict(extra="forbid", populate_by_name=True)
+    status: Annotated[
+        Status13 | None,
+        Field(
+            description="Domain lifecycle. Custom domains become active only via POST /verify"
+        ),
+    ] = None
+
+
+class Status14(StrEnum):
+    active = "active"
+    disabled = "disabled"
+
+
+class UpdateWebhookInboxRequest(BaseModel):
+    model_config = ConfigDict(extra="forbid", populate_by_name=True)
+    name: Annotated[
+        str | None,
+        Field(
+            description="Human-readable name for this inbox",
+            max_length=200,
+            min_length=0,
+        ),
+    ] = None
+    status: Annotated[Status14 | None, Field(description="Inbox lifecycle")] = None
+    http_response: Annotated[
+        InboundWebhookHttpResponsePatch | None, Field(alias="httpResponse")
+    ] = None
+    cors: Annotated[
+        bool | None,
+        Field(
+            description="Allow browser callers on other origins to hit the ingest URL"
+        ),
+    ] = None
+    retention_days: Annotated[
+        int | None,
+        Field(
+            alias="retentionDays",
+            description="Days events are kept. Cannot exceed the testing plan",
+            ge=1,
+            le=3650,
+        ),
+    ] = None
+    max_events: Annotated[
+        int | None,
+        Field(
+            alias="maxEvents",
+            description="Max stored events before ingest drops the oldest",
+            ge=1,
+            le=100000,
+        ),
+    ] = None
+
+
+class WaitEmailMessageRequest(BaseModel):
+    model_config = ConfigDict(extra="forbid", populate_by_name=True)
+    timeout_ms: Annotated[
+        int | None,
+        Field(
+            alias="timeoutMs",
+            description="How long to block in milliseconds (default: 30000, max: 120000)",
+        ),
+    ] = None
+    received_after: Annotated[
+        AwareDatetime | None,
+        Field(
+            alias="receivedAfter",
+            description="Oldest eligible receivedAt; default now minus 60 seconds",
+        ),
+    ] = None
+    to: Annotated[str | None, Field(description="Full address on POST /email/wait")] = (
+        None
+    )
+    subject_contains: Annotated[
+        str | None,
+        Field(
+            alias="subjectContains", description="Subject must contain this substring"
+        ),
+    ] = None
+    domain: Annotated[
+        str | None,
+        Field(description="Domain FQDN; required on POST /email/{localpart}/wait"),
+    ] = None
+
+
+class WaitHttpMatchers(BaseModel):
+    model_config = ConfigDict(extra="ignore", populate_by_name=True)
+    method: Annotated[
+        str | None,
+        Field(description="HTTP method to match; omit matches any except OPTIONS"),
+    ] = None
+    path_prefix: Annotated[
+        str | None,
+        Field(
+            alias="pathPrefix", description="Captured path must start with this prefix"
+        ),
+    ] = None
+
+
+class WaitWebhookEventRequest(BaseModel):
+    model_config = ConfigDict(extra="forbid", populate_by_name=True)
+    timeout_ms: Annotated[
+        int | None,
+        Field(
+            alias="timeoutMs",
+            description="How long to block in milliseconds (default: 30000, max: 120000)",
+        ),
+    ] = None
+    received_after: Annotated[
+        AwareDatetime | None,
+        Field(
+            alias="receivedAfter",
+            description="Oldest eligible receivedAt; default now minus 60 seconds",
+        ),
+    ] = None
+    http: WaitHttpMatchers | None = None
+
+
+class WebhookEventDto(BaseModel):
+    model_config = ConfigDict(extra="ignore", populate_by_name=True)
+    id: Annotated[UUID, Field(description="Event id")]
+    inbox_id: Annotated[UUID, Field(alias="inboxId", description="Parent inbox id")]
+    received_at: Annotated[
+        AwareDatetime,
+        Field(alias="receivedAt", description="When the request was received"),
+    ]
+    size_bytes: Annotated[
+        int, Field(alias="sizeBytes", description="Captured body size in bytes")
+    ]
+    source_ip: Annotated[
+        str | None, Field(alias="sourceIp", description="Sender IP when known")
+    ] = None
+    headers: Annotated[
+        dict[str, list[str]], Field(description="Captured request headers as received")
+    ]
+    method: Annotated[str, Field(description="HTTP method")]
+    path: Annotated[str, Field(description="Request path after the token")]
+    query: Annotated[
+        dict[str, list[str]] | None, Field(description="Query parameters")
+    ] = None
+    url: Annotated[str | None, Field(description="Full request URL when captured")] = (
+        None
+    )
+    host: Annotated[str | None, Field(description="Host header")] = None
+    body_preview: Annotated[
+        str | None,
+        Field(
+            alias="bodyPreview",
+            description="Body preview at most 2048 characters. Full bytes are in object storage",
+        ),
+    ] = None
+    sha256: Annotated[str, Field(description="SHA-256 of the raw object")]
+
+
+class WebhookInboxDto(BaseModel):
+    model_config = ConfigDict(extra="ignore", populate_by_name=True)
+    id: Annotated[UUID, Field(description="Inbox id")]
+    workspace_id: Annotated[
+        int, Field(alias="workspaceId", description="Workspace this inbox belongs to")
+    ]
+    name: Annotated[
+        str, Field(description="Human-readable name for this inbox", min_length=1)
+    ]
+    status: Annotated[str, Field(description="Inbox lifecycle")]
+    public_token: Annotated[
+        str,
+        Field(
+            alias="publicToken",
+            description="Opaque public token embedded in the ingest URL",
+            min_length=1,
+        ),
+    ]
+    http_url: Annotated[
+        str,
+        Field(
+            alias="httpUrl",
+            description="URL senders POST or PUT to. Any HTTP method is captured",
+            min_length=1,
+        ),
+    ]
+    http_response: Annotated[InboundWebhookHttpResponse, Field(alias="httpResponse")]
+    cors: Annotated[
+        bool,
+        Field(
+            description="Allow browser callers on other origins to hit the ingest URL"
+        ),
+    ]
+    retention_days: Annotated[
+        int,
+        Field(
+            alias="retentionDays", description="How many days captured events are kept"
+        ),
+    ]
+    max_events: Annotated[
+        int,
+        Field(
+            alias="maxEvents",
+            description="Max stored events. Ingest drops the oldest when this is exceeded",
+        ),
+    ]
+    created_at: Annotated[
+        AwareDatetime,
+        Field(alias="createdAt", description="When the inbox was created"),
+    ]
+    updated_at: Annotated[
+        AwareDatetime,
+        Field(alias="updatedAt", description="When the inbox was last updated"),
+    ]
+
+
 class AcknowledgeAllIncidentsResponse(BaseModel):
     model_config = ConfigDict(extra="ignore", populate_by_name=True)
     acknowledged: Annotated[
@@ -9845,6 +10364,141 @@ class UpdateNotificationPolicyRequest(BaseModel):
     ] = None
 
 
+class CreateWebhookInboxRequest(BaseModel):
+    model_config = ConfigDict(extra="forbid", populate_by_name=True)
+    name: Annotated[
+        str,
+        Field(
+            description="Human-readable name for this inbox",
+            max_length=200,
+            min_length=0,
+        ),
+    ]
+    status: Annotated[
+        Status12 | None, Field(description="Inbox lifecycle (default: active)")
+    ] = None
+    http_response: Annotated[
+        InboundWebhookHttpResponsePatch | None, Field(alias="httpResponse")
+    ] = None
+    cors: Annotated[
+        bool | None,
+        Field(
+            description="Allow browser callers on other origins to hit the ingest URL (default: true)"
+        ),
+    ] = None
+    retention_days: Annotated[
+        int | None,
+        Field(
+            alias="retentionDays",
+            description="Days events are kept. Omitted uses the testing plan. Cannot exceed the plan",
+            ge=1,
+            le=3650,
+        ),
+    ] = None
+    max_events: Annotated[
+        int | None,
+        Field(
+            alias="maxEvents",
+            description="Max stored events before ingest drops the oldest (default: 10000)",
+            ge=1,
+            le=100000,
+        ),
+    ] = None
+
+
+class CursorPageWebhookEventDto(BaseModel):
+    model_config = ConfigDict(extra="ignore", populate_by_name=True)
+    data: Annotated[list[WebhookEventDto], Field(description="Items on this page")]
+    next_cursor: Annotated[
+        str | None,
+        Field(
+            alias="nextCursor",
+            description="Opaque cursor for the next page; null when there are no more results",
+        ),
+    ] = None
+    has_more: Annotated[
+        bool,
+        Field(
+            alias="hasMore", description="Whether more results exist beyond this page"
+        ),
+    ]
+
+
+class EmailMessageDto(BaseModel):
+    model_config = ConfigDict(extra="ignore", populate_by_name=True)
+    id: Annotated[UUID, Field(description="Message id")]
+    domain_id: Annotated[UUID, Field(alias="domainId", description="Parent domain id")]
+    inbox: Annotated[
+        str | None, Field(description="Local-part the message was addressed to")
+    ] = None
+    received_at: Annotated[
+        AwareDatetime,
+        Field(alias="receivedAt", description="When the message was received"),
+    ]
+    size_bytes: Annotated[
+        int, Field(alias="sizeBytes", description="Captured size in bytes")
+    ]
+    from_: Annotated[str | None, Field(alias="from", description="Sender mailbox")] = (
+        None
+    )
+    to: Annotated[list[str] | None, Field(description="Recipient mailboxes")] = None
+    subject: Annotated[str | None, Field(description="Subject")] = None
+    headers: Annotated[
+        dict[str, list[str]], Field(description="Captured MIME headers as received")
+    ]
+    body_preview: Annotated[
+        str | None,
+        Field(
+            alias="bodyPreview",
+            description="Truncated body excerpt; full MIME lives in Spaces",
+        ),
+    ] = None
+    otp: Annotated[
+        list[InboundOtpCode] | None, Field(description="Extracted one-time codes")
+    ] = None
+    links: Annotated[
+        list[InboundEmailLink] | None, Field(description="Extracted links")
+    ] = None
+    attachments: Annotated[
+        list[InboundEmailAttachment] | None, Field(description="Attachment metadata")
+    ] = None
+    sha256: Annotated[str, Field(description="SHA-256 of the raw object")]
+
+
+class SingleValueResponseEmailMessageDto(BaseModel):
+    model_config = ConfigDict(extra="ignore", populate_by_name=True)
+    data: EmailMessageDto
+
+
+class SingleValueResponseWebhookEventDto(BaseModel):
+    model_config = ConfigDict(extra="ignore", populate_by_name=True)
+    data: WebhookEventDto
+
+
+class SingleValueResponseWebhookInboxDto(BaseModel):
+    model_config = ConfigDict(extra="ignore", populate_by_name=True)
+    data: WebhookInboxDto
+
+
+class TableValueResultWebhookInboxDto(BaseModel):
+    model_config = ConfigDict(extra="ignore", populate_by_name=True)
+    data: list[WebhookInboxDto]
+    has_next: Annotated[bool, Field(alias="hasNext")]
+    has_prev: Annotated[bool, Field(alias="hasPrev")]
+    total_elements: Annotated[int | None, Field(alias="totalElements")] = None
+    total_pages: Annotated[int | None, Field(alias="totalPages")] = None
+
+
+class WaitEmailMessageResponse(BaseModel):
+    model_config = ConfigDict(extra="ignore", populate_by_name=True)
+    message: EmailMessageDto
+
+
+class WaitWebhookEventResponse(BaseModel):
+    model_config = ConfigDict(extra="ignore", populate_by_name=True)
+    event: WebhookEventDto
+
+
 class AuditEventDto(BaseModel):
     model_config = ConfigDict(extra="ignore", populate_by_name=True)
     id: Annotated[int, Field(description="Unique audit event identifier")]
@@ -10225,6 +10879,24 @@ class TableValueResultResourceGroupDto(BaseModel):
     total_elements: Annotated[int | None, Field(alias="totalElements")] = None
     total_pages: Annotated[int | None, Field(alias="totalPages")] = None
     next_cursor: Annotated[str | None, Field(alias="nextCursor")] = None
+
+
+class CursorPageEmailMessageDto(BaseModel):
+    model_config = ConfigDict(extra="ignore", populate_by_name=True)
+    data: Annotated[list[EmailMessageDto], Field(description="Items on this page")]
+    next_cursor: Annotated[
+        str | None,
+        Field(
+            alias="nextCursor",
+            description="Opaque cursor for the next page; null when there are no more results",
+        ),
+    ] = None
+    has_more: Annotated[
+        bool,
+        Field(
+            alias="hasMore", description="Whether more results exist beyond this page"
+        ),
+    ]
 
 
 class CheckResultDetailsDto(BaseModel):
