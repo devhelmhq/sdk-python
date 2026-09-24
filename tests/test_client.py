@@ -11,8 +11,10 @@ from devhelm.resources.alert_channels import AlertChannels
 from devhelm.resources.api_keys import ApiKeys
 from devhelm.resources.dependencies import Dependencies
 from devhelm.resources.deploy_lock import DeployLock
+from devhelm.resources.email import Email
 from devhelm.resources.environments import Environments
 from devhelm.resources.forensics import Forensics
+from devhelm.resources.inboxes import Inboxes
 from devhelm.resources.incidents import Incidents
 from devhelm.resources.maintenance_windows import MaintenanceWindows
 from devhelm.resources.monitors import Monitors
@@ -69,6 +71,16 @@ class TestClientResources:
 
     def test_webhooks(self, client: Devhelm) -> None:
         assert isinstance(client.webhooks, Webhooks)
+
+    def test_inboxes(self, client: Devhelm) -> None:
+        assert isinstance(client.inboxes, Inboxes)
+        assert callable(client.inboxes.create)
+        assert callable(client.inboxes.wait)
+
+    def test_email(self, client: Devhelm) -> None:
+        assert isinstance(client.email, Email)
+        assert callable(client.email.address)
+        assert callable(client.email.wait)
 
     def test_api_keys(self, client: Devhelm) -> None:
         assert isinstance(client.api_keys, ApiKeys)
