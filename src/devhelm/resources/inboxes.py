@@ -6,12 +6,14 @@ capture URL a sender hits, plus ``wait`` for the captured request.
 
 from __future__ import annotations
 
+import json
 from datetime import datetime, timezone
 from pathlib import Path
 from uuid import UUID
 
 import httpx
 
+from devhelm._errors import DevhelmValidationError
 from devhelm._generated import (
     CreateWebhookInboxRequest,
     InboundWebhookHttpResponse,
@@ -54,7 +56,7 @@ class InboxEvents:
 
     def list(
         self, *, cursor: str | None = None, limit: int | None = None
-    ) -> CursorPage[Event]:
+    ) -> CursorPage[ListedEvent]:
         page = fetch_cursor_page(
             self._inboxes._client,
             f"{BASE}/{path_param(self._inbox_id)}/events",
@@ -63,7 +65,7 @@ class InboxEvents:
             limit,
         )
         return CursorPage(
-            data=[self._inboxes._bind_event(self._inbox_id, row) for row in page.data],
+            data=[self._inboxes._bind_listed(self._inbox_id, row) for row in page.data],
             next_cursor=page.next_cursor,
             has_more=page.has_more,
         )
@@ -73,7 +75,7 @@ class InboxEvents:
         row = parse_single(
             WebhookEventDto, api_get(self._inboxes._client, path), f"GET {path}"
         )
-        return self._inboxes._bind_event(self._inbox_id, row)
+        return self._inboxes._bind_detail(self._inbox_id, row)
 
     def delete(self, event_id: str) -> None:
         api_delete(
@@ -85,8 +87,8 @@ class InboxEvents:
         api_delete(self._inboxes._client, f"{BASE}/{path_param(self._inbox_id)}/events")
 
 
-class Event:
-    """One captured HTTP request."""
+class ListedEvent:
+    """One captured HTTP request. List rows omit the full body."""
 
     def __init__(self, inboxes: Inboxes, inbox_id: str, dto: WebhookEventDto) -> None:
         self._inboxes = inboxes
@@ -103,6 +105,7 @@ class Event:
         self.url = dto.url
         self.host = dto.host
         self.body_preview = dto.body_preview
+        self.body = dto.body
         self.sha256 = dto.sha256
 
     def raw(self) -> bytes:
@@ -125,6 +128,25 @@ class Event:
         return (
             f"{BASE}/{path_param(self._inbox_id)}/events/{path_param(str(self.id))}/raw"
         )
+
+
+class Event(ListedEvent):
+    """A single captured request, including the full UTF-8 body."""
+
+    def text(self) -> str:
+        """Return the captured body. Signature checks use this string."""
+        if self.body is None:
+            raise DevhelmValidationError("Event body is not on this response")
+        return self.body
+
+    def json(self) -> object:
+        """Parse the captured body as JSON."""
+        raw = self.text()
+        try:
+            parsed: object = json.loads(raw)
+        except json.JSONDecodeError as exc:
+            raise DevhelmValidationError("Event body is not JSON") from exc
+        return parsed
 
 
 class Inbox:
@@ -258,12 +280,15 @@ class Inboxes:
         raw = api_post(
             self._client, path, body, timeout=wait_timeout_seconds(timeout_ms)
         )
-        return self._bind_event(
+        return self._bind_detail(
             id, parse_keyed_envelope(WebhookEventDto, raw, "event", f"POST {path}")
         )
 
     def _bind(self, dto: WebhookInboxDto) -> Inbox:
         return Inbox(self, dto)
 
-    def _bind_event(self, inbox_id: str, dto: WebhookEventDto) -> Event:
+    def _bind_listed(self, inbox_id: str, dto: WebhookEventDto) -> ListedEvent:
+        return ListedEvent(self, inbox_id, dto)
+
+    def _bind_detail(self, inbox_id: str, dto: WebhookEventDto) -> Event:
         return Event(self, inbox_id, dto)

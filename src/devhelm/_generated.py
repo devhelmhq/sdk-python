@@ -8122,10 +8122,11 @@ class WebhookEventDto(BaseModel):
     host: Annotated[str | None, Field(description="Host header")] = None
     body_preview: Annotated[
         str | None,
-        Field(
-            alias="bodyPreview",
-            description="Body preview at most 2048 characters. Full bytes are in object storage",
-        ),
+        Field(alias="bodyPreview", description="Body preview at most 2048 characters"),
+    ] = None
+    body: Annotated[
+        str | None,
+        Field(description="Captured body as UTF-8 text; null when listing events"),
     ] = None
     sha256: Annotated[str, Field(description="SHA-256 of the raw object")]
 

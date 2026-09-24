@@ -25,6 +25,7 @@ EVENT = {
     "method": "POST",
     "path": "/",
     "sha256": "abc",
+    "body": '{"ok":true}',
 }
 
 SIGNED = {
@@ -67,6 +68,8 @@ def test_inbox_wait_unwraps_event_and_downloads_signed_url(
     )
     event = Inboxes(client).wait(INBOX_ID, timeout_ms=30_000, http={"method": "POST"})
     assert event.method == "POST"
+    assert event.text() == '{"ok":true}'
+    assert event.json() == {"ok": True}
     assert event.raw() == b"\x09\x09"
     assert downloaded == ["https://files.example/event"]
 

@@ -40,6 +40,7 @@ monitor = client.monitors.get(monitor.id)
 # Inbound testing. `webhooks` stays outbound alert delivery.
 inbox = client.inboxes.create(name="stripe")
 event = inbox.wait(timeout_ms=30_000, http={"method": "POST"})
+payment = event.json()
 raw = event.raw()
 
 to = client.email.address(label="signup")
