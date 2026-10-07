@@ -176,6 +176,10 @@ def test_email_query_source_and_domain_activity() -> None:
                             "receivedAt": WHEN,
                             "sizeBytes": 4,
                             "headers": {},
+                            "text": "hello",
+                            "html": "<p>hello</p>",
+                            "bodyTruncated": False,
+                            "rawUrl": None,
                             "sha256": "abc",
                         }
                     ],
@@ -211,6 +215,10 @@ def test_email_query_source_and_domain_activity() -> None:
     page = address.messages.list(q="code")
     listed = next(request for request in seen if "/messages" in request.url.path)
     assert listed.url.params["q"] == "code"
+    assert page.data[0].text == "hello"
+    assert page.data[0].html == "<p>hello</p>"
+    assert page.data[0].body_truncated is False
+    assert page.data[0].raw_url is None
     assert listed.url.params["inbox"] == address.local_part
     text = page.data[0].source()
     assert text.source == "Subject: code"
