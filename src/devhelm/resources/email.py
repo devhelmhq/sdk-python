@@ -10,7 +10,7 @@ from __future__ import annotations
 import builtins
 import secrets
 from dataclasses import dataclass
-from datetime import datetime, timezone
+from datetime import datetime
 from pathlib import Path
 from uuid import UUID
 
@@ -524,11 +524,9 @@ class Email:
         subject_contains: str | None,
         extra: dict[str, str],
     ) -> WaitEmailMessageRequest:
-        fields: dict[str, object] = {
-            "timeoutMs": timeout_ms,
-            "receivedAfter": received_after or datetime.now(timezone.utc),
-            **extra,
-        }
+        fields: dict[str, object] = {"timeoutMs": timeout_ms, **extra}
+        if received_after is not None:
+            fields["receivedAfter"] = received_after
         if subject_contains is not None:
             fields["subjectContains"] = subject_contains
         return validate_request(WaitEmailMessageRequest, fields, "email.wait")
