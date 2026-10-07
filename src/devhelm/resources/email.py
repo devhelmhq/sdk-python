@@ -191,6 +191,10 @@ class Message:
         self.subject = dto.subject
         self.headers = dto.headers
         self.body_preview = dto.body_preview
+        self.text = dto.text
+        self.html = dto.html
+        self.body_truncated = dto.body_truncated
+        self.raw_url = dto.raw_url
         self.otp = dto.otp
         self.links = dto.links
         self.sha256 = dto.sha256
