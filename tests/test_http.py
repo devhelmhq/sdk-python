@@ -37,7 +37,7 @@ class TestBuildClient:
         config = DevhelmConfig(token="test-token")
         client = build_client(config)
         assert client.headers["x-phelm-org-id"] == "1"
-        assert client.headers["x-phelm-workspace-id"] == "1"
+        assert "x-phelm-workspace-id" not in client.headers
         client.close()
 
     def test_reads_from_env(self, monkeypatch: pytest.MonkeyPatch) -> None:

@@ -106,19 +106,17 @@ def build_client(config: DevhelmConfig) -> httpx.Client:
     base_url = config.base_url.rstrip("/")
     token = _resolve(config.token, "DEVHELM_API_TOKEN", "token")
     org_id = _resolve_optional(config.org_id, "DEVHELM_ORG_ID", "1")
-    workspace_id = _resolve_optional(config.workspace_id, "DEVHELM_WORKSPACE_ID", "1")
+    workspace_id = config.workspace_id or os.environ.get("DEVHELM_WORKSPACE_ID") or None
+    headers = {
+        "Authorization": f"Bearer {token}",
+        "Content-Type": "application/json",
+        "x-phelm-org-id": org_id,
+        **_telemetry_headers(config),
+    }
+    if workspace_id:
+        headers["x-phelm-workspace-id"] = workspace_id
 
-    return httpx.Client(
-        base_url=base_url,
-        headers={
-            "Authorization": f"Bearer {token}",
-            "Content-Type": "application/json",
-            "x-phelm-org-id": org_id,
-            "x-phelm-workspace-id": workspace_id,
-            **_telemetry_headers(config),
-        },
-        timeout=config.timeout,
-    )
+    return httpx.Client(base_url=base_url, headers=headers, timeout=config.timeout)
 
 
 def path_param(value: str | int) -> str:

@@ -9,7 +9,7 @@ from __future__ import annotations
 import builtins
 import json
 from dataclasses import dataclass
-from datetime import datetime, timezone
+from datetime import datetime
 from pathlib import Path
 from uuid import UUID
 
@@ -365,10 +365,9 @@ class Inboxes:
             if http is None
             else validate_request(WaitHttpMatchers, http, "inboxes.wait")
         )
-        fields: dict[str, object] = {
-            "timeoutMs": timeout_ms,
-            "receivedAfter": received_after or datetime.now(timezone.utc),
-        }
+        fields: dict[str, object] = {"timeoutMs": timeout_ms}
+        if received_after is not None:
+            fields["receivedAfter"] = received_after
         if matchers is not None:
             fields["http"] = matchers
         body = validate_request(WaitWebhookEventRequest, fields, "inboxes.wait")

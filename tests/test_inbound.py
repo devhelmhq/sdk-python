@@ -75,7 +75,7 @@ def test_inbox_wait_unwraps_event_and_downloads_signed_url(
 
     body = json.loads(captured[0].content)
     assert body["timeoutMs"] == 30_000
-    assert "receivedAfter" in body
+    assert "receivedAfter" not in body
     assert body["http"] == {"method": "POST"}
     assert all("files.example" not in str(request.url) for request in captured)
 
