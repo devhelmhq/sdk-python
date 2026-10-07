@@ -9,11 +9,14 @@ from __future__ import annotations
 
 import builtins
 import secrets
+from dataclasses import dataclass
 from datetime import datetime, timezone
 from pathlib import Path
+from uuid import UUID
 
 import httpx
 
+from devhelm._errors import DevhelmValidationError
 from devhelm._generated import (
     CreateEmailDomainRequest,
     EmailDnsRecordDto,
@@ -49,6 +52,92 @@ from devhelm.resources.signed_download import (
 )
 
 DOMAINS = "/api/v1/email/domains"
+
+
+@dataclass(frozen=True, slots=True)
+class DomainActivityBucket:
+    hour: str
+    message_count: int
+
+
+@dataclass(frozen=True, slots=True)
+class DomainActivity:
+    domain_id: UUID
+    buckets: list[DomainActivityBucket]
+
+
+@dataclass(frozen=True, slots=True)
+class MessageSource:
+    source: str
+    truncated: bool
+
+
+def _query(**values: str | None) -> dict[str, str] | None:
+    params: dict[str, str] = {}
+    for key, value in values.items():
+        if value is not None:
+            params[key] = value
+    return params or None
+
+
+def _invalid(context: str) -> DevhelmValidationError:
+    return DevhelmValidationError(f"Invalid response from {context}")
+
+
+def _count(value: object, context: str) -> int:
+    if isinstance(value, bool) or not isinstance(value, int):
+        raise _invalid(context)
+    return value
+
+
+def _activity_row(item: object, context: str) -> DomainActivity:
+    if not isinstance(item, dict):
+        raise _invalid(context)
+    domain_id = item.get("domainId")
+    buckets = item.get("buckets")
+    if not isinstance(domain_id, str) or not isinstance(buckets, list):
+        raise _invalid(context)
+    try:
+        parsed_id = UUID(domain_id)
+    except ValueError as exc:
+        raise DevhelmValidationError(
+            f"Invalid response from {context}", cause=exc
+        ) from exc
+    parsed: list[DomainActivityBucket] = []
+    for bucket in buckets:
+        if not isinstance(bucket, dict):
+            raise _invalid(context)
+        hour = bucket.get("hour")
+        if not isinstance(hour, str):
+            raise _invalid(context)
+        parsed.append(
+            DomainActivityBucket(
+                hour=hour, message_count=_count(bucket.get("messageCount"), context)
+            )
+        )
+    return DomainActivity(domain_id=parsed_id, buckets=parsed)
+
+
+def _read_activity(raw: object, context: str) -> list[DomainActivity]:
+    if not isinstance(raw, dict):
+        raise _invalid(context)
+    data = raw.get("data")
+    if not isinstance(data, list):
+        raise _invalid(context)
+    return [_activity_row(item, context) for item in data]
+
+
+def _read_source(raw: object, context: str) -> MessageSource:
+    if not isinstance(raw, dict):
+        raise _invalid(context)
+    data = raw.get("data")
+    if not isinstance(data, dict):
+        raise _invalid(context)
+    source = data.get("source")
+    truncated = data.get("truncated")
+    if not isinstance(source, str) or not isinstance(truncated, bool):
+        raise _invalid(context)
+    return MessageSource(source=source, truncated=truncated)
 
 
 def _domain_segment(name: str) -> str:
@@ -131,6 +220,11 @@ class Message:
             self._email._client, f"{self._message_path()}/links", InboundEmailLink
         )
 
+    def source(self) -> MessageSource:
+        """Clipped RFC822 text. ``truncated`` means the raw object is longer."""
+        path = f"{self._message_path()}/source"
+        return _read_source(api_get(self._email._client, path), f"GET {path}")
+
     def _message_path(self) -> str:
         return (
             f"{DOMAINS}/{_domain_segment(self._domain)}/messages/"
@@ -148,7 +242,11 @@ class AddressMessages:
         self._local_part = local_part
 
     def list(
-        self, *, cursor: str | None = None, limit: int | None = None
+        self,
+        *,
+        cursor: str | None = None,
+        limit: int | None = None,
+        q: str | None = None,
     ) -> CursorPage[Message]:
         path = f"{DOMAINS}/{_domain_segment(self._domain)}/messages"
         page = fetch_cursor_page(
@@ -157,7 +255,7 @@ class AddressMessages:
             EmailMessageDto,
             cursor,
             limit,
-            extra_params={"inbox": self._local_part},
+            extra_params=_query(inbox=self._local_part, q=q),
         )
         return CursorPage(
             data=[Message(self._email, self._domain, row) for row in page.data],
@@ -266,12 +364,26 @@ class EmailDomains:
     def __init__(self, email: Email) -> None:
         self._email = email
 
-    def list(self) -> list[Domain]:
-        rows = fetch_all_pages(self._email._client, DOMAINS, EmailDomainDto)
+    def list(self, *, search: str | None = None) -> list[Domain]:
+        rows = fetch_all_pages(
+            self._email._client,
+            DOMAINS,
+            EmailDomainDto,
+            extra_params=_query(search=search),
+        )
         return [Domain(self, row) for row in rows]
 
-    def list_page(self, page: int, size: int) -> Page[Domain]:
-        result = fetch_page(self._email._client, DOMAINS, EmailDomainDto, page, size)
+    def list_page(
+        self, page: int, size: int, *, search: str | None = None
+    ) -> Page[Domain]:
+        result = fetch_page(
+            self._email._client,
+            DOMAINS,
+            EmailDomainDto,
+            page,
+            size,
+            extra_params=_query(search=search),
+        )
         return Page(
             data=[Domain(self, row) for row in result.data],
             has_next=result.has_next,
@@ -279,6 +391,18 @@ class EmailDomains:
             total_elements=result.total_elements,
             total_pages=result.total_pages,
             next_cursor=result.next_cursor,
+        )
+
+    def activity(self, domain_ids: builtins.list[str]) -> builtins.list[DomainActivity]:
+        """Last-24h message counts. An empty id list does not call the API."""
+        if not domain_ids:
+            return []
+        path = f"{DOMAINS}/activity"
+        return _read_activity(
+            api_get(
+                self._email._client, path, params={"domainIds": ",".join(domain_ids)}
+            ),
+            f"GET {path}",
         )
 
     def get(self, name: str) -> Domain:

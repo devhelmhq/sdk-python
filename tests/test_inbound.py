@@ -80,6 +80,147 @@ def test_inbox_wait_unwraps_event_and_downloads_signed_url(
     assert all("files.example" not in str(request.url) for request in captured)
 
 
+INBOX = {
+    "id": INBOX_ID,
+    "workspaceId": 2,
+    "name": "stripe",
+    "status": "active",
+    "publicToken": "tok",
+    "httpUrl": "https://api.test/api/v1/ingest/tok",
+    "httpResponse": {
+        "status": 200,
+        "headers": {},
+        "body": "",
+        "contentType": "text/plain",
+        "delayMs": 0,
+    },
+    "cors": True,
+    "retentionDays": 3,
+    "maxEvents": 10000,
+    "createdAt": WHEN,
+    "updatedAt": WHEN,
+}
+
+PAGE = {"hasNext": False, "hasPrev": False, "totalElements": 1, "totalPages": 1}
+
+
+def test_inbox_search_event_filter_and_activity() -> None:
+    seen: list[httpx.Request] = []
+
+    def handler(request: httpx.Request) -> httpx.Response:
+        seen.append(request)
+        if request.url.path.endswith("/activity"):
+            return _json(
+                {
+                    "data": [
+                        {
+                            "inboxId": INBOX_ID,
+                            "buckets": [{"hour": WHEN, "eventCount": 3}],
+                        }
+                    ]
+                }
+            )
+        if request.url.path.endswith("/events"):
+            return _json({"data": [EVENT], "nextCursor": None, "hasMore": False})
+        return _json({"data": [INBOX], **PAGE})
+
+    client = httpx.Client(
+        transport=httpx.MockTransport(handler), base_url="http://api.test"
+    )
+    inboxes = Inboxes(client)
+    assert inboxes.activity([]) == []
+    assert seen == []
+
+    rows = inboxes.list(search="stripe")
+    assert rows[0].name == "stripe"
+    assert seen[0].url.params["search"] == "stripe"
+
+    rows[0].events.list(method="POST", path="/hooks")
+    events = next(request for request in seen if request.url.path.endswith("/events"))
+    assert events.url.params["method"] == "POST"
+    assert events.url.params["path"] == "/hooks"
+
+    activity = inboxes.activity([INBOX_ID])
+    assert activity[0].buckets[0].event_count == 3
+    act = next(request for request in seen if request.url.path.endswith("/activity"))
+    assert act.url.params["inboxIds"] == INBOX_ID
+
+
+def test_email_query_source_and_domain_activity() -> None:
+    domain_id = "550e8400-e29b-41d4-a716-446655440002"
+    message_id = "550e8400-e29b-41d4-a716-446655440003"
+    seen: list[httpx.Request] = []
+
+    def handler(request: httpx.Request) -> httpx.Response:
+        seen.append(request)
+        if request.url.path.endswith("/source"):
+            return _json({"data": {"source": "Subject: code", "truncated": False}})
+        if request.url.path.endswith("/activity"):
+            return _json(
+                {
+                    "data": [
+                        {
+                            "domainId": domain_id,
+                            "buckets": [{"hour": WHEN, "messageCount": 4}],
+                        }
+                    ]
+                }
+            )
+        if "/messages" in request.url.path:
+            return _json(
+                {
+                    "data": [
+                        {
+                            "id": message_id,
+                            "domainId": domain_id,
+                            "receivedAt": WHEN,
+                            "sizeBytes": 4,
+                            "headers": {},
+                            "sha256": "abc",
+                        }
+                    ],
+                    "nextCursor": None,
+                    "hasMore": False,
+                }
+            )
+        return _json(
+            {
+                "data": [
+                    {
+                        "id": domain_id,
+                        "name": "ws.devhelmmail.com",
+                        "workspaceId": 2,
+                        "kind": "assigned",
+                        "status": "active",
+                        "mxVerified": True,
+                        "dnsRecords": [],
+                        "createdAt": WHEN,
+                        "updatedAt": WHEN,
+                    }
+                ],
+                **PAGE,
+            }
+        )
+
+    client = httpx.Client(
+        transport=httpx.MockTransport(handler), base_url="http://api.test"
+    )
+    email = Email(client)
+    address = email.address(domain="ws.devhelmmail.com", label="signup")
+    page = address.messages.list(q="code")
+    listed = next(request for request in seen if "/messages" in request.url.path)
+    assert listed.url.params["q"] == "code"
+    assert listed.url.params["inbox"] == address.local_part
+    text = page.data[0].source()
+    assert text.source == "Subject: code"
+    assert text.truncated is False
+
+    domains = email.domains.list(search="ws")
+    assert domains[0].name == "ws.devhelmmail.com"
+    activity = email.domains.activity([domain_id])
+    assert activity[0].buckets[0].message_count == 4
+
+
 def test_email_wait_timeout_raises() -> None:
     def handler(_request: httpx.Request) -> httpx.Response:
         return _json({"code": "WAIT_TIMEOUT", "message": "timed out"}, status=408)

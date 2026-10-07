@@ -6,7 +6,9 @@ capture URL a sender hits, plus ``wait`` for the captured request.
 
 from __future__ import annotations
 
+import builtins
 import json
+from dataclasses import dataclass
 from datetime import datetime, timezone
 from pathlib import Path
 from uuid import UUID
@@ -47,6 +49,73 @@ from devhelm.resources.signed_download import (
 BASE = "/api/v1/webhook/inboxes"
 
 
+@dataclass(frozen=True, slots=True)
+class InboxActivityBucket:
+    hour: str
+    event_count: int
+
+
+@dataclass(frozen=True, slots=True)
+class InboxActivity:
+    inbox_id: UUID
+    buckets: list[InboxActivityBucket]
+
+
+def _query(**values: str | None) -> dict[str, str] | None:
+    params: dict[str, str] = {}
+    for key, value in values.items():
+        if value is not None:
+            params[key] = value
+    return params or None
+
+
+def _invalid(context: str) -> DevhelmValidationError:
+    return DevhelmValidationError(f"Invalid activity response from {context}")
+
+
+def _count(value: object, context: str) -> int:
+    if isinstance(value, bool) or not isinstance(value, int):
+        raise _invalid(context)
+    return value
+
+
+def _activity_row(item: object, context: str) -> InboxActivity:
+    if not isinstance(item, dict):
+        raise _invalid(context)
+    inbox_id = item.get("inboxId")
+    buckets = item.get("buckets")
+    if not isinstance(inbox_id, str) or not isinstance(buckets, list):
+        raise _invalid(context)
+    try:
+        parsed_id = UUID(inbox_id)
+    except ValueError as exc:
+        raise DevhelmValidationError(
+            f"Invalid activity response from {context}", cause=exc
+        ) from exc
+    parsed: list[InboxActivityBucket] = []
+    for bucket in buckets:
+        if not isinstance(bucket, dict):
+            raise _invalid(context)
+        hour = bucket.get("hour")
+        if not isinstance(hour, str):
+            raise _invalid(context)
+        parsed.append(
+            InboxActivityBucket(
+                hour=hour, event_count=_count(bucket.get("eventCount"), context)
+            )
+        )
+    return InboxActivity(inbox_id=parsed_id, buckets=parsed)
+
+
+def _read_activity(raw: object, context: str) -> list[InboxActivity]:
+    if not isinstance(raw, dict):
+        raise _invalid(context)
+    data = raw.get("data")
+    if not isinstance(data, list):
+        raise _invalid(context)
+    return [_activity_row(item, context) for item in data]
+
+
 class InboxEvents:
     """Events stored on one inbox."""
 
@@ -55,7 +124,12 @@ class InboxEvents:
         self._inbox_id = inbox_id
 
     def list(
-        self, *, cursor: str | None = None, limit: int | None = None
+        self,
+        *,
+        cursor: str | None = None,
+        limit: int | None = None,
+        method: str | None = None,
+        path: str | None = None,
     ) -> CursorPage[ListedEvent]:
         page = fetch_cursor_page(
             self._inboxes._client,
@@ -63,6 +137,7 @@ class InboxEvents:
             WebhookEventDto,
             cursor,
             limit,
+            extra_params=_query(method=method, path=path),
         )
         return CursorPage(
             data=[self._inboxes._bind_listed(self._inbox_id, row) for row in page.data],
@@ -195,12 +270,23 @@ class Inboxes:
     def __init__(self, client: httpx.Client) -> None:
         self._client = client
 
-    def list(self) -> list[Inbox]:
-        rows = fetch_all_pages(self._client, BASE, WebhookInboxDto)
+    def list(self, *, search: str | None = None) -> list[Inbox]:
+        rows = fetch_all_pages(
+            self._client, BASE, WebhookInboxDto, extra_params=_query(search=search)
+        )
         return [self._bind(row) for row in rows]
 
-    def list_page(self, page: int, size: int) -> Page[Inbox]:
-        result = fetch_page(self._client, BASE, WebhookInboxDto, page, size)
+    def list_page(
+        self, page: int, size: int, *, search: str | None = None
+    ) -> Page[Inbox]:
+        result = fetch_page(
+            self._client,
+            BASE,
+            WebhookInboxDto,
+            page,
+            size,
+            extra_params=_query(search=search),
+        )
         return Page(
             data=[self._bind(row) for row in result.data],
             has_next=result.has_next,
@@ -208,6 +294,16 @@ class Inboxes:
             total_elements=result.total_elements,
             total_pages=result.total_pages,
             next_cursor=result.next_cursor,
+        )
+
+    def activity(self, inbox_ids: builtins.list[str]) -> builtins.list[InboxActivity]:
+        """Last-24h request counts. An empty id list does not call the API."""
+        if not inbox_ids:
+            return []
+        path = f"{BASE}/activity"
+        return _read_activity(
+            api_get(self._client, path, params={"inboxIds": ",".join(inbox_ids)}),
+            f"GET {path}",
         )
 
     def get(self, id: str) -> Inbox:
