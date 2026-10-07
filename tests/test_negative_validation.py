@@ -104,6 +104,7 @@ def _monitor(**kw: object) -> dict[str, Any]:
         "enabled": True,
         "regions": ["us-east"],
         "managedBy": "DASHBOARD",
+        "muted": False,
         "createdAt": NOW,
         "updatedAt": NOW,
     }
@@ -545,10 +546,10 @@ class TestCreateMonitorRequestNegative:
             )
 
     def test_missing_config(self) -> None:
-        with pytest.raises(ValidationError, match="config"):
-            CreateMonitorRequest.model_validate(
-                {"name": "X", "type": "HTTP", "managedBy": "DASHBOARD"}
-            )
+        req = CreateMonitorRequest.model_validate(
+            {"name": "X", "type": "HTTP", "managedBy": "DASHBOARD"}
+        )
+        assert req.config is None
 
     def test_managed_by_optional_defaults_server_side(self) -> None:
         # As of mono v0.13, managedBy is optional on Create requests and

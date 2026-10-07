@@ -193,6 +193,7 @@ def test_email_query_source_and_domain_activity() -> None:
                         "kind": "assigned",
                         "status": "active",
                         "mxVerified": True,
+                        "retentionDays": 3,
                         "dnsRecords": [],
                         "createdAt": WHEN,
                         "updatedAt": WHEN,
