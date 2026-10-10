@@ -3828,15 +3828,61 @@ class MonitorReference(BaseModel):
     name: Annotated[str, Field(description="Monitor name")]
 
 
+class MonitorRunDurationMetricDto(BaseModel):
+    model_config = ConfigDict(extra="ignore", populate_by_name=True)
+    monitor_id: Annotated[
+        UUID, Field(alias="monitorId", description="Monitor identifier")
+    ]
+    sample_count: Annotated[
+        int,
+        Field(
+            alias="sampleCount", description="Finished runs with a measured duration"
+        ),
+    ]
+    p50_duration_ms: Annotated[
+        float | None,
+        Field(
+            alias="p50DurationMs",
+            description="Median execution duration in milliseconds",
+        ),
+    ] = None
+
+
+class MonitorRunDurationSummaryDto(BaseModel):
+    model_config = ConfigDict(extra="ignore", populate_by_name=True)
+    from_: Annotated[
+        AwareDatetime,
+        Field(alias="from", description="Inclusive start of the enqueue-time window"),
+    ]
+    to: Annotated[
+        AwareDatetime, Field(description="Exclusive end of the enqueue-time window")
+    ]
+    sample_count: Annotated[
+        int,
+        Field(
+            alias="sampleCount",
+            description="Number of finished runs with a measured execution duration",
+        ),
+    ]
+    p50_duration_ms: Annotated[
+        float | None,
+        Field(
+            alias="p50DurationMs",
+            description="Median execution duration in milliseconds; null when no durations were measured",
+        ),
+    ] = None
+
+
 class MonitorRunListParams(BaseModel):
     model_config = ConfigDict(extra="forbid", populate_by_name=True)
     phase: Annotated[
-        str | None, Field(description="Filter by run phase; omit to return every phase")
+        str | None,
+        Field(description="Filter by run phase; not_finished excludes finished runs"),
     ] = None
     outcome: Annotated[
         str | None,
         Field(
-            description="Filter by outcome; passed is first-try only; passed_on_retry is a pass after retry"
+            description="Filter by outcome; not_passed also includes passed-on-retry runs"
         ),
     ] = None
     region: Annotated[str | None, Field(description="Filter by probe region")] = None
@@ -5544,12 +5590,13 @@ class RunEvidenceDto(BaseModel):
 class RunListParams(BaseModel):
     model_config = ConfigDict(extra="forbid", populate_by_name=True)
     phase: Annotated[
-        str | None, Field(description="Filter by run phase; omit to return every phase")
+        str | None,
+        Field(description="Filter by run phase; not_finished excludes finished runs"),
     ] = None
     outcome: Annotated[
         str | None,
         Field(
-            description="Filter by outcome; passed is first-try only; passed_on_retry is a pass after retry"
+            description="Filter by outcome; not_passed also includes passed-on-retry runs"
         ),
     ] = None
     region: Annotated[str | None, Field(description="Filter by probe region")] = None
@@ -5601,6 +5648,122 @@ class RunLiveDto(BaseModel):
     artifacts_expected: Annotated[
         int | None,
         Field(alias="artifactsExpected", description="Artifacts expected for this run"),
+    ] = None
+
+
+class RunMetricsSummaryDto(BaseModel):
+    model_config = ConfigDict(extra="ignore", populate_by_name=True)
+    from_: Annotated[
+        AwareDatetime,
+        Field(alias="from", description="Inclusive start of the enqueue-time window"),
+    ]
+    to: Annotated[
+        AwareDatetime, Field(description="Inclusive end of the enqueue-time window")
+    ]
+    matching_run_count: Annotated[
+        int,
+        Field(
+            alias="matchingRunCount",
+            description="Runs matching the complete list filter",
+        ),
+    ]
+    duration_sample_count: Annotated[
+        int,
+        Field(
+            alias="durationSampleCount",
+            description="Finished matching runs with a measured execution duration",
+        ),
+    ]
+    p95_duration_ms: Annotated[
+        float | None,
+        Field(
+            alias="p95DurationMs",
+            description="95th percentile execution duration in milliseconds; null when no durations were measured",
+        ),
+    ] = None
+    evidence_eligible_run_count: Annotated[
+        int,
+        Field(
+            alias="evidenceEligibleRunCount",
+            description="Runs with a known capture policy",
+        ),
+    ]
+    evidence_unknown_policy_run_count: Annotated[
+        int,
+        Field(
+            alias="evidenceUnknownPolicyRunCount",
+            description="Runs with a missing or incomplete capture policy",
+        ),
+    ]
+    evidence_incomplete_run_count: Annotated[
+        int | None,
+        Field(
+            alias="evidenceIncompleteRunCount",
+            description="Eligible runs with required evidence missing, processing, failed, or expired",
+        ),
+    ] = None
+    evidence_processing_run_count: Annotated[
+        int | None,
+        Field(
+            alias="evidenceProcessingRunCount",
+            description="Eligible runs with required evidence still processing",
+        ),
+    ] = None
+    evidence_no_evidence_policy_run_count: Annotated[
+        int | None,
+        Field(
+            alias="evidenceNoEvidencePolicyRunCount",
+            description="Eligible runs with no evidence required by their recorded policy",
+        ),
+    ] = None
+    evidence_complete_run_count: Annotated[
+        int | None,
+        Field(
+            alias="evidenceCompleteRunCount",
+            description="Eligible runs with all required evidence available",
+        ),
+    ] = None
+    available_artifact_count: Annotated[
+        int | None,
+        Field(
+            alias="availableArtifactCount",
+            description="Required artifact records with an available unexpired object key",
+        ),
+    ] = None
+    processing_artifact_count: Annotated[
+        int | None,
+        Field(
+            alias="processingArtifactCount",
+            description="Required artifact records still processing",
+        ),
+    ] = None
+    failed_artifact_count: Annotated[
+        int | None,
+        Field(
+            alias="failedArtifactCount",
+            description="Required artifact records with a failed upload",
+        ),
+    ] = None
+    expired_artifact_count: Annotated[
+        int | None,
+        Field(
+            alias="expiredArtifactCount",
+            description="Required artifact records marked expired or past their expiry",
+        ),
+    ] = None
+    missing_artifact_kind_count: Annotated[
+        int | None,
+        Field(
+            alias="missingArtifactKindCount",
+            description="Required evidence kinds with no artifact record after the run finished",
+        ),
+    ] = None
+    intentional_no_evidence_artifact_count: Annotated[
+        int | None,
+        Field(
+            alias="intentionalNoEvidenceArtifactCount",
+            description="Required artifact records explicitly suppressed, not reached, or not captured",
+        ),
     ] = None
 
 
@@ -6400,6 +6563,11 @@ class SingleValueResponseMonitorAuthDto(BaseModel):
     data: MonitorAuthDto
 
 
+class SingleValueResponseMonitorRunDurationSummaryDto(BaseModel):
+    model_config = ConfigDict(extra="ignore", populate_by_name=True)
+    data: MonitorRunDurationSummaryDto
+
+
 class SingleValueResponseMonitorSessionDto(BaseModel):
     model_config = ConfigDict(extra="ignore", populate_by_name=True)
     data: MonitorSessionDto
@@ -6463,6 +6631,11 @@ class SingleValueResponseRunConsoleDto(BaseModel):
 class SingleValueResponseRunDiffDto(BaseModel):
     model_config = ConfigDict(extra="ignore", populate_by_name=True)
     data: RunDiffDto
+
+
+class SingleValueResponseRunMetricsSummaryDto(BaseModel):
+    model_config = ConfigDict(extra="ignore", populate_by_name=True)
+    data: RunMetricsSummaryDto
 
 
 class SingleValueResponseSecretDto(BaseModel):
@@ -7133,6 +7306,74 @@ class Summary(BaseModel):
     id: UUID
     name: Annotated[str, Field(min_length=1)]
     slug: Annotated[str, Field(min_length=1)]
+
+
+class SyntheticsFamilyMetricsDto(BaseModel):
+    model_config = ConfigDict(extra="ignore", populate_by_name=True)
+    availability_from: Annotated[
+        AwareDatetime,
+        Field(
+            alias="availabilityFrom",
+            description="Inclusive start of the availability window",
+        ),
+    ]
+    availability_to: Annotated[
+        AwareDatetime,
+        Field(
+            alias="availabilityTo",
+            description="Exclusive end of the availability window",
+        ),
+    ]
+    monitor_count: Annotated[
+        int,
+        Field(
+            alias="monitorCount",
+            description="Number of non-deleted BROWSER and MULTI_STEP_API monitors",
+        ),
+    ]
+    measured_monitor_count: Annotated[
+        int,
+        Field(
+            alias="measuredMonitorCount",
+            description="Number of family monitors with measured target checks",
+        ),
+    ]
+    check_count: Annotated[
+        int,
+        Field(
+            alias="checkCount",
+            description="Number of measured PASSED or FAILED target checks",
+        ),
+    ]
+    passed_check_count: Annotated[
+        int,
+        Field(
+            alias="passedCheckCount",
+            description="Number of measured PASSED target checks",
+        ),
+    ]
+    availability_percent: Annotated[
+        float | None,
+        Field(
+            alias="availabilityPercent",
+            description="Measured passed checks divided by all measured target checks; null when none were measured",
+        ),
+    ] = None
+    flaky_from: Annotated[
+        AwareDatetime,
+        Field(alias="flakyFrom", description="Inclusive start of the recovery window"),
+    ]
+    flaky_to: Annotated[
+        AwareDatetime,
+        Field(alias="flakyTo", description="Exclusive end of the recovery window"),
+    ]
+    flaky_monitor_count: Annotated[
+        int,
+        Field(
+            alias="flakyMonitorCount",
+            description="Distinct family monitors with a failed target recovered by a retry in the same cycle and region",
+        ),
+    ]
 
 
 class TableValueResultAlertChannelDto(BaseModel):
@@ -11074,6 +11315,21 @@ class MonitorDto(BaseModel):
     upload: PackageUploadDto | None = None
 
 
+class MonitorRunDurationBatchDto(BaseModel):
+    model_config = ConfigDict(extra="ignore", populate_by_name=True)
+    from_: Annotated[
+        AwareDatetime,
+        Field(alias="from", description="Inclusive start of the enqueue-time window"),
+    ]
+    to: Annotated[
+        AwareDatetime, Field(description="Exclusive end of the enqueue-time window")
+    ]
+    monitors: Annotated[
+        list[MonitorRunDurationMetricDto],
+        Field(description="Measured duration results for requested code monitors"),
+    ]
+
+
 class MonitorSecretRequestsDto(BaseModel):
     model_config = ConfigDict(extra="ignore", populate_by_name=True)
     environment: EnvironmentDto
@@ -11923,6 +12179,11 @@ class SingleValueResponseMonitorDto(BaseModel):
     data: MonitorDto
 
 
+class SingleValueResponseMonitorRunDurationBatchDto(BaseModel):
+    model_config = ConfigDict(extra="ignore", populate_by_name=True)
+    data: MonitorRunDurationBatchDto
+
+
 class SingleValueResponseMonitorSecretRequestsDto(BaseModel):
     model_config = ConfigDict(extra="ignore", populate_by_name=True)
     data: MonitorSecretRequestsDto
@@ -12016,6 +12277,11 @@ class SingleValueResponseStatusPageNotificationDeliveryDto(BaseModel):
 class SingleValueResponseStatusPageSubscriberDto(BaseModel):
     model_config = ConfigDict(extra="ignore", populate_by_name=True)
     data: StatusPageSubscriberDto
+
+
+class SingleValueResponseSyntheticsFamilyMetricsDto(BaseModel):
+    model_config = ConfigDict(extra="ignore", populate_by_name=True)
+    data: SyntheticsFamilyMetricsDto
 
 
 class SingleValueResponseTagDto(BaseModel):
