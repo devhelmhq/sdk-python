@@ -24,7 +24,10 @@ the specific subclass.
 from __future__ import annotations
 
 import json
-from typing import Any, Sequence
+from typing import TYPE_CHECKING, Any, Sequence
+
+if TYPE_CHECKING:
+    from devhelm._generated import RunDto
 
 
 class DevhelmError(Exception):
@@ -66,6 +69,28 @@ class DevhelmValidationError(DevhelmError):
         # `ErrorDetails` records and plain dicts callers may build by hand.
         self.errors: list[Any] = list(errors) if errors else []
         self.__cause__ = cause
+
+
+class DevhelmMonitorTestQueuedError(DevhelmValidationError):
+    """Raised by ``monitors.test()`` when the API answers 202.
+
+    The monitor is a browser or multi-step API monitor, so the API queued a
+    validation run instead of returning a probe result. Call
+    ``monitors.test_run()`` for these monitors. The run the API already
+    queued is on ``run``.
+
+    Subclasses :class:`DevhelmValidationError`, which is what ``test()``
+    raised for these monitors before the API started queuing runs, so
+    existing ``except`` sites keep working.
+    """
+
+    def __init__(self, run: RunDto) -> None:
+        super().__init__(
+            f"monitors.test() got a queued validation run ({run.id}) instead "
+            "of a probe result: this is a browser or multi-step API monitor. "
+            "Use monitors.test_run() for these monitors."
+        )
+        self.run = run
 
 
 class DevhelmApiError(DevhelmError):
