@@ -2,15 +2,25 @@ from __future__ import annotations
 
 import httpx
 
+from devhelm._errors import DevhelmMonitorTestQueuedError, DevhelmValidationError
 from devhelm._generated import (
-    AssertionTestResultDto,
     CheckResultDto,
+    CodeTestTargetRequest,
     CreateMonitorRequest,
     MonitorDto,
+    MonitorTestResultDto,
     MonitorVersionDto,
+    RunDto,
     UpdateMonitorRequest,
 )
-from devhelm._http import api_delete, api_get, api_post, api_put, path_param
+from devhelm._http import (
+    api_delete,
+    api_get,
+    api_post,
+    api_post_with_status,
+    api_put,
+    path_param,
+)
 from devhelm._pagination import (
     CursorPage,
     Page,
@@ -167,13 +177,51 @@ class Monitors:
             f"POST /api/v1/monitors/{id}/resume",
         )
 
-    def test(self, id: int | str) -> AssertionTestResultDto:
-        """Trigger an ad-hoc test run for a monitor."""
-        return parse_single(
-            AssertionTestResultDto,
-            api_post(self._client, f"/api/v1/monitors/{path_param(id)}/test"),
-            f"POST /api/v1/monitors/{id}/test",
+    def test(self, id: int | str) -> MonitorTestResultDto:
+        """Test an uptime monitor (HTTP, TCP, DNS, ICMP, MCP) once and return
+        the probe result. Nothing is stored.
+
+        Browser and multi-step API monitors do not return a probe result:
+        the API queues a validation run instead, and this method raises
+        :class:`~devhelm.DevhelmMonitorTestQueuedError` (carrying that run).
+        Use :meth:`test_run` for those monitors.
+        """
+        path = f"/api/v1/monitors/{path_param(id)}/test"
+        context = f"POST /api/v1/monitors/{id}/test"
+        status, data = api_post_with_status(self._client, path)
+        if status == 202:
+            raise DevhelmMonitorTestQueuedError(parse_single(RunDto, data, context))
+        return parse_single(MonitorTestResultDto, data, context)
+
+    def test_run(
+        self, id: int | str, target: RequestBody[CodeTestTargetRequest] | None = None
+    ) -> RunDto:
+        """Queue a validation run for a browser or multi-step API monitor and
+        return it.
+
+        The run does not vote on health; poll it by ``run.id`` for its
+        outcome. ``target`` (``environmentId``, ``region``) picks where it
+        executes; each defaults to the monitor's own.
+
+        Uptime monitors answer with a probe result instead; this method then
+        raises :class:`~devhelm.DevhelmValidationError`. Use :meth:`test`
+        for those.
+        """
+        path = f"/api/v1/monitors/{path_param(id)}/test"
+        context = f"POST /api/v1/monitors/{id}/test"
+        body = (
+            None
+            if target is None
+            else validate_request(CodeTestTargetRequest, target, "monitors.test_run")
         )
+        status, data = api_post_with_status(self._client, path, body)
+        if status != 202:
+            raise DevhelmValidationError(
+                f"Response validation failed ({context}): expected a queued "
+                f"validation run (202), got {status}. This is an uptime monitor; "
+                "use monitors.test() for it."
+            )
+        return parse_single(RunDto, data, context)
 
     def results(
         self, id: int | str, cursor: str | None = None, limit: int | None = None

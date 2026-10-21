@@ -242,6 +242,19 @@ def api_post(
     return checked_fetch(_wrap_transport_errors(send))
 
 
+def api_post_with_status(
+    client: httpx.Client, path: str, body: BaseModel | None = None
+) -> tuple[int, _JsonResponse]:
+    """POST that also returns the success status code, for endpoints whose
+    success body depends on it (e.g. 200 vs 202)."""
+    if body is None:
+        response = _wrap_transport_errors(lambda: client.post(path))
+    else:
+        payload = _serialize_body(body)
+        response = _wrap_transport_errors(lambda: client.post(path, json=payload))
+    return response.status_code, checked_fetch(response)
+
+
 def api_put(
     client: httpx.Client, path: str, body: BaseModel | dict[str, object] | None
 ) -> _JsonResponse:

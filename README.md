@@ -56,6 +56,23 @@ client.monitors.resume(monitor.id)
 client.monitors.delete(monitor.id)
 ```
 
+## Testing a monitor
+
+Neither method records the result against the monitor's health.
+
+```python
+# HTTP, TCP, DNS, ICMP, MCP: run once through the probe and return the result
+result = client.monitors.test(monitor.id)
+print(result.passed, result.status_code)
+
+# Browser and multi-step API: queue a validation run and poll it by id.
+# environmentId and region are optional (each defaults to the monitor's own).
+run = client.monitors.test_run(monitor.id, {"environmentId": env_id, "region": "eu-west"})
+print(run.id, run.phase)
+```
+
+`monitors.test()` on a browser or multi-step API monitor raises `DevhelmMonitorTestQueuedError` (a `DevhelmValidationError`). The run the API queued is on `err.run`.
+
 ## Configuration
 
 ```python

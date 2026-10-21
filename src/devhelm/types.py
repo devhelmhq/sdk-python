@@ -109,6 +109,7 @@ from devhelm._generated import (
     CategoryDto,
     CheckResultDto,  # noqa: F401
     CheckTraceDto,
+    CodeTestTargetRequest,
     ComponentUptimeDayDto,
     CreateAlertChannelRequest,
     CreateApiKeyRequest,
@@ -142,6 +143,7 @@ from devhelm._generated import (
     InjectEmailMessageResponse,
     MaintenanceWindowDto,
     MonitorDto,
+    MonitorTestResultDto,
     MonitorVersionDto,
     NotificationPolicyDto,
     Operator,  # request-side enum that survived as a StrEnum class
@@ -153,6 +155,7 @@ from devhelm._generated import (
     ResourceGroupDto,
     ResourceGroupMemberDto,  # noqa: F401
     RuleEvaluationDto,
+    RunDto,
     ScheduledMaintenanceDto,
     SecretDto,
     ServiceCatalogDto,
@@ -219,6 +222,7 @@ __all__ = [
     "CreateApiKeyRequest",
     "CreateEnvironmentRequest",
     "CreateManualIncidentRequest",
+    "CodeTestTargetRequest",
     "CreateMonitorRequest",
     "CreateNotificationPolicyRequest",
     "CreateResourceGroupRequest",
@@ -242,7 +246,9 @@ __all__ = [
     "IncidentTimelineDto",
     "MaintenanceWindowDto",
     "MonitorDto",
+    "MonitorTestResultDto",
     "MonitorVersionDto",
+    "RunDto",
     "NotificationPolicyDto",
     "PolicySnapshotDto",
     "PublishStatusPageIncidentRequest",
