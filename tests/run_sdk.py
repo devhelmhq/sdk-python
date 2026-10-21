@@ -9,10 +9,15 @@ This mirrors the CLI's `--output json` behavior so pytest tests can parse result
 
 from __future__ import annotations
 
+import dataclasses
+import hashlib
 import json
 import os
 import sys
+from datetime import date, datetime
+from enum import Enum
 from typing import Any, TypeVar
+from uuid import UUID
 
 from pydantic import BaseModel
 
@@ -42,6 +47,7 @@ from devhelm import (
     ReorderPageLayoutRequest,
     ResolveIncidentRequest,
     UpdateAlertChannelRequest,
+    UpdateEmailDomainRequest,
     UpdateEnvironmentRequest,
     UpdateMonitorRequest,
     UpdateNotificationPolicyRequest,
@@ -53,8 +59,10 @@ from devhelm import (
     UpdateStatusPageRequest,
     UpdateTagRequest,
     UpdateWebhookEndpointRequest,
+    UpdateWebhookInboxRequest,
 )
 from devhelm._pagination import CursorPage, Page
+from devhelm.resources.email import Address, Email
 
 M = TypeVar("M", bound=BaseModel)
 
@@ -89,7 +97,44 @@ def to_json(obj: Any) -> Any:
         return [to_json(item) for item in obj]
     if isinstance(obj, BaseModel):
         return obj.model_dump(mode="json", by_alias=True)
+    if isinstance(obj, dict):
+        return {key: to_json(value) for key, value in obj.items()}
+    if isinstance(obj, (UUID, Enum)):
+        return str(obj.value) if isinstance(obj, Enum) else str(obj)
+    if isinstance(obj, (datetime, date)):
+        return obj.isoformat()
+    if dataclasses.is_dataclass(obj) and not isinstance(obj, type):
+        return {
+            _camel(f.name): to_json(getattr(obj, f.name))
+            for f in dataclasses.fields(obj)
+        }
+    if hasattr(obj, "__dict__") and not isinstance(obj, (str, bytes, int, float)):
+        # Bound SDK handles (email Message/Domain/Address, inbox Inbox/Event)
+        # are plain classes; emit their public fields like the API DTO.
+        return {
+            _camel(key): to_json(value)
+            for key, value in vars(obj).items()
+            if not key.startswith("_")
+            and not hasattr(value, "_email")
+            and not hasattr(value, "_inboxes")
+        }
     return obj
+
+
+def _camel(name: str) -> str:
+    name = name.rstrip("_")
+    head, *tail = name.split("_")
+    return head + "".join(part[:1].upper() + part[1:] for part in tail)
+
+
+def _digest(data: bytes) -> dict[str, Any]:
+    """Downloads are reported as size + sha256 so the output stays JSON."""
+    return {"size": len(data), "sha256": hashlib.sha256(data).hexdigest()}
+
+
+def _address(email: Email, address: str) -> Address:
+    local_part, _, domain = address.rpartition("@")
+    return Address(email, address=address, domain=domain, local_part=local_part)
 
 
 def _parse(model_class: type[M], raw: str) -> M:
@@ -452,8 +497,137 @@ def run(client: Devhelm, resource: str, action: str, rest: list[str]) -> Any:  #
         client.status_pages.domains.remove(rest[0], rest[1])
         return None
 
+    result = _run_inbound(client, op, rest)
+    if result is not _UNKNOWN:
+        return result
+
     sys.stderr.write(json.dumps({"error": f"Unknown operation: {op}"}))
     sys.exit(2)
+
+
+_UNKNOWN = object()
+
+
+def _run_inbound(client: Devhelm, op: str, rest: list[str]) -> Any:  # noqa: C901
+    """Email Testing and Webhook Testing operations."""
+    # -- Email: addresses and waits --
+    if op == "email.address":
+        address = client.email.address(
+            label=rest[0] if len(rest) > 0 and rest[0] else None,
+            domain=rest[1] if len(rest) > 1 else None,
+        )
+        return {
+            "email": address.email,
+            "domain": address.domain,
+            "localPart": address.local_part,
+        }
+    if op == "email.wait":
+        return client.email.wait(
+            to=rest[0], timeout_ms=int(rest[1]) if len(rest) > 1 else 30_000
+        )
+    if op == "email.wait-local-part":
+        return client.email.wait_local_part(
+            rest[0],
+            domain=rest[1],
+            timeout_ms=int(rest[2]) if len(rest) > 2 else 30_000,
+        )
+    if op == "email.receive":
+        body = json.loads(rest[1])
+        return _address(client.email, rest[0]).receive(
+            from_=body["from"],
+            subject=body.get("subject"),
+            text=body.get("text"),
+            html=body.get("html"),
+            headers=body.get("headers"),
+        )
+    if op == "email.clear":
+        _address(client.email, rest[0]).clear()
+        return None
+
+    # -- Email: messages --
+    if op == "email.messages.list":
+        return _address(client.email, rest[0]).messages.list()
+    if op == "email.messages.get":
+        return _address(client.email, rest[0]).messages.get(rest[1])
+    if op == "email.messages.delete":
+        _address(client.email, rest[0]).messages.get(rest[1]).delete()
+        return None
+    if op == "email.messages.raw":
+        return _digest(_address(client.email, rest[0]).messages.get(rest[1]).raw())
+    if op == "email.messages.source":
+        return _address(client.email, rest[0]).messages.get(rest[1]).source()
+    if op == "email.messages.otp":
+        return _address(client.email, rest[0]).messages.get(rest[1]).list_otp()
+    if op == "email.messages.links":
+        return _address(client.email, rest[0]).messages.get(rest[1]).list_links()
+    if op == "email.attachments.get":
+        message = _address(client.email, rest[0]).messages.get(rest[1])
+        for attachment in message.attachments:
+            if str(attachment.id) == rest[2]:
+                return _digest(attachment.bytes())
+        raise ValueError(f"Attachment {rest[2]} not on message {rest[1]}")
+
+    # -- Email: domains --
+    if op == "email.domains.list":
+        return client.email.domains.list()
+    if op == "email.domains.get":
+        return client.email.domains.get(rest[0])
+    if op == "email.domains.create":
+        return client.email.domains.create(name=rest[0] if rest else None)
+    if op == "email.domains.update":
+        return client.email.domains.update(
+            rest[0], _parse(UpdateEmailDomainRequest, rest[1])
+        )
+    if op == "email.domains.verify":
+        return client.email.domains.verify(rest[0])
+    if op == "email.domains.delete":
+        client.email.domains.delete(rest[0])
+        return None
+    if op == "email.domains.activity":
+        return client.email.domains.activity(rest)
+
+    # -- Webhook inboxes --
+    if op == "inboxes.list":
+        return client.inboxes.list()
+    if op == "inboxes.get":
+        return client.inboxes.get(rest[0])
+    if op == "inboxes.create":
+        body = json.loads(rest[0])
+        return client.inboxes.create(
+            name=body["name"],
+            status=body.get("status"),
+            http_response=body.get("httpResponse"),
+            cors=body.get("cors"),
+            retention_days=body.get("retentionDays"),
+            max_events=body.get("maxEvents"),
+        )
+    if op == "inboxes.update":
+        return client.inboxes.update(
+            rest[0], _parse(UpdateWebhookInboxRequest, rest[1])
+        )
+    if op == "inboxes.delete":
+        client.inboxes.delete(rest[0])
+        return None
+    if op == "inboxes.activity":
+        return client.inboxes.activity(rest)
+    if op == "inboxes.wait":
+        return client.inboxes.wait(
+            rest[0], timeout_ms=int(rest[1]) if len(rest) > 1 else 30_000
+        )
+    if op == "inboxes.events.list":
+        return client.inboxes.get(rest[0]).events.list()
+    if op == "inboxes.events.get":
+        return client.inboxes.get(rest[0]).events.get(rest[1])
+    if op == "inboxes.events.delete":
+        client.inboxes.get(rest[0]).events.delete(rest[1])
+        return None
+    if op == "inboxes.events.clear":
+        client.inboxes.get(rest[0]).events.clear()
+        return None
+    if op == "inboxes.events.raw":
+        return _digest(client.inboxes.get(rest[0]).events.get(rest[1]).raw())
+
+    return _UNKNOWN
 
 
 def main() -> None:
