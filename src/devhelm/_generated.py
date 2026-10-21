@@ -1506,18 +1506,25 @@ class DatadogChannelConfig(BaseModel):
     ] = None
 
 
+class Status6(StrEnum):
+    investigating = "INVESTIGATING"
+    identified = "IDENTIFIED"
+    monitoring = "MONITORING"
+    resolved = "RESOLVED"
+
+
 class DayIncident(BaseModel):
     model_config = ConfigDict(extra="ignore", populate_by_name=True)
     id: Annotated[UUID, Field(description="Status page incident UUID")]
     title: Annotated[str, Field(description="Incident title")]
     status: Annotated[
-        str,
+        Status6,
         Field(
             description="Lifecycle status (investigating, identified, monitoring, resolved, …)"
         ),
     ]
     impact: Annotated[
-        str, Field(description="Severity bucket (none, minor, major, critical)")
+        Impact, Field(description="Severity bucket (none, minor, major, critical)")
     ]
     scheduled: Annotated[
         bool, Field(description="True for a maintenance window; false for an incident")
@@ -2153,10 +2160,20 @@ class EnvironmentDto(BaseModel):
     ]
 
 
-class ErrorCategory(RootModel[str]):
-    root: Annotated[
-        str, Field(description="Machine class clients use to choose the next action")
-    ]
+class ErrorCategory(StrEnum):
+    validation = "validation"
+    blocked = "blocked"
+    auth = "auth"
+    permission = "permission"
+    ownership = "ownership"
+    plan = "plan"
+    quota = "quota"
+    rate_limit = "rate_limit"
+    conflict = "conflict"
+    confirmation_required = "confirmation_required"
+    not_found = "not_found"
+    gone = "gone"
+    platform = "platform"
 
 
 class ErrorEntry(BaseModel):
@@ -2323,11 +2340,9 @@ class ErrorResponse(BaseModel):
             description="Why permission was refused: scope or role", examples=["role"]
         ),
     ] = None
-    next: Annotated[
-        ErrorNext | None, Field(description="Command and docs that fix this error")
-    ] = None
+    next: ErrorNext | None = None
     details: Annotated[
-        dict[str, Any] | None,
+        dict[str, dict[str, Any]] | None,
         Field(
             description="Extra fields for this error, such as a missing secret key and environment"
         ),
@@ -2764,13 +2779,18 @@ class InboundEmailLink(BaseModel):
     )
 
 
+class Source(StrEnum):
+    text = "text"
+    html = "html"
+
+
 class InboundOtpCode(BaseModel):
     model_config = ConfigDict(extra="ignore", populate_by_name=True)
     value: Annotated[
         str, Field(description="Extracted one-time code digits", min_length=1)
     ]
     source: Annotated[
-        str, Field(description="MIME part the code was found in (text or html)")
+        Source, Field(description="MIME part the code was found in (text or html)")
     ]
 
 
@@ -3032,14 +3052,14 @@ class IncidentFailingMemberSnapshotDto(BaseModel):
     ] = None
 
 
-class Status6(StrEnum):
+class Status7(StrEnum):
     watching = "WATCHING"
     triggered = "TRIGGERED"
     confirmed = "CONFIRMED"
     resolved = "RESOLVED"
 
 
-class Source(StrEnum):
+class Source1(StrEnum):
     automatic = "AUTOMATIC"
     manual = "MANUAL"
     monitors = "MONITORS"
@@ -3050,7 +3070,7 @@ class Source(StrEnum):
 class IncidentFilterParams(BaseModel):
     model_config = ConfigDict(extra="forbid", populate_by_name=True)
     status: Annotated[
-        Status6 | None,
+        Status7 | None,
         Field(
             description="Filter by incident lifecycle status; null returns every status"
         ),
@@ -3060,7 +3080,7 @@ class IncidentFilterParams(BaseModel):
         Field(description="Filter by severity; null returns every severity"),
     ] = None
     source: Annotated[
-        Source | None,
+        Source1 | None,
         Field(
             description="Filter by where the incident originated (auto, manual, third-party)"
         ),
@@ -3813,15 +3833,27 @@ class MemberDto(BaseModel):
     ]
 
 
+class OldRole(StrEnum):
+    owner = "OWNER"
+    admin = "ADMIN"
+    member = "MEMBER"
+
+
+class NewRole(StrEnum):
+    owner = "OWNER"
+    admin = "ADMIN"
+    member = "MEMBER"
+
+
 class MemberRoleChangedMetadata(BaseModel):
     model_config = ConfigDict(extra="ignore", populate_by_name=True)
     kind: Literal["member_role_changed"] = "member_role_changed"
     old_role: Annotated[
-        str,
+        OldRole,
         Field(alias="oldRole", description="Role the member held before the change"),
     ]
     new_role: Annotated[
-        str,
+        NewRole,
         Field(alias="newRole", description="Role the member holds after the change"),
     ]
 
@@ -4836,9 +4868,18 @@ class PickerItem(BaseModel):
     ]
 
 
+class Tier(StrEnum):
+    free = "FREE"
+    starter = "STARTER"
+    pro = "PRO"
+    team = "TEAM"
+    business = "BUSINESS"
+    enterprise = "ENTERPRISE"
+
+
 class PlanInfo(BaseModel):
     model_config = ConfigDict(extra="ignore", populate_by_name=True)
-    tier: Annotated[str, Field(description="Resolved plan tier")]
+    tier: Annotated[Tier, Field(description="Resolved plan tier")]
     subscription_status: Annotated[
         str | None,
         Field(
@@ -4964,7 +5005,7 @@ class PublishRevisionRequest(BaseModel):
     ]
 
 
-class Status7(StrEnum):
+class Status8(StrEnum):
     investigating = "INVESTIGATING"
     identified = "IDENTIFIED"
     monitoring = "MONITORING"
@@ -4985,7 +5026,7 @@ class PublishStatusPageIncidentRequest(BaseModel):
         Impact | None, Field(description="Impact level; null keeps draft value")
     ] = None
     status: Annotated[
-        Status7 | None,
+        Status8 | None,
         Field(
             description="Incident status; null keeps draft value (must be an active status)"
         ),
@@ -5542,6 +5583,13 @@ class RootlyChannelConfig(BaseModel):
     ] = None
 
 
+class Verdict(StrEnum):
+    unchanged = "unchanged"
+    much_slower = "much_slower"
+    now_failing = "now_failing"
+    not_reached = "not_reached"
+
+
 class Row(BaseModel):
     model_config = ConfigDict(extra="ignore", populate_by_name=True)
     index: Annotated[int, Field(description="Zero-based step index")]
@@ -5565,7 +5613,8 @@ class Row(BaseModel):
         Field(alias="deltaMs", description="thisDurationMs minus baselineDurationMs"),
     ] = None
     verdict: Annotated[
-        str, Field(description="unchanged, much_slower, now_failing, or not_reached")
+        Verdict,
+        Field(description="unchanged, much_slower, now_failing, or not_reached"),
     ]
 
 
@@ -6219,7 +6268,7 @@ class ScriptMonitorConfig(BaseModel):
         str | None,
         Field(
             alias="runtimeId",
-            description="Runtime pin such as 2026.11; omit to pin the current runtime at create",
+            description="Runtime pin such as 2026.11; omit to pin the newest runtime that can run",
             max_length=32,
             min_length=0,
             pattern="^$|^[A-Za-z0-9._-]+$",
@@ -6706,7 +6755,7 @@ class SetMonitorAuthRequest(BaseModel):
     config: ApiKeyAuthConfig | BasicAuthConfig | BearerAuthConfig | HeaderAuthConfig
 
 
-class Status8(StrEnum):
+class Status9(StrEnum):
     operational = "OPERATIONAL"
     degraded_performance = "DEGRADED_PERFORMANCE"
     partial_outage = "PARTIAL_OUTAGE"
@@ -6717,7 +6766,7 @@ class Status8(StrEnum):
 class SetStatusPageComponentOverrideRequest(BaseModel):
     model_config = ConfigDict(extra="forbid", populate_by_name=True)
     status: Annotated[
-        Status8,
+        Status9,
         Field(
             description="Override status while active; takes precedence over binding until expiry/clear"
         ),
@@ -6966,10 +7015,19 @@ class SingleValueResponseString(BaseModel):
     data: str
 
 
+class Status10(StrEnum):
+    pending = "PENDING"
+    dispatching = "DISPATCHING"
+    delivered = "DELIVERED"
+    escalating = "ESCALATING"
+    acknowledged = "ACKNOWLEDGED"
+    completed = "COMPLETED"
+
+
 class SkippedDispatch(BaseModel):
     model_config = ConfigDict(extra="ignore", populate_by_name=True)
     id: Annotated[UUID, Field(description="Dispatch identifier")]
-    status: Annotated[str, Field(description="Current dispatch status")]
+    status: Annotated[Status10, Field(description="Current dispatch status")]
     reason: Annotated[
         str, Field(description="Why this dispatch was skipped", min_length=1)
     ]
@@ -7081,10 +7139,15 @@ class SslExpiryAssertion(BaseModel):
     ]
 
 
+class Source2(StrEnum):
+    pipeline = "pipeline"
+    public_api = "public-api"
+
+
 class StateTransitionDetails(BaseModel):
     model_config = ConfigDict(extra="ignore", populate_by_name=True)
     source: Annotated[
-        str,
+        Source2,
         Field(
             description="Actor that produced this transition (pipeline | public-api)"
         ),
@@ -8228,9 +8291,16 @@ class TlsInfoDto(BaseModel):
     ] = None
 
 
+class Id(StrEnum):
+    failing_action = "failing_action"
+    failing_step = "failing_step"
+    first_failed_request = "first_failed_request"
+    case_start = "case_start"
+
+
 class TraceEntryPoint(BaseModel):
     model_config = ConfigDict(extra="ignore", populate_by_name=True)
-    id: Annotated[str, Field(description="Doorway id")]
+    id: Annotated[Id, Field(description="Doorway id")]
     action_index: Annotated[
         int, Field(alias="actionIndex", description="Action index this doorway opens")
     ]
@@ -8443,7 +8513,7 @@ class UpdateEmailChannelConfig(BaseModel):
     ]
 
 
-class Status9(StrEnum):
+class Status11(StrEnum):
     active = "active"
     disabled = "disabled"
     pending_dns = "pending_dns"
@@ -8453,7 +8523,7 @@ class Status9(StrEnum):
 class UpdateEmailDomainRequest(BaseModel):
     model_config = ConfigDict(extra="forbid", populate_by_name=True)
     status: Annotated[
-        Status9 | None,
+        Status11 | None,
         Field(
             description="Domain lifecycle. Custom domains become active only via POST /verify"
         ),
@@ -9137,7 +9207,7 @@ class UpdateStatusPageComponentRequest(BaseModel):
     ] = None
 
 
-class Status10(StrEnum):
+class Status12(StrEnum):
     investigating = "INVESTIGATING"
     identified = "IDENTIFIED"
     monitoring = "MONITORING"
@@ -9155,7 +9225,7 @@ class UpdateStatusPageIncidentRequest(BaseModel):
         ),
     ] = None
     status: Annotated[
-        Status10 | None, Field(description="New status; null preserves current")
+        Status12 | None, Field(description="New status; null preserves current")
     ] = None
     impact: Annotated[
         Impact | None, Field(description="New impact level; null preserves current")
@@ -9224,7 +9294,7 @@ class UpdateStatusPageIncidentUpdateRequest(BaseModel):
         ),
     ]
     status: Annotated[
-        Status10 | None,
+        Status12 | None,
         Field(
             description="Replacement lifecycle status for this update; null preserves current"
         ),
@@ -9367,7 +9437,7 @@ class UpdateWebhookEndpointRequest(BaseModel):
     ] = None
 
 
-class Status12(StrEnum):
+class Status14(StrEnum):
     active = "active"
     disabled = "disabled"
 
@@ -9382,7 +9452,7 @@ class UpdateWebhookInboxRequest(BaseModel):
             min_length=0,
         ),
     ] = None
-    status: Annotated[Status12 | None, Field(description="Inbox lifecycle")] = None
+    status: Annotated[Status14 | None, Field(description="Inbox lifecycle")] = None
     http_response: Annotated[
         InboundWebhookHttpResponsePatch | None, Field(alias="httpResponse")
     ] = None
