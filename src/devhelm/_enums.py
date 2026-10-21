@@ -125,6 +125,10 @@ BodyContainsAssertionType = Literal["body_contains"]
 BulkMonitorActionRequestAction = Literal[
     "PAUSE", "RESUME", "DELETE", "ADD_TAG", "REMOVE_TAG"
 ]
+CaptureCompareDtoBaselineKind = Literal["last_pass_this_step_this_region"]
+CapturePolicyScreenshots = Literal["always", "on_failure", "off"]
+CapturePolicyTrace = Literal["always", "on_failure", "off"]
+CapturePolicyVideo = Literal["always", "on_failure", "off"]
 ChangeRoleRequestOrgRole = Literal["OWNER", "ADMIN", "MEMBER"]
 ChangeStatusRequestStatus = Literal[
     "INVITED", "ACTIVE", "SUSPENDED", "LEFT", "REMOVED", "DECLINED"
@@ -204,6 +208,7 @@ EmailDomainDtoKind = Literal["assigned", "custom"]
 EmailDomainDtoStatus = Literal[
     "active", "disabled", "pending_dns", "verification_failed"
 ]
+ErrorResponseReason = Literal["scope", "role"]
 GitLabChannelConfigChannelType = Literal["gitlab"]
 GoogleChatChannelConfigChannelType = Literal["google_chat"]
 HeaderAuthConfigType = Literal["header"]
@@ -332,11 +337,26 @@ MonitorAssertionDtoAssertionType = Literal[
 ]
 MonitorAssertionDtoSeverity = Literal["fail", "warn"]
 MonitorAuthDtoAuthType = Literal["bearer", "basic", "header", "api_key"]
+MonitorDtoBindingReadiness = Literal["ready", "blocked", "not_applicable"]
 MonitorDtoCurrentStatus = Literal["up", "degraded", "down", "paused", "unknown"]
+MonitorDtoDisplayHealth = Literal[
+    "healthy",
+    "down",
+    "degraded",
+    "recovering",
+    "infra",
+    "flaky",
+    "blocked",
+    "paused",
+    "never_run",
+    "confirming",
+]
 MonitorDtoManagedBy = Literal["DASHBOARD", "CLI", "TERRAFORM", "MCP", "API"]
 MonitorDtoType = Literal[
     "HTTP", "DNS", "MCP_SERVER", "TCP", "ICMP", "HEARTBEAT", "BROWSER", "MULTI_STEP_API"
 ]
+MonitorSessionDtoLifecycle = Literal["active", "expired", "failed", "revoked"]
+MonitorSessionDtoReusePolicy = Literal["reuse", "every_run", "on_failure"]
 MonitorTestRequestType = Literal[
     "HTTP", "DNS", "MCP_SERVER", "TCP", "ICMP", "HEARTBEAT", "BROWSER", "MULTI_STEP_API"
 ]
@@ -374,7 +394,97 @@ ResponseSizeAssertionType = Literal["response_size"]
 ResponseTimeAssertionType = Literal["response_time"]
 ResponseTimeWarnAssertionType = Literal["response_time_warn"]
 ResultSummaryDtoCurrentStatus = Literal["up", "degraded", "down", "paused", "unknown"]
+RevisionDiffHunkDtoChange = Literal["added", "removed", "changed"]
 RootlyChannelConfigChannelType = Literal["rootly"]
+RowVerdict = Literal["unchanged", "much_slower", "now_failing", "not_reached"]
+RunArtifactDtoCaptureReason = Literal["on_failure", "named_step", "customer"]
+RunArtifactDtoKind = Literal[
+    "screenshot", "video", "trace", "har", "console", "runner_log"
+]
+RunArtifactDtoLifecycle = Literal[
+    "available",
+    "processing",
+    "failed",
+    "not_captured",
+    "suppressed",
+    "never_reached",
+    "expired",
+    "no_browser",
+]
+RunAttemptDtoOutcome = Literal[
+    "passed",
+    "failed",
+    "execution_error",
+    "timed_out",
+    "passed_on_retry",
+    "cancelled",
+    "inconclusive",
+]
+RunCaseDtoStatus = Literal[
+    "pending", "running", "passed", "failed", "timed_out", "skipped", "interrupted"
+]
+RunDiffDtoBaselineKind = Literal[
+    "last_pass_same_revision_region",
+    "last_pass_any_revision",
+    "attempts_in_run",
+    "none",
+]
+RunDtoMonitorType = Literal[
+    "HTTP", "DNS", "MCP_SERVER", "TCP", "ICMP", "HEARTBEAT", "BROWSER", "MULTI_STEP_API"
+]
+RunDtoOutcome = Literal[
+    "passed",
+    "failed",
+    "execution_error",
+    "timed_out",
+    "passed_on_retry",
+    "cancelled",
+    "inconclusive",
+]
+RunDtoPhase = Literal[
+    "created", "queued", "starting", "running", "finalizing", "finished"
+]
+RunDtoSource = Literal[
+    "schedule",
+    "run_now",
+    "ci",
+    "fast_retry",
+    "remote_validation",
+    "deployment_validation",
+    "session_renew",
+]
+RunEventDtoType = Literal[
+    "phase",
+    "headline",
+    "case_started",
+    "case_finished",
+    "step_started",
+    "step_finished",
+    "artifact_ready",
+    "artifact_lifecycle",
+    "finished",
+    "stream_gap",
+]
+RunEvidenceDtoKind = Literal["screenshot", "trace", "video", "network"]
+RunEvidenceDtoState = Literal["present", "bad", "processing", "expired"]
+RunExecutionDtoMonitorType = Literal[
+    "HTTP", "DNS", "MCP_SERVER", "TCP", "ICMP", "HEARTBEAT", "BROWSER", "MULTI_STEP_API"
+]
+RunStepDtoCategory = Literal["named", "assertion", "browser_action"]
+RunStepDtoStatus = Literal[
+    "pending",
+    "running",
+    "passed",
+    "slow",
+    "failed",
+    "skipped",
+    "suppressed",
+    "never_reached",
+    "timed_out",
+]
+RuntimeProfileDtoStatus = Literal["baking", "available", "deprecated", "retired"]
+SecretRequestDtoFulfilledBy = Literal["env", "secret"]
+SecretRequestDtoReadiness = Literal["resolved", "missing"]
 ServiceCatalogDtoLifecycleStatus = Literal[
     "ACTIVE", "DEGRADED", "DEPRECATED", "RETIRED"
 ]
@@ -488,6 +598,9 @@ TcpResponseTimeAssertionType = Literal["tcp_response_time"]
 TcpResponseTimeWarnAssertionType = Literal["tcp_response_time_warn"]
 TeamsChannelConfigChannelType = Literal["teams"]
 TelegramChannelConfigChannelType = Literal["telegram"]
+TraceEntryPointId = Literal[
+    "failing_action", "failing_step", "first_failed_request", "case_start"
+]
 TriggerRuleAggregationType = Literal["all_exceed", "average", "p95", "max"]
 TriggerRuleScope = Literal["per_region", "any_region"]
 TriggerRuleSeverity = Literal["down", "degraded"]
@@ -553,6 +666,11 @@ UpdateWebhookEndpointRequestSubscribedEventsItem = Literal[
 ]
 UpdateWebhookInboxRequestStatus = Literal["active", "disabled"]
 UpdateZapierChannelConfigChannelType = Literal["zapier"]
+UpsertMonitorSessionRequestReusePolicy = Literal["reuse", "every_run", "on_failure"]
+UserDtoOnboardingStage = Literal[
+    "WELCOME", "FIRST_MONITOR", "SETUP_COMPLETE", "COMPLETED"
+]
+UserDtoUserRole = Literal["SUPERADMIN", "ADMIN", "USER"]
 WebhookChannelConfigChannelType = Literal["webhook"]
 WebhookInboxDtoStatus = Literal["active", "disabled"]
 ZapierChannelConfigChannelType = Literal["zapier"]
@@ -573,6 +691,10 @@ __all__ = [
     "BearerAuthConfigType",
     "BodyContainsAssertionType",
     "BulkMonitorActionRequestAction",
+    "CaptureCompareDtoBaselineKind",
+    "CapturePolicyScreenshots",
+    "CapturePolicyTrace",
+    "CapturePolicyVideo",
     "ChangeRoleRequestOrgRole",
     "ChangeStatusRequestStatus",
     "CodeCheckType",
@@ -618,6 +740,7 @@ __all__ = [
     "EmailChannelConfigChannelType",
     "EmailDomainDtoKind",
     "EmailDomainDtoStatus",
+    "ErrorResponseReason",
     "GitLabChannelConfigChannelType",
     "GoogleChatChannelConfigChannelType",
     "HeaderAuthConfigType",
@@ -677,9 +800,13 @@ __all__ = [
     "MonitorAssertionDtoAssertionType",
     "MonitorAssertionDtoSeverity",
     "MonitorAuthDtoAuthType",
+    "MonitorDtoBindingReadiness",
     "MonitorDtoCurrentStatus",
+    "MonitorDtoDisplayHealth",
     "MonitorDtoManagedBy",
     "MonitorDtoType",
+    "MonitorSessionDtoLifecycle",
+    "MonitorSessionDtoReusePolicy",
     "MonitorTestRequestType",
     "MonitorVersionDtoChangedVia",
     "NotificationDispatchDtoCompletionReason",
@@ -707,7 +834,28 @@ __all__ = [
     "ResponseTimeAssertionType",
     "ResponseTimeWarnAssertionType",
     "ResultSummaryDtoCurrentStatus",
+    "RevisionDiffHunkDtoChange",
     "RootlyChannelConfigChannelType",
+    "RowVerdict",
+    "RunArtifactDtoCaptureReason",
+    "RunArtifactDtoKind",
+    "RunArtifactDtoLifecycle",
+    "RunAttemptDtoOutcome",
+    "RunCaseDtoStatus",
+    "RunDiffDtoBaselineKind",
+    "RunDtoMonitorType",
+    "RunDtoOutcome",
+    "RunDtoPhase",
+    "RunDtoSource",
+    "RunEventDtoType",
+    "RunEvidenceDtoKind",
+    "RunEvidenceDtoState",
+    "RunExecutionDtoMonitorType",
+    "RunStepDtoCategory",
+    "RunStepDtoStatus",
+    "RuntimeProfileDtoStatus",
+    "SecretRequestDtoFulfilledBy",
+    "SecretRequestDtoReadiness",
     "ServiceCatalogDtoLifecycleStatus",
     "ServiceDetailDtoLifecycleStatus",
     "ServiceSubscriptionDtoAlertSensitivity",
@@ -746,6 +894,7 @@ __all__ = [
     "TcpResponseTimeWarnAssertionType",
     "TeamsChannelConfigChannelType",
     "TelegramChannelConfigChannelType",
+    "TraceEntryPointId",
     "TriggerRuleAggregationType",
     "TriggerRuleScope",
     "TriggerRuleSeverity",
@@ -787,6 +936,9 @@ __all__ = [
     "UpdateWebhookEndpointRequestSubscribedEventsItem",
     "UpdateWebhookInboxRequestStatus",
     "UpdateZapierChannelConfigChannelType",
+    "UpsertMonitorSessionRequestReusePolicy",
+    "UserDtoOnboardingStage",
+    "UserDtoUserRole",
     "WebhookChannelConfigChannelType",
     "WebhookInboxDtoStatus",
     "ZapierChannelConfigChannelType",
