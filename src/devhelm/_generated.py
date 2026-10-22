@@ -9,6 +9,85 @@ from uuid import UUID
 from datetime import date as date_aliased
 
 
+class AccountEntitlementsDto(BaseModel):
+    model_config = ConfigDict(extra="ignore", populate_by_name=True)
+    plan: Annotated[str, Field(description="Billing plan, such as FREE or PRO")]
+    monitor_cap: Annotated[
+        int | None,
+        Field(
+            alias="monitorCap",
+            description="Maximum monitors on this plan; null when unlimited",
+        ),
+    ] = None
+    code_check_cap: Annotated[
+        int | None,
+        Field(
+            alias="codeCheckCap",
+            description="Maximum browser and multi-step API monitors; null when unlimited",
+        ),
+    ] = None
+    browser_monitor_cap: Annotated[
+        int | None,
+        Field(
+            alias="browserMonitorCap",
+            description="Browser monitor cap; null when the plan uses one combined cap",
+        ),
+    ] = None
+    api_monitor_cap: Annotated[
+        int | None,
+        Field(
+            alias="apiMonitorCap",
+            description="Multi-step API monitor cap; null when the plan uses one combined cap",
+        ),
+    ] = None
+    code_check_interval_floor_seconds: Annotated[
+        int,
+        Field(
+            alias="codeCheckIntervalFloorSeconds",
+            description="Shortest code-check interval in seconds",
+        ),
+    ]
+    monitor_interval_floor_seconds: Annotated[
+        int,
+        Field(
+            alias="monitorIntervalFloorSeconds",
+            description="Shortest probe interval in seconds",
+        ),
+    ]
+    environment_cap: Annotated[
+        int | None,
+        Field(
+            alias="environmentCap",
+            description="Maximum environments; null when unlimited",
+        ),
+    ] = None
+    retention_days: Annotated[
+        int | None,
+        Field(
+            alias="retentionDays",
+            description="Artifact retention in days; null when unlimited",
+        ),
+    ] = None
+
+
+class AccountSettingsDto(BaseModel):
+    model_config = ConfigDict(extra="ignore", populate_by_name=True)
+    validation_reserve_pct: Annotated[
+        int,
+        Field(
+            alias="validationReservePct",
+            description="Percent of included runs held for scheduled monitoring",
+        ),
+    ]
+    spend_cap_cents: Annotated[
+        int | None,
+        Field(
+            alias="spendCapCents",
+            description="Spend cap in cents; 0 is a hard stop; null when uncapped",
+        ),
+    ] = None
+
+
 class AcquireDeployLockRequest(BaseModel):
     model_config = ConfigDict(extra="forbid", populate_by_name=True)
     locked_by: Annotated[
@@ -2323,11 +2402,9 @@ class ErrorResponse(BaseModel):
             description="Why permission was refused: scope or role", examples=["role"]
         ),
     ] = None
-    next: Annotated[
-        ErrorNext | None, Field(description="Command and docs that fix this error")
-    ] = None
+    next: ErrorNext | None = None
     details: Annotated[
-        dict[str, Any] | None,
+        dict[str, dict[str, Any]] | None,
         Field(
             description="Extra fields for this error, such as a missing secret key and environment"
         ),
@@ -3859,6 +3936,32 @@ class MonitorDriftFieldDto(BaseModel):
     declared: Annotated[
         str, Field(description="Implied declared / IaC baseline", min_length=1)
     ]
+
+
+class MonitorHistoryEntryDto(BaseModel):
+    model_config = ConfigDict(extra="ignore", populate_by_name=True)
+    kind: Annotated[str, Field(description="Row kind: not_run")]
+    monitor_id: Annotated[
+        UUID, Field(alias="monitorId", description="Monitor this row belongs to")
+    ]
+    region: Annotated[
+        str | None,
+        Field(
+            description="Region of the skipped ticks; null when they span several regions"
+        ),
+    ] = None
+    reason: Annotated[
+        str,
+        Field(description="Why the ticks were skipped: quota, blocked, or plan_limit"),
+    ]
+    from_: Annotated[
+        AwareDatetime,
+        Field(alias="from", description="First skipped tick in this collapsed row"),
+    ]
+    to: Annotated[
+        AwareDatetime, Field(description="Latest skipped tick in this collapsed row")
+    ]
+    count: Annotated[int, Field(description="Skipped ticks collapsed into this row")]
 
 
 class MonitorOverlayRequest(BaseModel):
@@ -6219,7 +6322,7 @@ class ScriptMonitorConfig(BaseModel):
         str | None,
         Field(
             alias="runtimeId",
-            description="Runtime pin such as 2026.11; omit to pin the current runtime at create",
+            description="Runtime pin such as 2026.11; omit to pin the newest runtime that can run",
             max_length=32,
             min_length=0,
             pattern="^$|^[A-Za-z0-9._-]+$",
@@ -6764,6 +6867,16 @@ class SignedDownload(BaseModel):
     size_bytes: Annotated[
         int, Field(alias="sizeBytes", description="Object size in bytes")
     ]
+
+
+class SingleValueResponseAccountEntitlementsDto(BaseModel):
+    model_config = ConfigDict(extra="ignore", populate_by_name=True)
+    data: AccountEntitlementsDto
+
+
+class SingleValueResponseAccountSettingsDto(BaseModel):
+    model_config = ConfigDict(extra="ignore", populate_by_name=True)
+    data: AccountSettingsDto
 
 
 class SingleValueResponseAlertChannelDto(BaseModel):
@@ -8324,6 +8437,27 @@ class TriggerRule(BaseModel):
     ] = None
 
 
+class UpdateAccountSettingsRequest(BaseModel):
+    model_config = ConfigDict(extra="forbid", populate_by_name=True)
+    validation_reserve_pct: Annotated[
+        int | None,
+        Field(
+            alias="validationReservePct",
+            description="Reserve percent (0–100); null preserves current",
+            ge=0,
+            le=100,
+        ),
+    ] = None
+    spend_cap_cents: Annotated[
+        int | None,
+        Field(
+            alias="spendCapCents",
+            description="Spend cap in cents; 0 is a hard stop; null preserves current",
+            ge=0,
+        ),
+    ] = None
+
+
 class UpdateAlertSensitivityRequest(BaseModel):
     model_config = ConfigDict(extra="forbid", populate_by_name=True)
     alert_sensitivity: Annotated[
@@ -9577,6 +9711,50 @@ class UptimeDto(BaseModel):
     ] = None
 
 
+class UsageMeterDto(BaseModel):
+    model_config = ConfigDict(extra="ignore", populate_by_name=True)
+    meter: Annotated[
+        str, Field(description="Meter name, such as browser_runs or testing_events")
+    ]
+    used: Annotated[int, Field(description="Amount used this period")]
+    included: Annotated[
+        int | None, Field(description="Included amount; null when unlimited")
+    ] = None
+    reserved: Annotated[
+        int, Field(description="Amount held back for scheduled monitoring")
+    ]
+    resets_at: Annotated[
+        AwareDatetime, Field(alias="resetsAt", description="When this meter resets")
+    ]
+    overage_runs: Annotated[
+        int,
+        Field(
+            alias="overageRuns", description="Runs or events past the included amount"
+        ),
+    ]
+    overage_cents: Annotated[
+        int | None,
+        Field(
+            alias="overageCents",
+            description="Overage charge in cents; null for Testing events",
+        ),
+    ] = None
+    spend_cap_cents: Annotated[
+        int | None,
+        Field(
+            alias="spendCapCents",
+            description="Spend cap in cents; null when uncapped or not a run meter",
+        ),
+    ] = None
+    spend_cap_state: Annotated[
+        str | None,
+        Field(
+            alias="spendCapState",
+            description="Spend cap state: open, reached, or hard_stop",
+        ),
+    ] = None
+
+
 class UserDto(BaseModel):
     model_config = ConfigDict(extra="ignore", populate_by_name=True)
     id: Annotated[int, Field(description="Unique user identifier")]
@@ -10004,6 +10182,29 @@ class ZapierChannelConfig(BaseModel):
             min_length=1,
         ),
     ]
+
+
+class AccountUsageDto(BaseModel):
+    model_config = ConfigDict(extra="ignore", populate_by_name=True)
+    resets_at: Annotated[
+        AwareDatetime,
+        Field(alias="resetsAt", description="When this usage window resets"),
+    ]
+    spend_cap_cents: Annotated[
+        int | None,
+        Field(
+            alias="spendCapCents",
+            description="Owner spend cap in cents; 0 is a hard stop; null when uncapped",
+        ),
+    ] = None
+    spend_cap_state: Annotated[
+        str,
+        Field(
+            alias="spendCapState",
+            description="Spend cap state: open, reached, or hard_stop",
+        ),
+    ]
+    meters: Annotated[list[UsageMeterDto], Field(description="Meters for this period")]
 
 
 class AcknowledgeAllIncidentsResponse(BaseModel):
@@ -10657,6 +10858,26 @@ class CreditPolicy(BaseModel):
     tiers: Annotated[
         list[CreditTier] | None, Field(description="Credit tiers by uptime threshold")
     ] = None
+
+
+class CursorPageMonitorHistoryEntryDto(BaseModel):
+    model_config = ConfigDict(extra="ignore", populate_by_name=True)
+    data: Annotated[
+        list[MonitorHistoryEntryDto], Field(description="Items on this page")
+    ]
+    next_cursor: Annotated[
+        str | None,
+        Field(
+            alias="nextCursor",
+            description="Opaque cursor for the next page; null when there are no more results",
+        ),
+    ] = None
+    has_more: Annotated[
+        bool,
+        Field(
+            alias="hasMore", description="Whether more results exist beyond this page"
+        ),
+    ]
 
 
 class CursorPageNotificationDispatchDto(BaseModel):
@@ -11558,6 +11779,24 @@ class MonitorDto(BaseModel):
     last_run_id: Annotated[
         UUID | None, Field(alias="lastRunId", description="Latest code run id")
     ] = None
+    resumes_at: Annotated[
+        AwareDatetime | None,
+        Field(alias="resumesAt", description="When a capped monitor resumes"),
+    ] = None
+    missing_keys: Annotated[
+        list[str] | None,
+        Field(
+            alias="missingKeys",
+            description="Secret keys missing while the monitor is blocked",
+        ),
+    ] = None
+    blocked_environment: Annotated[
+        str | None,
+        Field(
+            alias="blockedEnvironment",
+            description="Environment missing those keys while the monitor is blocked",
+        ),
+    ] = None
     definition_id: Annotated[
         UUID | None,
         Field(
@@ -12306,6 +12545,11 @@ class ServiceUptimeResponse(BaseModel):
             examples=["vendor_reported"],
         ),
     ] = None
+
+
+class SingleValueResponseAccountUsageDto(BaseModel):
+    model_config = ConfigDict(extra="ignore", populate_by_name=True)
+    data: AccountUsageDto
 
 
 class SingleValueResponseAcknowledgeAllIncidentsResponse(BaseModel):
