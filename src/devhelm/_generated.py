@@ -423,6 +423,16 @@ class ApiKeyCreateResponse(BaseModel):
             description="Timestamp when the key expires; null if no expiration",
         ),
     ] = None
+    scopes: Annotated[
+        list[str],
+        Field(description="Scopes this key is allowed to call; full grants everything"),
+    ]
+    tool: Annotated[
+        str | None,
+        Field(
+            description="Tool this key writes as on owner-enforced monitors; null means API"
+        ),
+    ] = None
 
 
 class ApiKeyDto(BaseModel):
@@ -463,6 +473,25 @@ class ApiKeyDto(BaseModel):
             description="Timestamp when the key expires; null if no expiration",
         ),
     ] = None
+    scopes: Annotated[
+        list[str],
+        Field(description="Scopes this key is allowed to call; full grants everything"),
+    ]
+    tool: Annotated[
+        str | None,
+        Field(
+            description="Tool this key writes as on owner-enforced monitors; null means API"
+        ),
+    ] = None
+
+
+class ArtifactDownloadDto(BaseModel):
+    model_config = ConfigDict(extra="ignore", populate_by_name=True)
+    url: Annotated[str, Field(description="Signed GET URL for the artifact bytes")]
+    expires_at: Annotated[
+        AwareDatetime,
+        Field(alias="expiresAt", description="When the signed URL stops working"),
+    ]
 
 
 class ArtifactViewport(BaseModel):
@@ -554,12 +583,95 @@ class BrowserCapabilityEnvelope(BaseModel):
     upload: Annotated[bool, Field(description="File upload is enabled")]
 
 
+class Bucket(BaseModel):
+    model_config = ConfigDict(extra="ignore", populate_by_name=True)
+    start: Annotated[
+        AwareDatetime, Field(description="Inclusive clock-aligned bucket start")
+    ]
+    passed: Annotated[
+        int, Field(description="Health-voting region cycles whose final attempt passed")
+    ]
+    failed: Annotated[
+        int, Field(description="Health-voting region cycles whose final attempt failed")
+    ]
+    timed_out: Annotated[
+        int,
+        Field(
+            alias="timedOut", description="Region cycles whose final attempt timed out"
+        ),
+    ]
+    couldnt_run: Annotated[
+        int,
+        Field(
+            alias="couldntRun",
+            description="Region cycles with a final non-target outcome",
+        ),
+    ]
+    passed_on_retry: Annotated[
+        int,
+        Field(
+            alias="passedOnRetry",
+            description="Passed cycles that had an earlier failed attempt",
+        ),
+    ]
+    duration_samples: Annotated[
+        int,
+        Field(
+            alias="durationSamples",
+            description="Executions with a completed duration in this bucket",
+        ),
+    ]
+    p50_ms: Annotated[
+        float | None,
+        Field(
+            alias="p50Ms",
+            description="Median duration of completed executions in milliseconds",
+        ),
+    ] = None
+    p95_ms: Annotated[
+        float | None,
+        Field(
+            alias="p95Ms",
+            description="p95 duration of completed executions in milliseconds",
+        ),
+    ] = None
+
+
 class Action(StrEnum):
     pause = "PAUSE"
     resume = "RESUME"
     delete = "DELETE"
     add_tag = "ADD_TAG"
     remove_tag = "REMOVE_TAG"
+    update_schedule = "UPDATE_SCHEDULE"
+    run = "RUN"
+    mute = "MUTE"
+    unmute = "UNMUTE"
+    acknowledge = "ACKNOWLEDGE"
+
+
+class BundleDto(BaseModel):
+    model_config = ConfigDict(extra="ignore", populate_by_name=True)
+    digest: Annotated[
+        str,
+        Field(
+            description="Closure digest, sha256:<hex>. Same files always return this value",
+            min_length=1,
+        ),
+    ]
+    upload_digest: Annotated[
+        str,
+        Field(
+            alias="uploadDigest",
+            description="Digest of every file that was sent, before import closure",
+            min_length=1,
+        ),
+    ]
+    files: Annotated[list[str], Field(description="Files in the import closure")]
+    keys: Annotated[
+        list[str], Field(description="Secret names detected in the closure")
+    ]
+    size: Annotated[int, Field(description="Uncompressed closure size in bytes")]
 
 
 class Screenshots(StrEnum):
@@ -580,6 +692,12 @@ class Video(StrEnum):
     off = "off"
 
 
+class Network(StrEnum):
+    always = "always"
+    on_failure = "on_failure"
+    off = "off"
+
+
 class CapturePolicy(BaseModel):
     model_config = ConfigDict(extra="ignore", populate_by_name=True)
     screenshots: Annotated[
@@ -589,6 +707,10 @@ class CapturePolicy(BaseModel):
         Trace | None, Field(description="When to capture a Playwright trace")
     ] = None
     video: Annotated[Video | None, Field(description="When to capture video")] = None
+    network: Annotated[
+        Network | None,
+        Field(description="When network rows and HAR are retained; null uses always"),
+    ] = None
 
 
 class CategoryDto(BaseModel):
@@ -689,18 +811,35 @@ class CodeCheckStep(BaseModel):
     ] = None
 
 
-class CodeTestTargetRequest(BaseModel):
-    model_config = ConfigDict(extra="forbid", populate_by_name=True)
-    environment_id: Annotated[
-        UUID | None,
+class CodeSource(BaseModel):
+    model_config = ConfigDict(extra="ignore", populate_by_name=True)
+    repo: Annotated[
+        str | None,
         Field(
-            alias="environmentId",
-            description="Environment to test against; null uses the monitor's environment",
+            description="Repository that produced this code",
+            max_length=512,
+            min_length=0,
         ),
     ] = None
-    region: Annotated[
+    branch: Annotated[
         str | None,
-        Field(description="Region for this test; null uses the monitor's first region"),
+        Field(
+            description="Branch that produced this code", max_length=255, min_length=0
+        ),
+    ] = None
+    commit: Annotated[
+        str | None,
+        Field(
+            description="Commit that produced this code", max_length=64, min_length=0
+        ),
+    ] = None
+    file: Annotated[
+        str | None,
+        Field(
+            description="Declaring file in that repository",
+            max_length=512,
+            min_length=0,
+        ),
     ] = None
 
 
@@ -939,6 +1078,14 @@ class ManagedBy(StrEnum):
     api = "API"
 
 
+class Tool(StrEnum):
+    dashboard = "DASHBOARD"
+    cli = "CLI"
+    terraform = "TERRAFORM"
+    mcp = "MCP"
+    api = "API"
+
+
 class CreateApiKeyRequest(BaseModel):
     model_config = ConfigDict(extra="forbid", populate_by_name=True)
     name: Annotated[
@@ -956,11 +1103,64 @@ class CreateApiKeyRequest(BaseModel):
             description="Optional expiration timestamp in ISO 8601 format",
         ),
     ] = None
+    preset: Annotated[
+        str | None,
+        Field(
+            description="Preset expanded into scopes: ci-pr, ci-deploy, agent-responder, agent-author"
+        ),
+    ] = None
+    scopes: Annotated[
+        list[str] | None, Field(description="Scopes to grant (default: full)")
+    ] = None
+    tool: Annotated[
+        Tool | None,
+        Field(
+            description="Tool this key writes as on owner-enforced monitors (default: API)"
+        ),
+    ] = None
 
 
 class Severity(StrEnum):
     fail = "fail"
     warn = "warn"
+
+
+class CreateBundleRequest(BaseModel):
+    model_config = ConfigDict(extra="forbid", populate_by_name=True)
+    files: Annotated[
+        dict[str, str],
+        Field(description="Path to UTF-8 text. Paths are relative to the bundle root"),
+    ]
+    entrypoint: Annotated[
+        str | None,
+        Field(
+            description="File that runs. Omit when the map is already the import closure",
+            max_length=512,
+            min_length=0,
+        ),
+    ] = None
+    runtime_id: Annotated[
+        str | None,
+        Field(
+            alias="runtimeId",
+            description="Runtime used to refuse imports. Omit for the newest runtime that can run",
+            max_length=32,
+            min_length=0,
+        ),
+    ] = None
+
+
+class CreateDeviceAuthorizationRequest(BaseModel):
+    model_config = ConfigDict(extra="forbid", populate_by_name=True)
+    client_name: Annotated[
+        str,
+        Field(
+            alias="clientName",
+            description="Client name stored on the minted API key, e.g. devhelm-cli on mbp (max 190)",
+            max_length=190,
+            min_length=0,
+        ),
+    ]
 
 
 class Kind(StrEnum):
@@ -1127,14 +1327,13 @@ class Type(StrEnum):
     multi_step_api = "MULTI_STEP_API"
 
 
-class CreatePackageUploadRequest(BaseModel):
-    model_config = ConfigDict(extra="forbid", populate_by_name=True)
-    digest: Annotated[
+class SecretKey(RootModel[str]):
+    root: Annotated[
         str,
         Field(
-            description="SHA-256 hex digest of the package zip to upload (64 chars)",
-            max_length=64,
-            min_length=64,
+            description="Secret keys to attach; null starts with the scanned set",
+            max_length=255,
+            min_length=0,
         ),
     ]
 
@@ -1679,32 +1878,6 @@ class DeliveryAttemptDto(BaseModel):
     attempted_at: Annotated[AwareDatetime, Field(alias="attemptedAt")]
 
 
-class DemandedKeyLocation(BaseModel):
-    model_config = ConfigDict(extra="ignore", populate_by_name=True)
-    key: Annotated[
-        str,
-        Field(description="Secret name the code reads", max_length=255, min_length=0),
-    ]
-    declaring_file: Annotated[
-        str | None,
-        Field(
-            alias="declaringFile",
-            description="Declaring file path inside the zip",
-            max_length=512,
-            min_length=0,
-        ),
-    ] = None
-    declaring_location: Annotated[
-        str | None,
-        Field(
-            alias="declaringLocation",
-            description="Call site from package scan, e.g. signIn(…) · line 6",
-            max_length=255,
-            min_length=0,
-        ),
-    ] = None
-
-
 class DeployLockDto(BaseModel):
     model_config = ConfigDict(extra="ignore", populate_by_name=True)
     id: Annotated[UUID, Field(description="Unique lock identifier")]
@@ -1725,6 +1898,86 @@ class DeployLockDto(BaseModel):
         Field(
             alias="expiresAt",
             description="Timestamp when the lock automatically expires",
+        ),
+    ]
+
+
+class DeviceAuthorizationDto(BaseModel):
+    model_config = ConfigDict(extra="ignore", populate_by_name=True)
+    device_code: Annotated[
+        str,
+        Field(
+            alias="deviceCode",
+            description="Secret code the CLI sends when polling for the API key",
+            min_length=1,
+        ),
+    ]
+    user_code: Annotated[
+        str,
+        Field(
+            alias="userCode",
+            description="Short code the user confirms in the dashboard, e.g. ABCD-EFGH",
+            min_length=1,
+        ),
+    ]
+    verification_uri: Annotated[
+        str,
+        Field(
+            alias="verificationUri",
+            description="Dashboard page where the user enters the code",
+            min_length=1,
+        ),
+    ]
+    verification_uri_complete: Annotated[
+        str,
+        Field(
+            alias="verificationUriComplete",
+            description="Dashboard page with the user code already filled in",
+            min_length=1,
+        ),
+    ]
+    expires_in: Annotated[
+        int, Field(alias="expiresIn", description="Seconds until the codes expire")
+    ]
+    interval: Annotated[int, Field(description="Minimum seconds between token polls")]
+
+
+class DeviceTokenDto(BaseModel):
+    model_config = ConfigDict(extra="ignore", populate_by_name=True)
+    status: Annotated[str, Field(description="Poll outcome")]
+    interval: Annotated[int, Field(description="Minimum seconds before the next poll")]
+    api_key: Annotated[
+        str | None,
+        Field(
+            alias="apiKey",
+            description="Minted API key, returned once with status complete",
+        ),
+    ] = None
+    organization_id: Annotated[
+        int | None,
+        Field(
+            alias="organizationId",
+            description="Organization that owns the minted API key",
+        ),
+    ] = None
+    workspace_id: Annotated[
+        int | None,
+        Field(
+            alias="workspaceId",
+            description="Workspace chosen when the login was approved",
+        ),
+    ] = None
+
+
+class DeviceTokenRequest(BaseModel):
+    model_config = ConfigDict(extra="forbid", populate_by_name=True)
+    device_code: Annotated[
+        str,
+        Field(
+            alias="deviceCode",
+            description="Device code returned when the login was started",
+            max_length=128,
+            min_length=0,
         ),
     ]
 
@@ -2109,6 +2362,61 @@ class EntitlementDto(BaseModel):
     ]
 
 
+class EntitlementResponse(BaseModel):
+    model_config = ConfigDict(extra="ignore", populate_by_name=True)
+    tier: Annotated[str, Field(description="Resolved billing plan tier")]
+    entitlements: Annotated[
+        dict[str, EntitlementDto],
+        Field(description="All entitlements keyed by entitlement key"),
+    ]
+    usage: Annotated[
+        dict[str, int],
+        Field(
+            description="Current usage counters keyed by entitlement key (only for countable resources)"
+        ),
+    ]
+    trial_active: Annotated[
+        bool,
+        Field(
+            alias="trialActive", description="Whether the org is currently on a trial"
+        ),
+    ]
+    trial_expires_at: Annotated[
+        AwareDatetime | None,
+        Field(
+            alias="trialExpiresAt",
+            description="Trial expiry date (null if not trialing)",
+        ),
+    ] = None
+    subscription_status: Annotated[
+        str | None,
+        Field(
+            alias="subscriptionStatus",
+            description="Current subscription status (null if no subscription)",
+        ),
+    ] = None
+    usage_period_start: Annotated[
+        AwareDatetime,
+        Field(
+            alias="usagePeriodStart", description="Start of the current usage window"
+        ),
+    ]
+    synthetics_overage_cents: Annotated[
+        int | None,
+        Field(
+            alias="syntheticsOverageCents",
+            description="Consumed overage cents this period, including when overage is now off",
+        ),
+    ] = None
+    cap_stops: Annotated[
+        dict[str, str] | None,
+        Field(
+            alias="capStops",
+            description="Stopped meters keyed by meter name, with included or spend_cap reasons",
+        ),
+    ] = None
+
+
 class EnvironmentDto(BaseModel):
     model_config = ConfigDict(extra="ignore", populate_by_name=True)
     id: Annotated[UUID, Field(description="Unique environment identifier")]
@@ -2323,11 +2631,9 @@ class ErrorResponse(BaseModel):
             description="Why permission was refused: scope or role", examples=["role"]
         ),
     ] = None
-    next: Annotated[
-        ErrorNext | None, Field(description="Command and docs that fix this error")
-    ] = None
+    next: ErrorNext | None = None
     details: Annotated[
-        dict[str, Any] | None,
+        dict[str, dict[str, Any]] | None,
         Field(
             description="Extra fields for this error, such as a missing secret key and environment"
         ),
@@ -2377,12 +2683,72 @@ class EscalationStep(BaseModel):
     ] = None
 
 
+class EvidencePurgedMetadata(BaseModel):
+    model_config = ConfigDict(extra="ignore", populate_by_name=True)
+    kind: Literal["evidence_purged"] = "evidence_purged"
+    reason: Annotated[
+        str, Field(description="Why the evidence was deleted", min_length=1)
+    ]
+
+
+class EvidencePurgeRequest(BaseModel):
+    model_config = ConfigDict(extra="forbid", populate_by_name=True)
+    reason: Annotated[
+        str,
+        Field(
+            description="Why the evidence must be deleted; kept in the audit log (max 500)",
+            max_length=500,
+            min_length=0,
+        ),
+    ]
+
+
 class FailureDetail(BaseModel):
     model_config = ConfigDict(extra="ignore", populate_by_name=True)
     monitor_id: Annotated[
         UUID, Field(alias="monitorId", description="Monitor ID that failed")
     ]
     reason: Annotated[str, Field(description="Human-readable reason for the failure")]
+    code: Annotated[
+        str | None,
+        Field(
+            description="Error code for the failure, as returned by the single-monitor operation"
+        ),
+    ] = None
+
+
+class Finding(BaseModel):
+    model_config = ConfigDict(extra="ignore", populate_by_name=True)
+    code: Annotated[str, Field(description="Import validation code")]
+    file: Annotated[
+        str | None, Field(description="Source file containing the import")
+    ] = None
+    line: Annotated[
+        int | None, Field(description="One-based source line containing the import")
+    ] = None
+    message: Annotated[str, Field(description="Description of the import problem")]
+
+
+class Flakiness(BaseModel):
+    model_config = ConfigDict(extra="ignore", populate_by_name=True)
+    from_: Annotated[
+        AwareDatetime,
+        Field(alias="from", description="Start of the seven-day measurement window"),
+    ]
+    to: Annotated[
+        AwareDatetime, Field(description="Exclusive end of the measurement window")
+    ]
+    cycle_count: Annotated[
+        int,
+        Field(alias="cycleCount", description="Completed region cycles in this window"),
+    ]
+    flaky_cycle_count: Annotated[
+        int,
+        Field(
+            alias="flakyCycleCount",
+            description="Completed region cycles recovered by retry",
+        ),
+    ]
 
 
 class GitLabChannelConfig(BaseModel):
@@ -3195,57 +3561,6 @@ class IncidentsSummaryDto(BaseModel):
     mttr30d: float | None = None
 
 
-class IncidentTriggerDto(BaseModel):
-    model_config = ConfigDict(extra="ignore", populate_by_name=True)
-    rule_type: Annotated[
-        str | None,
-        Field(
-            alias="ruleType",
-            description="Trigger rule type (consecutive_failures, failures_in_window, response_time); null when unknown",
-        ),
-    ] = None
-    rule_index: Annotated[
-        int | None,
-        Field(
-            alias="ruleIndex",
-            description="0-based index into the policy trigger_rules array; null when unknown",
-        ),
-    ] = None
-    count: Annotated[
-        int | None,
-        Field(
-            description="Observed failing_streak or failures_in_window from forensics; null when unavailable"
-        ),
-    ] = None
-    threshold: Annotated[
-        int | None,
-        Field(
-            description="Rule required count or threshold_ms from forensics; null when unavailable"
-        ),
-    ] = None
-    last_error: Annotated[
-        str | None,
-        Field(
-            alias="lastError",
-            description="failure_reason from the triggering check result; null when unavailable",
-        ),
-    ] = None
-    first_failed_check_at: Annotated[
-        AwareDatetime | None,
-        Field(
-            alias="firstFailedCheckAt",
-            description="Earliest failing check timestamp in the confirm window when computable; null otherwise",
-        ),
-    ] = None
-    source: Annotated[
-        str,
-        Field(
-            description="Where the enrichment came from: forensics, checks, or none (STATUS_DATA/manual/no data)",
-            min_length=1,
-        ),
-    ]
-
-
 class IncidentUpdateDto(BaseModel):
     model_config = ConfigDict(extra="ignore", populate_by_name=True)
     id: UUID
@@ -3407,6 +3722,10 @@ class KeyInfo(BaseModel):
         AwareDatetime | None,
         Field(alias="lastUsedAt", description="Last time the key was used"),
     ] = None
+    scopes: Annotated[
+        list[str],
+        Field(description="Scopes this key is allowed to call; full grants everything"),
+    ]
 
 
 class LinearChannelConfig(BaseModel):
@@ -3423,6 +3742,16 @@ class LinearChannelConfig(BaseModel):
         str | None,
         Field(alias="labelId", description="Label ID to attach to created issues"),
     ] = None
+
+
+class LinkedIncidentDto(BaseModel):
+    model_config = ConfigDict(extra="ignore", populate_by_name=True)
+    id: Annotated[UUID, Field(description="Incident identifier")]
+    monitor_id: Annotated[
+        UUID, Field(alias="monitorId", description="Monitor the incident belongs to")
+    ]
+    status: Annotated[str, Field(description="Incident status")]
+    title: Annotated[str | None, Field(description="Incident title")] = None
 
 
 class LinkedStatusPageIncidentDto(BaseModel):
@@ -3826,6 +4155,21 @@ class MemberRoleChangedMetadata(BaseModel):
     ]
 
 
+class Meter(BaseModel):
+    model_config = ConfigDict(extra="ignore", populate_by_name=True)
+    used: Annotated[int, Field(description="Billable runs consumed")]
+    included: Annotated[
+        int | None, Field(description="Included runs; null means unlimited")
+    ] = None
+    test_runs: Annotated[
+        int,
+        Field(
+            alias="testRuns",
+            description="Billable validation runs included in consumed runs",
+        ),
+    ]
+
+
 class MonitorAuthConfig(
     RootModel[BearerAuthConfig | BasicAuthConfig | HeaderAuthConfig | ApiKeyAuthConfig]
 ):
@@ -3846,6 +4190,92 @@ class MonitorAuthDto(BaseModel):
     config: ApiKeyAuthConfig | BasicAuthConfig | BearerAuthConfig | HeaderAuthConfig
 
 
+class MonitorCappedDto(BaseModel):
+    model_config = ConfigDict(extra="ignore", populate_by_name=True)
+    resumes_at: Annotated[
+        AwareDatetime | None,
+        Field(alias="resumesAt", description="When runs resume; null when unknown"),
+    ] = None
+    kind: Annotated[
+        str | None,
+        Field(description="Allowance stopping this meter: included or spend_cap"),
+    ] = None
+
+
+class MonitorCodeSpec(BaseModel):
+    model_config = ConfigDict(extra="ignore", populate_by_name=True)
+    bundle: Annotated[
+        str,
+        Field(
+            description="Closure digest from POST /bundles (sha256:<hex>)",
+            max_length=80,
+            min_length=0,
+            pattern="^sha256:[a-f0-9]{64}$",
+        ),
+    ]
+    entrypoint: Annotated[
+        str,
+        Field(
+            description="File that runs, relative to the bundle root",
+            max_length=512,
+            min_length=0,
+        ),
+    ]
+    source: CodeSource | None = None
+
+
+class MonitorDisplayTickDto(BaseModel):
+    model_config = ConfigDict(extra="ignore", populate_by_name=True)
+    at: Annotated[AwareDatetime, Field(description="Inclusive start of this bucket")]
+    outcome: Annotated[
+        str,
+        Field(
+            description="passed, failed, degraded, timed_out, passed_on_retry, couldnt_run, skipped, or no_data"
+        ),
+    ]
+    run_id: Annotated[
+        UUID | None,
+        Field(alias="runId", description="Representative run to open for this bucket"),
+    ] = None
+    failing_regions: Annotated[
+        list[str],
+        Field(
+            alias="failingRegions",
+            description="Regions with a target failure in this bucket",
+        ),
+    ]
+    retry_pass_count: Annotated[
+        int,
+        Field(
+            alias="retryPassCount",
+            description="Region cycles that passed after retry in this bucket",
+        ),
+    ]
+
+
+class MonitorDriftCodeDto(BaseModel):
+    model_config = ConfigDict(extra="ignore", populate_by_name=True)
+    live_digest: Annotated[
+        str,
+        Field(
+            alias="liveDigest",
+            description="Digest of the code revision running now",
+            min_length=1,
+        ),
+    ]
+    git_digest: Annotated[
+        str,
+        Field(
+            alias="gitDigest",
+            description="Digest of the code revision last applied from Git",
+            min_length=1,
+        ),
+    ]
+    drifted: Annotated[
+        bool, Field(description="Whether the live digest differs from the Git digest")
+    ]
+
+
 class MonitorDriftFieldDto(BaseModel):
     model_config = ConfigDict(extra="ignore", populate_by_name=True)
     field: Annotated[
@@ -3859,6 +4289,108 @@ class MonitorDriftFieldDto(BaseModel):
     declared: Annotated[
         str, Field(description="Implied declared / IaC baseline", min_length=1)
     ]
+
+
+class MonitorFacetValueDto(BaseModel):
+    model_config = ConfigDict(extra="ignore", populate_by_name=True)
+    value: Annotated[
+        str,
+        Field(
+            description="Value as the list filter takes it: type name, environment id, region, tag name, or owner",
+            min_length=1,
+        ),
+    ]
+    count: Annotated[int, Field(description="Monitors with this value")]
+    worst_state: Annotated[
+        str,
+        Field(
+            alias="worstState",
+            description="Most severe displayHealth among the monitors with this value",
+        ),
+    ]
+    failing: Annotated[
+        int | None, Field(description="Matching monitors currently failing")
+    ] = None
+    not_running: Annotated[
+        int | None,
+        Field(
+            alias="notRunning", description="Matching monitors currently unable to run"
+        ),
+    ] = None
+    flaky: Annotated[
+        int | None, Field(description="Matching running monitors recovered by retry")
+    ] = None
+    owner: Annotated[
+        str | None, Field(description="Owning tool for a project facet value")
+    ] = None
+
+
+class MonitorFieldChange(BaseModel):
+    model_config = ConfigDict(extra="ignore", populate_by_name=True)
+    field: Annotated[str, Field(description="Setting that changed", min_length=1)]
+    from_: Annotated[
+        str | None, Field(alias="from", description="Previous setting value")
+    ] = None
+    to: Annotated[str | None, Field(description="New setting value")] = None
+
+
+class MonitorHistoryEntryDto(BaseModel):
+    model_config = ConfigDict(extra="ignore", populate_by_name=True)
+    kind: Annotated[str, Field(description="Row kind: not_run")]
+    monitor_id: Annotated[
+        UUID, Field(alias="monitorId", description="Monitor this row belongs to")
+    ]
+    region: Annotated[
+        str | None,
+        Field(
+            description="Region of the skipped ticks; null when they span several regions"
+        ),
+    ] = None
+    reason: Annotated[
+        str,
+        Field(description="Why the ticks were skipped: quota, blocked, or plan_limit"),
+    ]
+    from_: Annotated[
+        AwareDatetime,
+        Field(alias="from", description="First skipped tick in this collapsed row"),
+    ]
+    to: Annotated[
+        AwareDatetime, Field(description="Latest skipped tick in this collapsed row")
+    ]
+    count: Annotated[int, Field(description="Skipped ticks collapsed into this row")]
+    missing_keys: Annotated[
+        list[str] | None,
+        Field(
+            alias="missingKeys",
+            description="Secret keys recorded as missing for this interval",
+        ),
+    ] = None
+    environment: Annotated[
+        str | None,
+        Field(description="Environment recorded when these ticks were skipped"),
+    ] = None
+
+
+class MonitorHistoryTickDto(BaseModel):
+    model_config = ConfigDict(extra="ignore", populate_by_name=True)
+    at: Annotated[AwareDatetime, Field(description="Start of the bucket")]
+    outcome: Annotated[
+        str,
+        Field(
+            description="PASSED when every check passed, FAILED when none did, otherwise DEGRADED"
+        ),
+    ]
+
+
+class MonitorListGroupDto(BaseModel):
+    model_config = ConfigDict(extra="ignore", populate_by_name=True)
+    key: Annotated[
+        str,
+        Field(
+            description="Group: failing, not_running, flaky, passing, running, or paused"
+        ),
+    ]
+    count: Annotated[int, Field(description="Monitors in the group")]
 
 
 class MonitorOverlayRequest(BaseModel):
@@ -3877,113 +4409,57 @@ class MonitorOverlayRequest(BaseModel):
     ] = None
 
 
-class File(RootModel[str]):
-    root: Annotated[
-        str,
-        Field(
-            description="Relative file paths included in the zip",
-            max_length=512,
-            min_length=0,
-        ),
-    ]
-
-
-class Key(RootModel[str]):
-    root: Annotated[
-        str,
-        Field(
-            description="Secret names the zip demanded. PUT: null preserves, [] clears",
-            max_length=255,
-            min_length=0,
-        ),
-    ]
-
-
-class MonitorPackageSpec(BaseModel):
+class MonitorOwnerDto(BaseModel):
     model_config = ConfigDict(extra="ignore", populate_by_name=True)
-    digest: Annotated[
-        str,
-        Field(
-            description="SHA-256 hex digest of the package zip (64 characters)",
-            max_length=64,
-            min_length=64,
-        ),
+    type: Annotated[
+        str, Field(description="Owning tool: DASHBOARD, CLI, TERRAFORM, MCP, or API")
     ]
-    entrypoint: Annotated[
-        str,
-        Field(
-            description="Entrypoint path inside the zip, e.g. tests/login.spec.ts",
-            max_length=512,
-            min_length=0,
-        ),
-    ]
-    files: Annotated[
-        list[File],
-        Field(
-            description="Relative file paths included in the zip",
-            max_length=256,
-            min_length=0,
-        ),
-    ]
-    keys: Annotated[
-        list[Key] | None,
-        Field(
-            description="Secret names the zip demanded. PUT: null preserves, [] clears",
-            max_length=64,
-            min_length=0,
-        ),
-    ] = None
-    git_sha: Annotated[
+    project: Annotated[
         str | None,
         Field(
-            alias="gitSha",
-            description="Commit SHA from the repo that produced this zip. Client-supplied provenance only",
-            max_length=64,
-            min_length=0,
+            description="Project the owning tool declares; null when it declares none"
         ),
     ] = None
-    git_message: Annotated[
+    address: Annotated[
+        str | None, Field(description="Resource address declared by the owning tool")
+    ] = None
+    label: Annotated[
+        str | None, Field(description="Display label declared by the owning client")
+    ] = None
+    labeled_at: Annotated[
+        AwareDatetime | None,
+        Field(alias="labeledAt", description="When the owner label was declared"),
+    ] = None
+
+
+class MonitorOwnershipMetadata(BaseModel):
+    model_config = ConfigDict(extra="ignore", populate_by_name=True)
+    kind: Literal["monitor_ownership"] = "monitor_ownership"
+    from_owner: Annotated[
         str | None,
-        Field(
-            alias="gitMessage",
-            description="Commit message from the repo that produced this zip",
-            max_length=1024,
-            min_length=0,
-        ),
+        Field(alias="fromOwner", description="Owning tool before the change"),
     ] = None
-    git_file: Annotated[
-        str | None,
-        Field(
-            alias="gitFile",
-            description="Path of the declaring file in that repo",
-            max_length=512,
-            min_length=0,
-        ),
+    to_owner: Annotated[
+        str | None, Field(alias="toOwner", description="Owning tool after the change")
     ] = None
-    authored_by: Annotated[
-        str | None,
-        Field(
-            alias="authoredBy",
-            description="Author attribution supplied with the package",
-            max_length=255,
-            min_length=0,
-        ),
-    ] = None
-    key_locations: Annotated[
-        list[DemandedKeyLocation] | None,
-        Field(
-            alias="keyLocations",
-            description="Per-key declaring file and location from package scan",
-            max_length=64,
-            min_length=0,
-        ),
-    ] = None
+    reason: Annotated[str | None, Field(description="Reason the caller gave")] = None
 
 
 class MonitorReference(BaseModel):
     model_config = ConfigDict(extra="ignore", populate_by_name=True)
     id: Annotated[UUID, Field(description="Monitor identifier")]
     name: Annotated[str, Field(description="Monitor name")]
+
+
+class MonitorRegionHealthDto(BaseModel):
+    model_config = ConfigDict(extra="ignore", populate_by_name=True)
+    region: Annotated[str, Field(description="Probe region", min_length=1)]
+    verdict: Annotated[
+        str,
+        Field(
+            description="Latest verdict: UP, DEGRADED, DOWN, or UNKNOWN when no recent check"
+        ),
+    ]
 
 
 class MonitorRunDurationMetricDto(BaseModel):
@@ -4040,7 +4516,7 @@ class MonitorRunListParams(BaseModel):
     outcome: Annotated[
         str | None,
         Field(
-            description="Filter by outcome; not_passed also includes passed-on-retry runs"
+            description="Outcomes, repeated or comma-separated; not_passed includes retries"
         ),
     ] = None
     region: Annotated[str | None, Field(description="Filter by probe region")] = None
@@ -4052,6 +4528,17 @@ class MonitorRunListParams(BaseModel):
         UUID | None,
         Field(alias="revisionId", description="Only runs for this published revision"),
     ] = None
+    from_: Annotated[
+        AwareDatetime | None,
+        Field(
+            alias="from",
+            description="Inclusive enqueue lower bound (clamped to 90 days)",
+        ),
+    ] = None
+    to: Annotated[
+        AwareDatetime | None,
+        Field(description="Inclusive enqueue upper bound (default now)"),
+    ] = None
     cursor: Annotated[
         str | None,
         Field(
@@ -4061,6 +4548,73 @@ class MonitorRunListParams(BaseModel):
     limit: Annotated[
         int, Field(description="Page size (1–100, default 25)", ge=1, le=100)
     ]
+    monitor_type: Annotated[
+        str | None,
+        Field(
+            alias="monitorType", description="Monitor type: BROWSER or MULTI_STEP_API"
+        ),
+    ] = None
+    incident_id: Annotated[
+        UUID | None,
+        Field(
+            alias="incidentId",
+            description="Runs in the incident window, intersected with from and to",
+        ),
+    ] = None
+    branch: Annotated[
+        str | None, Field(description="Exact branch from revision provenance")
+    ] = None
+    flaky: Annotated[
+        bool | None,
+        Field(description="Select monitors currently flaky over the last seven days"),
+    ] = None
+    session_id: Annotated[
+        str | None,
+        Field(alias="sessionId", description="Caller-provided CI session identifier"),
+    ] = None
+    evaluation_cycle_id: Annotated[
+        UUID | None,
+        Field(
+            alias="evaluationCycleId",
+            description="Only runs in this evaluation cycle, including retries",
+        ),
+    ] = None
+    exclude_source: Annotated[
+        str | None,
+        Field(
+            alias="excludeSource",
+            description="Exclude this source; omitted preserves all sources",
+        ),
+    ] = None
+    sort: Annotated[
+        str | None, Field(description="Enqueue order: asc or desc (default: desc)")
+    ] = None
+    step: Annotated[
+        int | None,
+        Field(
+            description="Zero-based failed step index; requires monitor and caseIndex",
+            ge=0,
+        ),
+    ] = None
+    case_index: Annotated[
+        int | None,
+        Field(
+            alias="caseIndex",
+            description="Zero-based case index qualifying the failed step",
+            ge=0,
+        ),
+    ] = None
+
+
+class MonitorScheduleDto(BaseModel):
+    model_config = ConfigDict(extra="ignore", populate_by_name=True)
+    next_run_at: Annotated[
+        AwareDatetime | None,
+        Field(
+            alias="nextRunAt",
+            description="When the next scheduled cycle is due for admission",
+        ),
+    ] = None
 
 
 class MonitorSessionDto(BaseModel):
@@ -4108,6 +4662,27 @@ class MonitorSessionDto(BaseModel):
         AwareDatetime | None,
         Field(alias="updatedAt", description="When this session row was last written"),
     ] = None
+    captured_at: Annotated[
+        AwareDatetime | None,
+        Field(
+            alias="capturedAt",
+            description="When storage state was last captured successfully",
+        ),
+    ] = None
+    capture_run_id: Annotated[
+        UUID | None,
+        Field(
+            alias="captureRunId",
+            description="Run that last captured storage state successfully",
+        ),
+    ] = None
+    default_session: Annotated[
+        bool | None,
+        Field(
+            alias="defaultSession",
+            description="Whether legacy single-session routes select this setup file; absent on older APIs",
+        ),
+    ] = None
 
 
 class MonitorSettingsPreviewDto(BaseModel):
@@ -4136,6 +4711,12 @@ class MonitorSettingsPreviewDto(BaseModel):
         int | None,
         Field(description="Included runs still left; null when the pool is unlimited"),
     ] = None
+
+
+class MonitorSourceSummaryDto(BaseModel):
+    model_config = ConfigDict(extra="ignore", populate_by_name=True)
+    owner: MonitorOwnerDto
+    count: Annotated[int, Field(description="Number of matching monitors")]
 
 
 class MonitorsSummaryDto(BaseModel):
@@ -4195,6 +4776,70 @@ class MonitorTestResultDto(BaseModel):
         list[AssertionTestResultDto], Field(alias="assertionResults")
     ]
     warnings: list[str] | None = None
+
+
+class MonitorTriageParams(BaseModel):
+    model_config = ConfigDict(extra="forbid", populate_by_name=True)
+    name: Annotated[
+        str | None,
+        Field(description="Exact monitor name, ignoring case and surrounding spaces"),
+    ] = None
+    open_incident: Annotated[
+        bool | None,
+        Field(alias="openIncident", description="Whether a confirmed incident is open"),
+    ] = None
+    muted: Annotated[
+        bool | None, Field(description="Whether alert delivery is currently muted")
+    ] = None
+    quarantined: Annotated[
+        bool | None, Field(description="Whether quarantine has not expired")
+    ] = None
+    paused_before: Annotated[
+        AwareDatetime | None,
+        Field(
+            alias="pausedBefore",
+            description="Only monitors paused before this timestamp",
+        ),
+    ] = None
+    flaky: Annotated[
+        bool | None,
+        Field(description="Whether recent completed cycles recovered on retry"),
+    ] = None
+    group: Annotated[
+        str | None,
+        Field(description="List group: failing, not_running, passing, or paused"),
+    ] = None
+    owner_project: Annotated[
+        str | None,
+        Field(
+            alias="ownerProject",
+            description="Exact project declared by the owning tool",
+        ),
+    ] = None
+    sort: Annotated[
+        str | None, Field(description="Use state for group and streak ordering")
+    ] = None
+
+
+class MonitorUsage(BaseModel):
+    model_config = ConfigDict(extra="ignore", populate_by_name=True)
+    monitor_id: Annotated[
+        UUID, Field(alias="monitorId", description="Monitor owning this usage")
+    ]
+    monitor_name: Annotated[
+        str | None,
+        Field(alias="monitorName", description="Monitor name; null when unavailable"),
+    ] = None
+    deleted: Annotated[bool, Field(description="Whether the monitor has been deleted")]
+    meter: Annotated[str, Field(description="Meter this usage counts toward")]
+    runs: Annotated[int, Field(description="Billable runs consumed")]
+    test_runs: Annotated[
+        int,
+        Field(
+            alias="testRuns",
+            description="Billable validation runs included in consumed runs",
+        ),
+    ]
 
 
 class MonitorUsageProjectionDto(BaseModel):
@@ -4260,14 +4905,78 @@ class MonitorUsageProjectionDto(BaseModel):
     ] = None
 
 
+class MonitorValidationFindingDto(BaseModel):
+    model_config = ConfigDict(extra="ignore", populate_by_name=True)
+    severity: Annotated[
+        str, Field(description="error blocks a write; warning does not")
+    ]
+    code: Annotated[
+        str,
+        Field(
+            description="Stable problem code, such as MONITOR_FREQUENCY_BELOW_PLAN_MIN"
+        ),
+    ]
+    message: Annotated[str, Field(description="What is wrong")]
+    field: Annotated[
+        str | None, Field(description="Request field this finding refers to")
+    ] = None
+    have: Annotated[int | None, Field(description="Current or requested amount")] = None
+    limit: Annotated[int | None, Field(description="Plan limit or floor")] = None
+    plan: Annotated[str | None, Field(description="Billing plan, such as FREE")] = None
+    upgrade_url: Annotated[
+        str | None, Field(alias="upgradeUrl", description="Where to change plan")
+    ] = None
+    environment: Annotated[
+        str | None, Field(description="Destination environment slug or id")
+    ] = None
+    secret_key: Annotated[
+        str | None,
+        Field(
+            alias="secretKey",
+            description="Secret key name with no value in this environment",
+        ),
+    ] = None
+    runtime_id: Annotated[
+        str | None,
+        Field(alias="runtimeId", description="Runtime id this finding refers to"),
+    ] = None
+    monitor_index: Annotated[
+        int | None,
+        Field(alias="monitorIndex", description="Index of the monitor in the request"),
+    ] = None
+
+
+class MonitorValidationProjectionDto(BaseModel):
+    model_config = ConfigDict(extra="ignore", populate_by_name=True)
+    monitor_index: Annotated[
+        int,
+        Field(alias="monitorIndex", description="Index of the monitor in the request"),
+    ]
+    environment: Annotated[
+        str | None, Field(description="Destination environment slug or id")
+    ] = None
+    usage: MonitorUsageProjectionDto
+
+
+class MonitorValidationResultDto(BaseModel):
+    model_config = ConfigDict(extra="ignore", populate_by_name=True)
+    findings: Annotated[
+        list[MonitorValidationFindingDto],
+        Field(description="Every problem found, including warnings"),
+    ]
+    projections: Annotated[
+        list[MonitorValidationProjectionDto],
+        Field(description="Projected monthly runs for each code monitor destination"),
+    ]
+
+
 class NearestOtherRegion(BaseModel):
     model_config = ConfigDict(extra="ignore", populate_by_name=True)
-    run_id: Annotated[
-        UUID, Field(alias="runId", description="Run that holds the other-region shot")
-    ]
-    region: Annotated[str, Field(description="Region of that run")]
-    artifact_id: Annotated[
-        UUID, Field(alias="artifactId", description="Screenshot on that run")
+    run_id: Annotated[UUID, Field(alias="runId", description="Passing run identifier")]
+    region: Annotated[str, Field(description="Region of the passing run", min_length=1)]
+    finished_at: Annotated[
+        AwareDatetime,
+        Field(alias="finishedAt", description="When the passing run finished"),
     ]
 
 
@@ -4658,6 +5367,13 @@ class OverviewStepDto(BaseModel):
             description="p95 duration in ms; null until the step has settled timings",
         ),
     ] = None
+    p99_ms: Annotated[
+        float | None,
+        Field(
+            alias="p99Ms",
+            description="p99 duration in ms; null without settled timings",
+        ),
+    ] = None
     failed: Annotated[
         int, Field(description="Failed first-attempt count in the window")
     ]
@@ -4714,27 +5430,24 @@ class OverviewStepsDto(BaseModel):
     ]
 
 
-class PackageUploadDto(BaseModel):
+class OwnerDeclaration(BaseModel):
     model_config = ConfigDict(extra="ignore", populate_by_name=True)
-    put_url: Annotated[
-        str,
+    address: Annotated[
+        str | None,
         Field(
-            alias="putUrl",
-            description="Presigned PUT URL for the zip bytes",
-            min_length=1,
+            description="Resource address declared by the owning tool",
+            max_length=512,
+            min_length=0,
         ),
-    ]
-    expires_at: Annotated[
-        AwareDatetime,
-        Field(alias="expiresAt", description="When the signed URL expires"),
-    ]
-    required_headers: Annotated[
-        dict[str, str],
+    ] = None
+    label: Annotated[
+        str | None,
         Field(
-            alias="requiredHeaders",
-            description="Must send Content-Type: application/zip and If-None-Match: *",
+            description="Display label declared by the owning client",
+            max_length=255,
+            min_length=0,
         ),
-    ]
+    ] = None
 
 
 class Pageable(BaseModel):
@@ -4825,17 +5538,6 @@ class PhoneCallChannelConfig(BaseModel):
     ] = None
 
 
-class PickerItem(BaseModel):
-    model_config = ConfigDict(extra="ignore", populate_by_name=True)
-    run_id: Annotated[UUID, Field(alias="runId", description="Finished run identifier")]
-    revision_id: Annotated[
-        UUID, Field(alias="revisionId", description="Revision that run executed")
-    ]
-    finished_at: Annotated[
-        AwareDatetime, Field(alias="finishedAt", description="When that run finished")
-    ]
-
-
 class PlanInfo(BaseModel):
     model_config = ConfigDict(extra="ignore", populate_by_name=True)
     tier: Annotated[str, Field(description="Resolved plan tier")]
@@ -4863,6 +5565,18 @@ class PlanInfo(BaseModel):
         dict[str, int],
         Field(description="Current usage counters keyed by entitlement name"),
     ]
+
+
+class Point(BaseModel):
+    model_config = ConfigDict(extra="ignore", populate_by_name=True)
+    at: Annotated[AwareDatetime, Field(description="When the execution finished")]
+    run_id: Annotated[UUID, Field(alias="runId", description="Execution identifier")]
+    region: Annotated[str, Field(description="Execution region")]
+    outcome: Annotated[str, Field(description="Recorded execution outcome")]
+    duration_ms: Annotated[
+        int | None,
+        Field(alias="durationMs", description="Execution duration in milliseconds"),
+    ] = None
 
 
 class PolicySnapshotDto(BaseModel):
@@ -4959,9 +5673,44 @@ class PublishRevisionRequest(BaseModel):
         UUID,
         Field(
             alias="revisionId",
-            description="Existing revision to activate as Head for this monitor's environment",
+            description="Revision to make live for this monitor's environment",
         ),
     ]
+    expected_live_revision_id: Annotated[
+        UUID | None,
+        Field(
+            alias="expectedLiveRevisionId",
+            description="Live revision this publish replaces; null skips the check",
+        ),
+    ] = None
+    require_tested: Annotated[
+        bool | None,
+        Field(
+            alias="requireTested",
+            description="When true, require a passing test in this environment within 24 hours",
+        ),
+    ] = None
+    force: Annotated[
+        bool | None,
+        Field(
+            description="Skip the requireTested check; needs the publish-untested scope"
+        ),
+    ] = None
+    acknowledge_rollback: Annotated[
+        str | None,
+        Field(
+            alias="acknowledgeRollback",
+            description="Rolled-back digest this publish re-applies on purpose",
+        ),
+    ] = None
+    note: Annotated[
+        str | None,
+        Field(
+            description="Optional note describing this publish",
+            max_length=280,
+            min_length=0,
+        ),
+    ] = None
 
 
 class Status7(StrEnum):
@@ -5142,6 +5891,60 @@ class RegexBodyAssertion(BaseModel):
         Field(
             description="Regular expression the response body must match", min_length=1
         ),
+    ]
+
+
+class Region(BaseModel):
+    model_config = ConfigDict(extra="ignore", populate_by_name=True)
+    region: Annotated[str, Field(description="Execution region")]
+    uptime_percent: Annotated[
+        float | None,
+        Field(alias="uptimePercent", description="Final target uptime in this region"),
+    ] = None
+    buckets: Annotated[list[Bucket], Field(description="Clock-aligned chart buckets")]
+
+
+class RegionBucketDto(BaseModel):
+    model_config = ConfigDict(extra="ignore", populate_by_name=True)
+    from_: Annotated[
+        AwareDatetime,
+        Field(alias="from", description="Inclusive bucket start (ISO 8601)"),
+    ]
+    to: Annotated[AwareDatetime, Field(description="Exclusive bucket end (ISO 8601)")]
+    p50: Annotated[
+        float | None, Field(description="50th-percentile latency in milliseconds")
+    ] = None
+    p95: Annotated[
+        float | None, Field(description="95th-percentile latency in milliseconds")
+    ] = None
+    p99: Annotated[
+        float | None, Field(description="99th-percentile latency in milliseconds")
+    ] = None
+    total: Annotated[int, Field(description="Checks run in this bucket")]
+    passed: Annotated[int, Field(description="Checks that passed in this bucket")]
+
+
+class RegionDto(BaseModel):
+    model_config = ConfigDict(extra="ignore", populate_by_name=True)
+    id: Annotated[str, Field(description="Region id, such as us-east")]
+    display_name: Annotated[
+        str, Field(alias="displayName", description="Name shown for this region")
+    ]
+
+
+class RegionSeriesDto(BaseModel):
+    model_config = ConfigDict(extra="ignore", populate_by_name=True)
+    region: Annotated[str, Field(description="Probe region identifier")]
+    uptime_percent: Annotated[
+        float | None,
+        Field(
+            alias="uptimePercent",
+            description="Uptime percent over checks run in the window",
+        ),
+    ] = None
+    buckets: Annotated[
+        list[RegionBucketDto],
+        Field(description="Clock-aligned buckets spanning the window"),
     ]
 
 
@@ -5387,6 +6190,17 @@ class ResponseTimeWarnAssertion(BaseModel):
     ]
 
 
+class RestoreMonitorRequest(BaseModel):
+    model_config = ConfigDict(extra="forbid", populate_by_name=True)
+    environment_id: Annotated[
+        UUID | None,
+        Field(
+            alias="environmentId",
+            description="Environment to restore a code monitor into; null preserves its environment",
+        ),
+    ] = None
+
+
 class ResultSummaryDto(BaseModel):
     model_config = ConfigDict(extra="ignore", populate_by_name=True)
     current_status: Annotated[
@@ -5465,57 +6279,35 @@ class RevisionDiffHunkDto(BaseModel):
     right: Annotated[str | None, Field(description="Right value when present")] = None
 
 
-class RevisionDto(BaseModel):
+class RevisionFilesDto(BaseModel):
     model_config = ConfigDict(extra="ignore", populate_by_name=True)
-    id: Annotated[UUID, Field(description="Revision identifier")]
-    definition_id: Annotated[
-        UUID, Field(alias="definitionId", description="Parent definition")
+    entrypoint: Annotated[str, Field(description="Entry file path inside the bundle")]
+    files: Annotated[dict[str, str], Field(description="Source text by file path")]
+
+
+class RevisionLiveStatsDto(BaseModel):
+    model_config = ConfigDict(extra="ignore", populate_by_name=True)
+    runs: Annotated[
+        int, Field(description="Scheduled runs and fast retries of this revision")
     ]
-    number: Annotated[
-        int, Field(description="Monotonic revision number within the definition")
-    ]
-    digest: Annotated[
-        str, Field(description="SHA-256 hex digest of the zip", min_length=1)
-    ]
-    entrypoint: Annotated[
-        str, Field(description="Entrypoint file that runs", min_length=1)
-    ]
-    files: Annotated[list[str], Field(description="Paths present in the zip")]
-    keys: Annotated[list[str], Field(description="Secret key names the code demands")]
-    download_until: Annotated[
-        AwareDatetime | None,
-        Field(
-            alias="downloadUntil", description="When package bytes expire for download"
-        ),
-    ] = None
-    git_sha: Annotated[
-        str | None,
-        Field(alias="gitSha", description="Git commit SHA when sourced from Git"),
-    ] = None
-    git_message: Annotated[
-        str | None, Field(alias="gitMessage", description="Git commit message")
-    ] = None
-    git_file: Annotated[
-        str | None, Field(alias="gitFile", description="Declaring Git file path")
-    ] = None
-    authored_by: Annotated[
-        str | None, Field(alias="authoredBy", description="Who authored this package")
-    ] = None
-    created_at: Annotated[
-        AwareDatetime,
-        Field(alias="createdAt", description="When the revision was minted"),
-    ]
+    failed: Annotated[int, Field(description="How many of those runs failed")]
+
+
+class RevisionReferenceDto(BaseModel):
+    model_config = ConfigDict(extra="ignore", populate_by_name=True)
+    id: Annotated[UUID, Field(description="Related revision identifier")]
+    number: Annotated[int, Field(description="Revision number within its definition")]
 
 
 class RollbackRevisionRequest(BaseModel):
     model_config = ConfigDict(extra="forbid", populate_by_name=True)
     revision_id: Annotated[
-        UUID,
+        UUID | None,
         Field(
             alias="revisionId",
-            description="Existing revision to restore as Head for this monitor's environment",
+            description="Revision to restore; null restores the previous live revision",
         ),
-    ]
+    ] = None
     reason: Annotated[
         str,
         Field(
@@ -5524,6 +6316,16 @@ class RollbackRevisionRequest(BaseModel):
             min_length=0,
         ),
     ]
+    emergency: Annotated[
+        bool | None, Field(description="Set true for an emergency rollback")
+    ] = None
+    expected_live_revision_id: Annotated[
+        UUID | None,
+        Field(
+            alias="expectedLiveRevisionId",
+            description="Live revision this rollback replaces; null skips the check",
+        ),
+    ] = None
 
 
 class RootlyChannelConfig(BaseModel):
@@ -5718,32 +6520,6 @@ class RunConsoleParams(BaseModel):
     ] = None
 
 
-class RunDiffDto(BaseModel):
-    model_config = ConfigDict(extra="ignore", populate_by_name=True)
-    baseline_run_id: Annotated[
-        UUID | None,
-        Field(
-            alias="baselineRunId", description="Baseline run; null when no prior pass"
-        ),
-    ] = None
-    baseline_kind: Annotated[
-        str, Field(alias="baselineKind", description="How the baseline was chosen")
-    ]
-    reads_as: Annotated[
-        str,
-        Field(
-            alias="readsAs",
-            description="Human-readable baseline sentence",
-            min_length=1,
-        ),
-    ]
-    rows: Annotated[list[Row], Field(description="One row per step on this run")]
-    picker: Annotated[
-        list[PickerItem],
-        Field(description="Other finished runs of this monitor for the picker"),
-    ]
-
-
 class RunEventDto(BaseModel):
     model_config = ConfigDict(extra="ignore", populate_by_name=True)
     id: Annotated[UUID, Field(description="Event identifier")]
@@ -5817,6 +6593,32 @@ class RunExecutionAttemptDto(BaseModel):
     ]
 
 
+class RunFailureDto(BaseModel):
+    model_config = ConfigDict(extra="ignore", populate_by_name=True)
+    kind: Annotated[str, Field(description="Failure category")]
+    step: Annotated[
+        str | None,
+        Field(
+            description="Step title that failed; null when the run failed before a step"
+        ),
+    ] = None
+    message: Annotated[str | None, Field(description="Reporter message, trimmed")] = (
+        None
+    )
+    file: Annotated[
+        str | None,
+        Field(
+            description="User source file; null when the reporter did not capture one"
+        ),
+    ] = None
+    line: Annotated[
+        int | None, Field(description="1-based line in the user source file")
+    ] = None
+    index: Annotated[
+        int | None, Field(description="0-based index of the failed step")
+    ] = None
+
+
 class RunListParams(BaseModel):
     model_config = ConfigDict(extra="forbid", populate_by_name=True)
     phase: Annotated[
@@ -5826,7 +6628,7 @@ class RunListParams(BaseModel):
     outcome: Annotated[
         str | None,
         Field(
-            description="Filter by outcome; not_passed also includes passed-on-retry runs"
+            description="Outcomes, repeated or comma-separated; not_passed includes retries"
         ),
     ] = None
     region: Annotated[str | None, Field(description="Filter by probe region")] = None
@@ -5844,7 +6646,7 @@ class RunListParams(BaseModel):
         AwareDatetime | None,
         Field(
             alias="from",
-            description="Inclusive enqueue lower bound (default last 30 minutes; clamped to 90 days)",
+            description="Inclusive enqueue lower bound (default last 24 hours; clamped to 90 days)",
         ),
     ] = None
     to: Annotated[
@@ -5854,10 +6656,79 @@ class RunListParams(BaseModel):
     q: Annotated[
         str | None, Field(description="Substring match on monitor name or headline")
     ] = None
-    size: Annotated[
+    cursor: Annotated[
+        str | None, Field(description="Opaque cursor from the previous page")
+    ] = None
+    limit: Annotated[
         int, Field(description="Page size (1–100, default 50)", ge=1, le=100)
     ]
-    page: Annotated[int, Field(description="Zero-based page index (default 0)", ge=0)]
+    monitor_id: Annotated[
+        UUID | None, Field(alias="monitorId", description="Only runs for this monitor")
+    ] = None
+    revision_id: Annotated[
+        UUID | None,
+        Field(alias="revisionId", description="Only runs for this revision"),
+    ] = None
+    monitor_type: Annotated[
+        str | None,
+        Field(
+            alias="monitorType", description="Monitor type: BROWSER or MULTI_STEP_API"
+        ),
+    ] = None
+    incident_id: Annotated[
+        UUID | None,
+        Field(
+            alias="incidentId",
+            description="Runs in the incident window, intersected with from and to",
+        ),
+    ] = None
+    branch: Annotated[
+        str | None, Field(description="Exact branch from revision provenance")
+    ] = None
+    flaky: Annotated[
+        bool | None,
+        Field(description="Select monitors currently flaky over the last seven days"),
+    ] = None
+    session_id: Annotated[
+        str | None,
+        Field(alias="sessionId", description="Caller-provided CI session identifier"),
+    ] = None
+    evaluation_cycle_id: Annotated[
+        UUID | None,
+        Field(
+            alias="evaluationCycleId",
+            description="Only runs in this evaluation cycle, including retries",
+        ),
+    ] = None
+    exclude_source: Annotated[
+        str | None,
+        Field(
+            alias="excludeSource",
+            description="Exclude this source; omitted preserves all sources",
+        ),
+    ] = None
+    sort: Annotated[
+        str | None, Field(description="Enqueue order: asc or desc (default: desc)")
+    ] = None
+    step: Annotated[
+        int | None,
+        Field(
+            description="Zero-based failed step index; requires monitor and caseIndex",
+            ge=0,
+        ),
+    ] = None
+    case_index: Annotated[
+        int | None,
+        Field(
+            alias="caseIndex",
+            description="Zero-based case index qualifying the failed step",
+            ge=0,
+        ),
+    ] = None
+    bucket: Annotated[
+        str | None,
+        Field(description="Histogram width: 30m, 1h or 1d; at most 1000 buckets"),
+    ] = None
 
 
 class RunLiveDto(BaseModel):
@@ -5881,126 +6752,29 @@ class RunLiveDto(BaseModel):
     ] = None
 
 
-class RunMetricsSummaryDto(BaseModel):
-    model_config = ConfigDict(extra="ignore", populate_by_name=True)
-    from_: Annotated[
-        AwareDatetime,
-        Field(alias="from", description="Inclusive start of the enqueue-time window"),
-    ]
-    to: Annotated[
-        AwareDatetime, Field(description="Inclusive end of the enqueue-time window")
-    ]
-    matching_run_count: Annotated[
-        int,
-        Field(
-            alias="matchingRunCount",
-            description="Runs matching the complete list filter",
-        ),
-    ]
-    duration_sample_count: Annotated[
-        int,
-        Field(
-            alias="durationSampleCount",
-            description="Finished matching runs with a measured execution duration",
-        ),
-    ]
-    p95_duration_ms: Annotated[
-        float | None,
-        Field(
-            alias="p95DurationMs",
-            description="95th percentile execution duration in milliseconds; null when no durations were measured",
-        ),
-    ] = None
-    evidence_eligible_run_count: Annotated[
-        int,
-        Field(
-            alias="evidenceEligibleRunCount",
-            description="Runs with a known capture policy",
-        ),
-    ]
-    evidence_unknown_policy_run_count: Annotated[
-        int,
-        Field(
-            alias="evidenceUnknownPolicyRunCount",
-            description="Runs with a missing or incomplete capture policy",
-        ),
-    ]
-    evidence_incomplete_run_count: Annotated[
-        int | None,
-        Field(
-            alias="evidenceIncompleteRunCount",
-            description="Eligible runs with required evidence missing, processing, failed, or expired",
-        ),
-    ] = None
-    evidence_processing_run_count: Annotated[
-        int | None,
-        Field(
-            alias="evidenceProcessingRunCount",
-            description="Eligible runs with required evidence still processing",
-        ),
-    ] = None
-    evidence_no_evidence_policy_run_count: Annotated[
-        int | None,
-        Field(
-            alias="evidenceNoEvidencePolicyRunCount",
-            description="Eligible runs with no evidence required by their recorded policy",
-        ),
-    ] = None
-    evidence_complete_run_count: Annotated[
-        int | None,
-        Field(
-            alias="evidenceCompleteRunCount",
-            description="Eligible runs with all required evidence available",
-        ),
-    ] = None
-    available_artifact_count: Annotated[
-        int | None,
-        Field(
-            alias="availableArtifactCount",
-            description="Required artifact records with an available unexpired object key",
-        ),
-    ] = None
-    processing_artifact_count: Annotated[
-        int | None,
-        Field(
-            alias="processingArtifactCount",
-            description="Required artifact records still processing",
-        ),
-    ] = None
-    failed_artifact_count: Annotated[
-        int | None,
-        Field(
-            alias="failedArtifactCount",
-            description="Required artifact records with a failed upload",
-        ),
-    ] = None
-    expired_artifact_count: Annotated[
-        int | None,
-        Field(
-            alias="expiredArtifactCount",
-            description="Required artifact records marked expired or past their expiry",
-        ),
-    ] = None
-    missing_artifact_kind_count: Annotated[
-        int | None,
-        Field(
-            alias="missingArtifactKindCount",
-            description="Required evidence kinds with no artifact record after the run finished",
-        ),
-    ] = None
-    intentional_no_evidence_artifact_count: Annotated[
-        int | None,
-        Field(
-            alias="intentionalNoEvidenceArtifactCount",
-            description="Required artifact records explicitly suppressed, not reached, or not captured",
-        ),
-    ] = None
-
-
 class RunnerLogLiveEvent(BaseModel):
     model_config = ConfigDict(extra="ignore", populate_by_name=True)
     ts: Annotated[str, Field(description="Loki timestamp in nanoseconds")]
     line: Annotated[str, Field(description="One runner-log line", min_length=1)]
+
+
+class RunnerRegionStatusDto(BaseModel):
+    model_config = ConfigDict(extra="ignore", populate_by_name=True)
+    id: Annotated[str, Field(description="Public region identifier")]
+    status: Annotated[
+        str,
+        Field(
+            description="ok when both code-monitor types have an active accepting pool; otherwise degraded"
+        ),
+    ]
+
+
+class RunnerRegionStatusesDto(BaseModel):
+    model_config = ConfigDict(extra="ignore", populate_by_name=True)
+    regions: Annotated[
+        list[RunnerRegionStatusDto],
+        Field(description="Acceptance status per public region"),
+    ]
 
 
 class RunNetworkParams(BaseModel):
@@ -6023,6 +6797,94 @@ class RunNetworkParams(BaseModel):
     source: Annotated[str | None, Field(description="page or request")] = None
     cursor: Annotated[
         str | None, Field(description="Opaque cursor from the previous page")
+    ] = None
+
+
+class RunOutcomeCountDto(BaseModel):
+    model_config = ConfigDict(extra="ignore", populate_by_name=True)
+    outcome: Annotated[str, Field(description="Projected run outcome")]
+    count: Annotated[int, Field(description="Matching run attempts with this outcome")]
+
+
+class RunSessionContext(BaseModel):
+    model_config = ConfigDict(extra="ignore", populate_by_name=True)
+    id: Annotated[
+        str,
+        Field(
+            description="Caller-provided CI session identifier",
+            max_length=255,
+            min_length=0,
+        ),
+    ]
+    label: Annotated[
+        str | None,
+        Field(
+            description="CI session label, such as CI #4812",
+            max_length=255,
+            min_length=0,
+        ),
+    ] = None
+    commit: Annotated[
+        str | None,
+        Field(
+            description="Commit that started this CI session",
+            max_length=64,
+            min_length=0,
+        ),
+    ] = None
+    branch: Annotated[
+        str | None,
+        Field(
+            description="Branch that started this CI session",
+            max_length=255,
+            min_length=0,
+        ),
+    ] = None
+    url: Annotated[
+        str | None,
+        Field(
+            description="HTTP or HTTPS URL of the CI job",
+            max_length=2048,
+            min_length=0,
+            pattern="^[hH][tT][tT][pP][sS]?://\\S+$",
+        ),
+    ] = None
+
+
+class RunSkippedListParams(BaseModel):
+    model_config = ConfigDict(extra="forbid", populate_by_name=True)
+    from_: Annotated[
+        AwareDatetime | None,
+        Field(
+            alias="from",
+            description="Inclusive window start; default last 24 hours, clamped to 90 days",
+        ),
+    ] = None
+    to: Annotated[
+        AwareDatetime | None, Field(description="Inclusive window end; default now")
+    ] = None
+    monitor_id: Annotated[
+        UUID | None,
+        Field(alias="monitorId", description="Only entries for this monitor"),
+    ] = None
+    cursor: Annotated[
+        str | None, Field(description="Opaque cursor returned by this endpoint")
+    ] = None
+    limit: Annotated[
+        int, Field(description="Page size (1–100, default 50)", ge=1, le=100)
+    ]
+    environment_id: Annotated[
+        UUID | None,
+        Field(
+            alias="environmentId",
+            description="Current monitor environment; historical ticks retain their snapshot",
+        ),
+    ] = None
+    monitor_type: Annotated[
+        str | None,
+        Field(
+            alias="monitorType", description="Monitor type: BROWSER or MULTI_STEP_API"
+        ),
     ] = None
 
 
@@ -6059,7 +6921,7 @@ class RunStepDto(BaseModel):
     error: Annotated[str | None, Field(description="Error when the step failed")] = None
     assertion: Annotated[
         dict[str, dict[str, Any]] | None,
-        Field(description="Assertion payload when this step is an assertion"),
+        Field(description="Assertion or safe wait-result metadata"),
     ] = None
 
 
@@ -6134,6 +6996,51 @@ class RuntimeProfileDto(BaseModel):
     browser: BrowserCapabilityEnvelope | None = None
 
 
+class RunTraceSummaryDto(BaseModel):
+    model_config = ConfigDict(extra="ignore", populate_by_name=True)
+    run_id: Annotated[
+        UUID, Field(alias="runId", description="Run this summary belongs to")
+    ]
+    failed_actions: Annotated[
+        list[str],
+        Field(alias="failedActions", description="Failed step titles and messages"),
+    ]
+    failed_requests: Annotated[
+        list[str], Field(alias="failedRequests", description="Failed network requests")
+    ]
+    console_errors: Annotated[
+        list[str], Field(alias="consoleErrors", description="Console error lines")
+    ]
+    text: Annotated[str, Field(description="Plain-text summary, length-capped")]
+    truncated: Annotated[
+        bool, Field(description="Whether any section was cut to the cap")
+    ]
+
+
+class RunWindowListParams(BaseModel):
+    model_config = ConfigDict(extra="forbid", populate_by_name=True)
+    from_: Annotated[
+        AwareDatetime | None,
+        Field(
+            alias="from",
+            description="Inclusive window start; default last 24 hours, clamped to 90 days",
+        ),
+    ] = None
+    to: Annotated[
+        AwareDatetime | None, Field(description="Inclusive window end; default now")
+    ] = None
+    monitor_id: Annotated[
+        UUID | None,
+        Field(alias="monitorId", description="Only entries for this monitor"),
+    ] = None
+    cursor: Annotated[
+        str | None, Field(description="Opaque cursor returned by this endpoint")
+    ] = None
+    limit: Annotated[
+        int, Field(description="Page size (1–100, default 50)", ge=1, le=100)
+    ]
+
+
 class ScheduledMaintenanceDto(BaseModel):
     model_config = ConfigDict(extra="ignore", populate_by_name=True)
     id: Annotated[UUID, Field(description="Unique maintenance record identifier")]
@@ -6198,14 +7105,6 @@ class ScheduledMaintenanceDto(BaseModel):
 
 class ScriptMonitorConfig(BaseModel):
     model_config = ConfigDict(extra="ignore", populate_by_name=True)
-    script: Annotated[
-        str | None,
-        Field(
-            description="Legacy inline script on existing rows",
-            max_length=65536,
-            min_length=0,
-        ),
-    ] = None
     timeout_seconds: Annotated[
         int | None,
         Field(
@@ -6219,87 +7118,11 @@ class ScriptMonitorConfig(BaseModel):
         str | None,
         Field(
             alias="runtimeId",
-            description="Runtime pin such as 2026.11; omit to pin the current runtime at create",
+            description="Runtime pin such as 2026.11; omit to pin the newest runtime that can run",
             max_length=32,
             min_length=0,
             pattern="^$|^[A-Za-z0-9._-]+$",
         ),
-    ] = None
-
-
-class SecretDto(BaseModel):
-    model_config = ConfigDict(extra="ignore", populate_by_name=True)
-    id: Annotated[UUID, Field(description="Unique secret identifier")]
-    key: Annotated[
-        str, Field(description="Secret key name, unique within the workspace")
-    ]
-    dek_version: Annotated[
-        int,
-        Field(
-            alias="dekVersion", description="DEK version at the time of last encryption"
-        ),
-    ]
-    value_hash: Annotated[
-        str,
-        Field(
-            alias="valueHash",
-            description="SHA-256 hex digest of the current plaintext; use for change detection",
-        ),
-    ]
-    created_at: Annotated[
-        AwareDatetime,
-        Field(alias="createdAt", description="Timestamp when the secret was created"),
-    ]
-    updated_at: Annotated[
-        AwareDatetime,
-        Field(
-            alias="updatedAt", description="Timestamp when the secret was last updated"
-        ),
-    ]
-    used_by_monitors: Annotated[
-        list[MonitorReference] | None,
-        Field(
-            alias="usedByMonitors",
-            description="Monitors that reference this secret for authentication",
-        ),
-    ] = None
-
-
-class SecretRequestDto(BaseModel):
-    model_config = ConfigDict(extra="ignore", populate_by_name=True)
-    key: Annotated[str, Field(description="Secret key this monitor requires")]
-    secret: SecretDto | None = None
-    readiness: Annotated[
-        str, Field(description="Whether this key is resolved or missing")
-    ]
-    fulfilled_by: Annotated[
-        str | None,
-        Field(
-            alias="fulfilledBy",
-            description="Fulfilled from environment variables or a secret",
-        ),
-    ] = None
-    declaring_file: Annotated[
-        str | None,
-        Field(
-            alias="declaringFile",
-            description="Declaring file path inside the package zip",
-        ),
-    ] = None
-    declaring_location: Annotated[
-        str | None,
-        Field(
-            alias="declaringLocation",
-            description="Call site from package scan, e.g. signIn(…) · line 6",
-        ),
-    ] = None
-    last_resolved_at: Annotated[
-        AwareDatetime | None,
-        Field(alias="lastResolvedAt", description="When a run last resolved this key"),
-    ] = None
-    last_resolved_run_id: Annotated[
-        UUID | None,
-        Field(alias="lastResolvedRunId", description="Run that last resolved this key"),
     ] = None
 
 
@@ -6786,6 +7609,16 @@ class SingleValueResponseApiKeyDto(BaseModel):
     data: ApiKeyDto
 
 
+class SingleValueResponseArtifactDownloadDto(BaseModel):
+    model_config = ConfigDict(extra="ignore", populate_by_name=True)
+    data: ArtifactDownloadDto
+
+
+class SingleValueResponseBundleDto(BaseModel):
+    model_config = ConfigDict(extra="ignore", populate_by_name=True)
+    data: BundleDto
+
+
 class SingleValueResponseDekRotationResultDto(BaseModel):
     model_config = ConfigDict(extra="ignore", populate_by_name=True)
     data: DekRotationResultDto
@@ -6794,6 +7627,16 @@ class SingleValueResponseDekRotationResultDto(BaseModel):
 class SingleValueResponseDeployLockDto(BaseModel):
     model_config = ConfigDict(extra="ignore", populate_by_name=True)
     data: DeployLockDto
+
+
+class SingleValueResponseDeviceAuthorizationDto(BaseModel):
+    model_config = ConfigDict(extra="ignore", populate_by_name=True)
+    data: DeviceAuthorizationDto
+
+
+class SingleValueResponseDeviceTokenDto(BaseModel):
+    model_config = ConfigDict(extra="ignore", populate_by_name=True)
+    data: DeviceTokenDto
 
 
 class SingleValueResponseEmailDomainDto(BaseModel):
@@ -6806,14 +7649,14 @@ class SingleValueResponseEmailMessageSourceDto(BaseModel):
     data: EmailMessageSourceDto
 
 
+class SingleValueResponseEntitlementResponse(BaseModel):
+    model_config = ConfigDict(extra="ignore", populate_by_name=True)
+    data: EntitlementResponse
+
+
 class SingleValueResponseEnvironmentDto(BaseModel):
     model_config = ConfigDict(extra="ignore", populate_by_name=True)
     data: EnvironmentDto
-
-
-class SingleValueResponseIncidentTriggerDto(BaseModel):
-    model_config = ConfigDict(extra="ignore", populate_by_name=True)
-    data: IncidentTriggerDto
 
 
 class SingleValueResponseInjectEmailMessageResponse(BaseModel):
@@ -6829,6 +7672,11 @@ class SingleValueResponseInviteDto(BaseModel):
 class SingleValueResponseListEmailDomainActivityDto(BaseModel):
     model_config = ConfigDict(extra="ignore", populate_by_name=True)
     data: list[EmailDomainActivityDto]
+
+
+class SingleValueResponseListRegionDto(BaseModel):
+    model_config = ConfigDict(extra="ignore", populate_by_name=True)
+    data: list[RegionDto]
 
 
 class SingleValueResponseListUUID(BaseModel):
@@ -6856,6 +7704,11 @@ class SingleValueResponseMonitorRunDurationSummaryDto(BaseModel):
     data: MonitorRunDurationSummaryDto
 
 
+class SingleValueResponseMonitorScheduleDto(BaseModel):
+    model_config = ConfigDict(extra="ignore", populate_by_name=True)
+    data: MonitorScheduleDto
+
+
 class SingleValueResponseMonitorSessionDto(BaseModel):
     model_config = ConfigDict(extra="ignore", populate_by_name=True)
     data: MonitorSessionDto
@@ -6876,6 +7729,11 @@ class SingleValueResponseMonitorUsageProjectionDto(BaseModel):
     data: MonitorUsageProjectionDto
 
 
+class SingleValueResponseMonitorValidationResultDto(BaseModel):
+    model_config = ConfigDict(extra="ignore", populate_by_name=True)
+    data: MonitorValidationResultDto
+
+
 class SingleValueResponseNotificationDispatchDto(BaseModel):
     model_config = ConfigDict(extra="ignore", populate_by_name=True)
     data: NotificationDispatchDto
@@ -6889,11 +7747,6 @@ class SingleValueResponseOrganizationDto(BaseModel):
 class SingleValueResponseOverviewStepsDto(BaseModel):
     model_config = ConfigDict(extra="ignore", populate_by_name=True)
     data: OverviewStepsDto
-
-
-class SingleValueResponsePackageUploadDto(BaseModel):
-    model_config = ConfigDict(extra="ignore", populate_by_name=True)
-    data: PackageUploadDto
 
 
 class SingleValueResponsePolicySnapshotDto(BaseModel):
@@ -6911,9 +7764,9 @@ class SingleValueResponseResultSummaryDto(BaseModel):
     data: ResultSummaryDto
 
 
-class SingleValueResponseRevisionDto(BaseModel):
+class SingleValueResponseRevisionFilesDto(BaseModel):
     model_config = ConfigDict(extra="ignore", populate_by_name=True)
-    data: RevisionDto
+    data: RevisionFilesDto
 
 
 class SingleValueResponseRunConsoleDto(BaseModel):
@@ -6921,14 +7774,9 @@ class SingleValueResponseRunConsoleDto(BaseModel):
     data: RunConsoleDto
 
 
-class SingleValueResponseRunDiffDto(BaseModel):
+class SingleValueResponseRunnerRegionStatusesDto(BaseModel):
     model_config = ConfigDict(extra="ignore", populate_by_name=True)
-    data: RunDiffDto
-
-
-class SingleValueResponseRunMetricsSummaryDto(BaseModel):
-    model_config = ConfigDict(extra="ignore", populate_by_name=True)
-    data: RunMetricsSummaryDto
+    data: RunnerRegionStatusesDto
 
 
 class SingleValueResponseRuntimeProfileDto(BaseModel):
@@ -6936,9 +7784,9 @@ class SingleValueResponseRuntimeProfileDto(BaseModel):
     data: RuntimeProfileDto
 
 
-class SingleValueResponseSecretDto(BaseModel):
+class SingleValueResponseRunTraceSummaryDto(BaseModel):
     model_config = ConfigDict(extra="ignore", populate_by_name=True)
-    data: SecretDto
+    data: RunTraceSummaryDto
 
 
 class SingleValueResponseServiceDayDetailDto(BaseModel):
@@ -7131,6 +7979,39 @@ class StatusEventDto(BaseModel):
     component: ComponentTransitionEventDto | None = None
     org_annotation: Annotated[
         OrgIncidentAnnotationDto | None, Field(alias="orgAnnotation")
+    ] = None
+
+
+class StatusPageBindingSnapshot(BaseModel):
+    model_config = ConfigDict(extra="ignore", populate_by_name=True)
+    name: Annotated[str, Field(description="Component display name", min_length=1)]
+    description: Annotated[
+        str | None, Field(description="Optional component description")
+    ] = None
+    group_id: Annotated[
+        UUID | None,
+        Field(alias="groupId", description="Group that contains this component"),
+    ] = None
+    show_uptime: Annotated[
+        bool, Field(alias="showUptime", description="Whether to show measured uptime")
+    ]
+    display_order: Annotated[
+        int,
+        Field(alias="displayOrder", description="Position within the page or group"),
+    ]
+    exclude_from_overall: Annotated[
+        bool,
+        Field(
+            alias="excludeFromOverall",
+            description="Whether to exclude this component from overall status",
+        ),
+    ]
+    start_date: Annotated[
+        date_aliased | None,
+        Field(
+            alias="startDate",
+            description="Optional start date for published uptime history",
+        ),
     ] = None
 
 
@@ -7585,6 +8466,10 @@ class StatusPageSubscriberDto(BaseModel):
     ]
 
 
+class StreamingResponseBody(BaseModel):
+    model_config = ConfigDict(extra="ignore", populate_by_name=True)
+
+
 class Summary(BaseModel):
     model_config = ConfigDict(extra="ignore", populate_by_name=True)
     id: UUID
@@ -7656,6 +8541,25 @@ class SyntheticsFamilyMetricsDto(BaseModel):
         Field(
             alias="flakyMonitorCount",
             description="Distinct family monitors with a failed target recovered by a retry in the same cycle and region",
+        ),
+    ]
+
+
+class SyntheticsUsagePeriodDto(BaseModel):
+    model_config = ConfigDict(extra="ignore", populate_by_name=True)
+    period_start: Annotated[
+        AwareDatetime,
+        Field(alias="periodStart", description="Start of the usage period"),
+    ]
+    period_end: Annotated[
+        AwareDatetime, Field(alias="periodEnd", description="End of the usage period")
+    ]
+    browser: Meter
+    api: Meter
+    monitors: Annotated[
+        list[MonitorUsage],
+        Field(
+            description="Usage grouped by monitor and meter, including deleted monitors"
         ),
     ]
 
@@ -7777,6 +8681,15 @@ class TableValueResultMemberDto(BaseModel):
     total_pages: Annotated[int | None, Field(alias="totalPages")] = None
 
 
+class TableValueResultMonitorSessionDto(BaseModel):
+    model_config = ConfigDict(extra="ignore", populate_by_name=True)
+    data: list[MonitorSessionDto]
+    has_next: Annotated[bool, Field(alias="hasNext")]
+    has_prev: Annotated[bool, Field(alias="hasPrev")]
+    total_elements: Annotated[int | None, Field(alias="totalElements")] = None
+    total_pages: Annotated[int | None, Field(alias="totalPages")] = None
+
+
 class TableValueResultNotificationDispatchDto(BaseModel):
     model_config = ConfigDict(extra="ignore", populate_by_name=True)
     data: list[NotificationDispatchDto]
@@ -7789,15 +8702,6 @@ class TableValueResultNotificationDispatchDto(BaseModel):
 class TableValueResultNotificationDto(BaseModel):
     model_config = ConfigDict(extra="ignore", populate_by_name=True)
     data: list[NotificationDto]
-    has_next: Annotated[bool, Field(alias="hasNext")]
-    has_prev: Annotated[bool, Field(alias="hasPrev")]
-    total_elements: Annotated[int | None, Field(alias="totalElements")] = None
-    total_pages: Annotated[int | None, Field(alias="totalPages")] = None
-
-
-class TableValueResultRevisionDto(BaseModel):
-    model_config = ConfigDict(extra="ignore", populate_by_name=True)
-    data: list[RevisionDto]
     has_next: Annotated[bool, Field(alias="hasNext")]
     has_prev: Annotated[bool, Field(alias="hasPrev")]
     total_elements: Annotated[int | None, Field(alias="totalElements")] = None
@@ -7825,15 +8729,6 @@ class TableValueResultRuntimeProfileDto(BaseModel):
 class TableValueResultScheduledMaintenanceDto(BaseModel):
     model_config = ConfigDict(extra="ignore", populate_by_name=True)
     data: list[ScheduledMaintenanceDto]
-    has_next: Annotated[bool, Field(alias="hasNext")]
-    has_prev: Annotated[bool, Field(alias="hasPrev")]
-    total_elements: Annotated[int | None, Field(alias="totalElements")] = None
-    total_pages: Annotated[int | None, Field(alias="totalPages")] = None
-
-
-class TableValueResultSecretDto(BaseModel):
-    model_config = ConfigDict(extra="ignore", populate_by_name=True)
-    data: list[SecretDto]
     has_next: Annotated[bool, Field(alias="hasNext")]
     has_prev: Annotated[bool, Field(alias="hasPrev")]
     total_elements: Annotated[int | None, Field(alias="totalElements")] = None
@@ -8259,6 +9154,40 @@ class TraceNearbyAction(BaseModel):
     ]
 
 
+class To(StrEnum):
+    dashboard = "DASHBOARD"
+    cli = "CLI"
+    terraform = "TERRAFORM"
+    mcp = "MCP"
+    api = "API"
+
+
+class TransferMonitorRequest(BaseModel):
+    model_config = ConfigDict(extra="forbid", populate_by_name=True)
+    to: Annotated[
+        To, Field(description="New owning tool: DASHBOARD, CLI, TERRAFORM, MCP, or API")
+    ]
+    reason: Annotated[
+        str,
+        Field(
+            description="Why ownership is moving (recorded in the audit log)",
+            max_length=280,
+            min_length=0,
+        ),
+    ]
+    project: Annotated[
+        str | None,
+        Field(
+            description="Project the new owner declares for this monitor; null clears it",
+            max_length=255,
+            min_length=0,
+        ),
+    ] = None
+    owner_declaration: Annotated[
+        OwnerDeclaration | None, Field(alias="ownerDeclaration")
+    ] = None
+
+
 class Type4(StrEnum):
     consecutive_failures = "consecutive_failures"
     failures_in_window = "failures_in_window"
@@ -8322,6 +9251,52 @@ class TriggerRule(BaseModel):
             description="How response times are aggregated for response-time rules",
         ),
     ] = None
+
+
+class TriggerRunRef(BaseModel):
+    model_config = ConfigDict(extra="ignore", populate_by_name=True)
+    id: Annotated[UUID, Field(description="Run identifier")]
+    region: Annotated[str, Field(description="Probe region for this run", min_length=1)]
+    phase: Annotated[str, Field(description="Current run phase")]
+    url: Annotated[str, Field(description="API path for this run", min_length=1)]
+
+
+class TriggerRunRequest(BaseModel):
+    model_config = ConfigDict(extra="forbid", populate_by_name=True)
+    regions: Annotated[
+        list[str] | None,
+        Field(
+            description="Regions to run; empty or omitted runs every configured region"
+        ),
+    ] = None
+    signal: Annotated[
+        bool | None,
+        Field(
+            description="Count these runs toward health and incidents (default: false)"
+        ),
+    ] = None
+    session: RunSessionContext | None = None
+
+
+class TriggerRunsResponse(BaseModel):
+    model_config = ConfigDict(extra="ignore", populate_by_name=True)
+    trigger_id: Annotated[
+        UUID,
+        Field(
+            alias="triggerId",
+            description="Groups every run started by this trigger; scheduled runs group by evaluation cycle instead",
+        ),
+    ]
+    billed_runs: Annotated[
+        int,
+        Field(
+            alias="billedRuns",
+            description="Runs billed for this trigger, one per region",
+        ),
+    ]
+    runs: Annotated[
+        list[TriggerRunRef], Field(description="Queued runs, one per region")
+    ]
 
 
 class UpdateAlertSensitivityRequest(BaseModel):
@@ -8690,6 +9665,17 @@ class UpdateMattermostChannelConfig(BaseModel):
 class UpdateMonitorAuthRequest(BaseModel):
     model_config = ConfigDict(extra="forbid", populate_by_name=True)
     config: ApiKeyAuthConfig | BasicAuthConfig | BearerAuthConfig | HeaderAuthConfig
+
+
+class SecretKey1(RootModel[str]):
+    root: Annotated[
+        str,
+        Field(
+            description="Replace attached secret keys; null preserves current",
+            max_length=255,
+            min_length=0,
+        ),
+    ]
 
 
 class UpdateOpsGenieChannelConfig(BaseModel):
@@ -9617,6 +10603,28 @@ class UserDto(BaseModel):
     ]
 
 
+class Value(BaseModel):
+    model_config = ConfigDict(extra="ignore", populate_by_name=True)
+    value: Annotated[
+        str, Field(description="Exact filter value; steps use caseIndex:step")
+    ]
+    count: Annotated[int, Field(description="Matching run attempts for this value")]
+    failed_count: Annotated[
+        int | None,
+        Field(
+            alias="failedCount",
+            description="Failed attempt count; populated for region facets",
+        ),
+    ] = None
+    outcome_counts: Annotated[
+        list[RunOutcomeCountDto] | None,
+        Field(
+            alias="outcomeCounts",
+            description="Per-outcome attempt counts; populated for region facets",
+        ),
+    ] = None
+
+
 class VoiceLanguageDto(BaseModel):
     model_config = ConfigDict(extra="ignore", populate_by_name=True)
     code: Annotated[
@@ -10020,6 +11028,16 @@ class AcknowledgeAllIncidentsResponse(BaseModel):
     ]
 
 
+class ActorDisplayDto(BaseModel):
+    model_config = ConfigDict(extra="ignore", populate_by_name=True)
+    identity: Annotated[str, Field(description="Stable actor identity")]
+    user: UserDto | None = None
+    key_name: Annotated[
+        str | None,
+        Field(alias="keyName", description="API key display name; never the key value"),
+    ] = None
+
+
 class AddMonitorTagsRequest(BaseModel):
     model_config = ConfigDict(extra="forbid", populate_by_name=True)
     tag_ids: Annotated[
@@ -10059,9 +11077,19 @@ class ArtifactTraceMeta(BaseModel):
     ] = None
 
 
-class AuditMetadata(RootModel[MemberRoleChangedMetadata | None]):
+class AuditMetadata(
+    RootModel[
+        MemberRoleChangedMetadata
+        | EvidencePurgedMetadata
+        | MonitorOwnershipMetadata
+        | None
+    ]
+):
     root: Annotated[
-        MemberRoleChangedMetadata | None,
+        MemberRoleChangedMetadata
+        | EvidencePurgedMetadata
+        | MonitorOwnershipMetadata
+        | None,
         Field(
             description="Typed metadata payload attached to an audit event; null for actions that carry no extra context.",
             discriminator="kind",
@@ -10106,6 +11134,16 @@ class BulkMonitorActionRequest(BaseModel):
             description="New tags to create and attach (only for ADD_TAG)",
         ),
     ] = None
+    frequency_seconds: Annotated[
+        int | None,
+        Field(
+            alias="frequencySeconds",
+            description="New check frequency in seconds (10–86400), required for UPDATE_SCHEDULE",
+            ge=10,
+            le=86400,
+        ),
+    ] = None
+    overlay: MonitorOverlayRequest | None = None
 
 
 class BulkMonitorActionResult(BaseModel):
@@ -10118,6 +11156,13 @@ class BulkMonitorActionResult(BaseModel):
         Field(
             description="Monitors on which the action failed, with the reason for each failure"
         ),
+    ]
+
+
+class BundleCheckResultDto(BaseModel):
+    model_config = ConfigDict(extra="ignore", populate_by_name=True)
+    findings: Annotated[
+        list[Finding], Field(description="Problems found in the supplied source files")
     ]
 
 
@@ -10189,6 +11234,23 @@ class Code(BaseModel):
             description="Whether the run hit a step/total/run-budget timeout",
         ),
     ] = None
+
+
+class CodeTestTargetRequest(BaseModel):
+    model_config = ConfigDict(extra="forbid", populate_by_name=True)
+    environment_id: Annotated[
+        UUID | None,
+        Field(
+            alias="environmentId",
+            description="Environment to test against; null uses the monitor's environment",
+        ),
+    ] = None
+    region: Annotated[
+        str | None,
+        Field(description="Region for this test; null uses the monitor's first region"),
+    ] = None
+    code: MonitorCodeSpec | None = None
+    session: RunSessionContext | None = None
 
 
 class ComponentUptimeDayDto(BaseModel):
@@ -10332,6 +11394,11 @@ class CreateAssertionRequest(BaseModel):
     ] = None
 
 
+class CreateDraftRevisionRequest(BaseModel):
+    model_config = ConfigDict(extra="forbid", populate_by_name=True)
+    code: MonitorCodeSpec
+
+
 class CreateMonitorRequest(BaseModel):
     model_config = ConfigDict(extra="forbid", populate_by_name=True)
     name: Annotated[
@@ -10376,6 +11443,22 @@ class CreateMonitorRequest(BaseModel):
         Field(
             alias="managedBy",
             description="Source that created this monitor: DASHBOARD, CLI, TERRAFORM, MCP, or API. Defaults to API",
+        ),
+    ] = None
+    owner_enforced: Annotated[
+        bool | None,
+        Field(
+            alias="ownerEnforced",
+            description="Only the managedBy tool may change configuration (default: false)",
+        ),
+    ] = None
+    owner_project: Annotated[
+        str | None,
+        Field(
+            alias="ownerProject",
+            description="Project the owning tool declares for this monitor, e.g. acme/web",
+            max_length=255,
+            min_length=0,
         ),
     ] = None
     environment_id: Annotated[
@@ -10425,7 +11508,19 @@ class CreateMonitorRequest(BaseModel):
             description="Existing definition to reuse for a sibling monitor",
         ),
     ] = None
-    package: MonitorPackageSpec | None = None
+    code: MonitorCodeSpec | None = None
+    owner_declaration: Annotated[
+        OwnerDeclaration | None, Field(alias="ownerDeclaration")
+    ] = None
+    secret_keys: Annotated[
+        list[SecretKey] | None,
+        Field(
+            alias="secretKeys",
+            description="Secret keys to attach; null starts with the scanned set",
+            max_length=256,
+            min_length=0,
+        ),
+    ] = None
 
 
 class CreateResourceGroupRequest(BaseModel):
@@ -10659,6 +11754,26 @@ class CreditPolicy(BaseModel):
     ] = None
 
 
+class CursorPageMonitorHistoryEntryDto(BaseModel):
+    model_config = ConfigDict(extra="ignore", populate_by_name=True)
+    data: Annotated[
+        list[MonitorHistoryEntryDto], Field(description="Items on this page")
+    ]
+    next_cursor: Annotated[
+        str | None,
+        Field(
+            alias="nextCursor",
+            description="Opaque cursor for the next page; null when there are no more results",
+        ),
+    ] = None
+    has_more: Annotated[
+        bool,
+        Field(
+            alias="hasMore", description="Whether more results exist beyond this page"
+        ),
+    ]
+
+
 class CursorPageNotificationDispatchDto(BaseModel):
     model_config = ConfigDict(extra="ignore", populate_by_name=True)
     data: Annotated[
@@ -10755,26 +11870,6 @@ class DashboardOverviewDto(BaseModel):
     model_config = ConfigDict(extra="ignore", populate_by_name=True)
     monitors: MonitorsSummaryDto
     incidents: IncidentsSummaryDto
-
-
-class DefinitionHeadDto(BaseModel):
-    model_config = ConfigDict(extra="ignore", populate_by_name=True)
-    definition_id: Annotated[
-        UUID, Field(alias="definitionId", description="Definition this Head belongs to")
-    ]
-    environment: EnvironmentDto
-    revision: RevisionDto
-    activated_at: Annotated[
-        AwareDatetime,
-        Field(alias="activatedAt", description="When this Head last activated"),
-    ]
-    activated_by: Annotated[
-        str | None,
-        Field(alias="activatedBy", description="Who last activated this Head"),
-    ] = None
-    reason: Annotated[
-        str | None, Field(description="Rollback reason when this Head was restored")
-    ] = None
 
 
 class EmailMessageDto(BaseModel):
@@ -11157,6 +12252,13 @@ class IncidentDto(BaseModel):
             description="Scheduler-minted check execution ID whose result confirmed this incident; joins to check_results, rule_evaluations, and incident_state_transitions. Omitted from JSON (undefined to SDKs) when null, treat missing as null.",
         ),
     ] = None
+    triggering_run_id: Annotated[
+        UUID | None,
+        Field(
+            alias="triggeringRunId",
+            description="Code-monitor run whose failing tick confirmed this incident; null for uptime",
+        ),
+    ] = None
     triggered_by_rule_snapshot_hash_hex: Annotated[
         str | None,
         Field(
@@ -11422,202 +12524,127 @@ class MonitorAssertionDto(BaseModel):
     severity: str
 
 
-class MonitorDriftDto(BaseModel):
+class MonitorBatchHistoryItemDto(BaseModel):
     model_config = ConfigDict(extra="ignore", populate_by_name=True)
-    fields: Annotated[
-        list[MonitorDriftFieldDto],
+    id: Annotated[UUID, Field(description="Monitor identifier")]
+    availability: Annotated[
+        float | None,
         Field(
-            description="Fields whose live overlay differs from the declared baseline"
+            description="Share of checks that passed, 0–100; null when no checks ran"
         ),
+    ] = None
+    p95: Annotated[
+        float | None,
+        Field(
+            description="95th percentile response time in milliseconds; null when none recorded"
+        ),
+    ] = None
+    ticks: Annotated[
+        list[MonitorHistoryTickDto],
+        Field(description="Outcome per time bucket, oldest first"),
     ]
+    display_ticks: Annotated[
+        list[MonitorDisplayTickDto] | None,
+        Field(
+            alias="displayTicks",
+            description="48 display buckets; present only when density=48",
+        ),
+    ] = None
 
 
-class MonitorDto(BaseModel):
-    """Note: ``currentStatus`` was removed from this DTO. Inspect ``enabled`` and the incident-policy API to derive a live status for a monitor instead."""
-
+class MonitorDriftSettingDto(BaseModel):
     model_config = ConfigDict(extra="ignore", populate_by_name=True)
-    id: Annotated[UUID, Field(description="Unique monitor identifier")]
-    organization_id: Annotated[
-        int,
-        Field(
-            alias="organizationId", description="Organization this monitor belongs to"
-        ),
+    field: Annotated[
+        str, Field(description="Setting name: frequency or regions", min_length=1)
     ]
-    name: Annotated[
-        str, Field(description="Human-readable name for this monitor", min_length=1)
-    ]
-    type: str
-    config: (
-        DnsMonitorConfig
-        | HeartbeatMonitorConfig
-        | HttpMonitorConfig
-        | IcmpMonitorConfig
-        | McpServerMonitorConfig
-        | ScriptMonitorConfig
-        | TcpMonitorConfig
-    )
-    frequency_seconds: Annotated[
-        int,
-        Field(
-            alias="frequencySeconds",
-            description="Check frequency in seconds (30–86400)",
-        ),
-    ]
-    enabled: Annotated[bool, Field(description="Whether the monitor is active")]
-    regions: Annotated[
-        list[str], Field(description="Probe regions where checks are executed")
-    ]
-    managed_by: Annotated[
+    live: Annotated[
         str,
         Field(
-            alias="managedBy",
-            description="Source that created/owns this monitor: DASHBOARD, CLI, TERRAFORM, MCP, or API",
+            description="Live value: seconds for frequency, comma-separated ids for regions",
+            min_length=1,
         ),
     ]
-    created_at: Annotated[
+    git: Annotated[
+        str,
+        Field(
+            description="Value last applied from Git, in the same format as live",
+            min_length=1,
+        ),
+    ]
+    changed_at: Annotated[
+        AwareDatetime | None,
+        Field(alias="changedAt", description="When this setting was last changed"),
+    ] = None
+    changed_by: Annotated[UserDto | None, Field(alias="changedBy")] = None
+    reason: Annotated[
+        str | None, Field(description="Recorded reason; null when no reason was stored")
+    ] = None
+
+
+class MonitorFacetDto(BaseModel):
+    model_config = ConfigDict(extra="ignore", populate_by_name=True)
+    field: Annotated[
+        str, Field(description="Facet field: type, environment, region, tag, or owner")
+    ]
+    values: Annotated[
+        list[MonitorFacetValueDto],
+        Field(description="Values with at least one monitor, largest first"),
+    ]
+
+
+class MonitorFleetSummaryDto(BaseModel):
+    model_config = ConfigDict(extra="ignore", populate_by_name=True)
+    window: Annotated[str, Field(description="Window: 24h, 7d, or 30d")]
+    from_: Annotated[
         AwareDatetime,
-        Field(alias="createdAt", description="Timestamp when the monitor was created"),
+        Field(alias="from", description="Inclusive start of the history window"),
     ]
-    updated_at: Annotated[
-        AwareDatetime,
+    to: Annotated[
+        AwareDatetime, Field(description="Exclusive end of the history window")
+    ]
+    uptime_percent: Annotated[
+        float | None,
         Field(
-            alias="updatedAt", description="Timestamp when the monitor was last updated"
+            alias="uptimePercent",
+            description="Passed target checks divided by measured target checks, 0–100",
+        ),
+    ] = None
+    last_failure_bucket_at: Annotated[
+        AwareDatetime | None,
+        Field(
+            alias="lastFailureBucketAt",
+            description="Start of the most recent failing display bucket",
+        ),
+    ] = None
+    open_incident_count: Annotated[
+        int,
+        Field(
+            alias="openIncidentCount", description="Open confirmed monitor incidents"
         ),
     ]
-    assertions: Annotated[
-        list[MonitorAssertionDto] | None,
+    groups: Annotated[
+        list[MonitorListGroupDto],
+        Field(description="Current monitor group counts, independent of list filters"),
+    ]
+    ticks: Annotated[
+        list[MonitorDisplayTickDto],
         Field(
-            description="Assertions evaluated against each check result; null on list responses"
+            description="48 display buckets showing the worst observed monitor outcome"
         ),
-    ] = None
-    tags: Annotated[
-        list[TagDto] | None, Field(description="Tags applied to this monitor")
-    ] = None
-    ping_url: Annotated[
-        str | None,
-        Field(
-            alias="pingUrl",
-            description="Heartbeat ping URL; populated for HEARTBEAT monitors only",
-        ),
-    ] = None
-    environment: Summary | None = None
-    auth: MonitorAuthConfig | None = None
-    incident_policy: Annotated[
-        IncidentPolicyDto | None, Field(alias="incidentPolicy")
-    ] = None
-    alert_channel_ids: Annotated[
-        list[UUID] | None,
-        Field(
-            alias="alertChannelIds",
-            description="Alert channel IDs linked to this monitor; populated on single-monitor responses",
-        ),
-    ] = None
-    bound_status_page_components: Annotated[
-        list[StatusPageBoundComponentDto] | None,
-        Field(
-            alias="boundStatusPageComponents",
-            description="Status-page components that represent this monitor; omitted when none",
-        ),
-    ] = None
-    current_status: Annotated[
-        str | None,
-        Field(
-            alias="currentStatus",
-            description="Current operational state. One of UP, DOWN, DEGRADED, PAUSED, or UNKNOWN",
-        ),
-    ] = None
-    display_health: Annotated[
-        str | None,
-        Field(
-            alias="displayHealth",
-            description="List and header chip health; not currentStatus and not evaluation state",
-        ),
-    ] = None
-    binding_readiness: Annotated[
-        str | None,
-        Field(
-            alias="bindingReadiness",
-            description="Secret binding state: ready, blocked, or not_applicable",
-        ),
-    ] = None
-    needs_attention: Annotated[
-        bool | None,
-        Field(
-            alias="needsAttention",
-            description="True when the monitor needs operator attention",
-        ),
-    ] = None
-    open_incident: Annotated[
-        UUID | None,
-        Field(alias="openIncident", description="Open confirmed incident id"),
-    ] = None
-    last_run_at: Annotated[
-        AwareDatetime | None,
-        Field(alias="lastRunAt", description="When the latest code run was enqueued"),
-    ] = None
-    last_run_id: Annotated[
-        UUID | None, Field(alias="lastRunId", description="Latest code run id")
-    ] = None
-    definition_id: Annotated[
-        UUID | None,
-        Field(
-            alias="definitionId",
-            description="Definition id for a browser or multi-step monitor. Null on probe monitors",
-        ),
-    ] = None
-    capture_policy: Annotated[CapturePolicy | None, Field(alias="capturePolicy")] = None
-    fast_retry_max_attempts: Annotated[
-        int | None,
-        Field(
-            alias="fastRetryMaxAttempts",
-            description="Fast-retry max attempts; null/0 = off",
-        ),
-    ] = None
-    run_parallel: Annotated[
-        bool | None,
-        Field(
-            alias="runParallel",
-            description="When multiple locations are set, run all of them each interval. False rotates one location per interval",
-        ),
-    ] = None
-    muted: Annotated[bool, Field(description="Whether alert delivery is muted")]
-    muted_until: Annotated[
-        AwareDatetime | None,
-        Field(
-            alias="mutedUntil",
-            description="Mute expiry; null means indefinite while muted",
-        ),
-    ] = None
-    mute_reason: Annotated[
-        str | None, Field(alias="muteReason", description="Optional mute reason")
-    ] = None
-    paused_at: Annotated[
-        AwareDatetime | None,
-        Field(alias="pausedAt", description="When the monitor was paused"),
-    ] = None
-    pause_reason: Annotated[
-        str | None, Field(alias="pauseReason", description="Optional pause reason")
-    ] = None
-    pause_expires_at: Annotated[
-        AwareDatetime | None, Field(alias="pauseExpiresAt", description="Pause expiry")
-    ] = None
-    quarantine_owner_id: Annotated[
-        str | None,
-        Field(alias="quarantineOwnerId", description="Quarantine person owner id"),
-    ] = None
-    quarantine_until: Annotated[
-        AwareDatetime | None,
-        Field(
-            alias="quarantineUntil",
-            description="Quarantine expiry; non-null means quarantined",
-        ),
-    ] = None
-    quarantine_reason: Annotated[
-        str | None, Field(alias="quarantineReason", description="Quarantine reason")
-    ] = None
-    upload: PackageUploadDto | None = None
-    usage_projection: Annotated[
-        MonitorUsageProjectionDto | None, Field(alias="usageProjection")
+    ]
+
+
+class MonitorListFacetsDto(BaseModel):
+    model_config = ConfigDict(extra="ignore", populate_by_name=True)
+    groups: Annotated[
+        list[MonitorListGroupDto], Field(description="Count per list group")
+    ]
+    facets: Annotated[
+        list[MonitorFacetDto], Field(description="Values and counts per facet field")
+    ]
+    sources: Annotated[
+        list[MonitorSourceSummaryDto] | None,
+        Field(description="Matching monitors per owning tool and project"),
     ] = None
 
 
@@ -11636,12 +12663,43 @@ class MonitorRunDurationBatchDto(BaseModel):
     ]
 
 
-class MonitorSecretRequestsDto(BaseModel):
+class MonitorRunSeriesDto(BaseModel):
     model_config = ConfigDict(extra="ignore", populate_by_name=True)
-    environment: EnvironmentDto
-    requests: Annotated[
-        list[SecretRequestDto],
-        Field(description="Secret keys this monitor requires and their resolve state"),
+    window: Annotated[str, Field(description="Requested chart window")]
+    from_: Annotated[
+        AwareDatetime, Field(alias="from", description="Inclusive start of the chart")
+    ]
+    to: Annotated[AwareDatetime, Field(description="Exclusive end of the chart")]
+    uptime_percent: Annotated[
+        float | None,
+        Field(
+            alias="uptimePercent",
+            description="Passed final target outcomes as a percent of passed and failed",
+        ),
+    ] = None
+    previous_uptime_percent: Annotated[
+        float | None,
+        Field(
+            alias="previousUptimePercent",
+            description="Target uptime in the previous equal-length period",
+        ),
+    ] = None
+    buckets: Annotated[
+        list[Bucket], Field(description="Buckets across every selected region")
+    ]
+    regions: Annotated[
+        list[Region], Field(description="Buckets for each selected region")
+    ]
+    points: Annotated[
+        list[Point] | None,
+        Field(description="Latest execution points for 24h; null for longer windows"),
+    ] = None
+    points_truncated: Annotated[
+        bool,
+        Field(
+            alias="pointsTruncated",
+            description="More 24h points exist than the returned 2000-point limit",
+        ),
     ]
 
 
@@ -11668,42 +12726,8 @@ class MonitorTestRequest(BaseModel):
             description="Environment to test against; null uses the monitor environment",
         ),
     ] = None
-
-
-class MonitorVersionDto(BaseModel):
-    model_config = ConfigDict(extra="ignore", populate_by_name=True)
-    id: Annotated[UUID, Field(description="Unique version record identifier")]
-    monitor_id: Annotated[
-        UUID, Field(alias="monitorId", description="Monitor this version belongs to")
-    ]
-    version: Annotated[
-        int, Field(description="Monotonically increasing version number")
-    ]
-    snapshot: MonitorDto
-    changed_by_id: Annotated[
-        int | None,
-        Field(
-            alias="changedById",
-            description="User ID who made the change; null for automated changes",
-        ),
-    ] = None
-    changed_via: Annotated[
-        str,
-        Field(alias="changedVia", description="Change source (DASHBOARD, CLI, API)"),
-    ]
-    change_summary: Annotated[
-        str | None,
-        Field(
-            alias="changeSummary",
-            description="Human-readable description of what changed",
-        ),
-    ] = None
-    created_at: Annotated[
-        AwareDatetime,
-        Field(
-            alias="createdAt", description="Timestamp when this version was recorded"
-        ),
-    ]
+    code: MonitorCodeSpec | None = None
+    session: RunSessionContext | None = None
 
 
 class NetworkRowDto(BaseModel):
@@ -11865,6 +12889,25 @@ class NotificationPolicyDto(BaseModel):
     ] = None
 
 
+class RegionResultSeriesDto(BaseModel):
+    model_config = ConfigDict(extra="ignore", populate_by_name=True)
+    window: Annotated[str, Field(description="Requested window (24h, 7d, or 30d)")]
+    bucket_seconds: Annotated[
+        int, Field(alias="bucketSeconds", description="Chart bucket width in seconds")
+    ]
+    previous_uptime_percent: Annotated[
+        float | None,
+        Field(
+            alias="previousUptimePercent",
+            description="Uptime percent for the previous equal-length window",
+        ),
+    ] = None
+    regions: Annotated[
+        list[RegionSeriesDto],
+        Field(description="Per-region series covering the requested window"),
+    ]
+
+
 class RelatedIncidentsResponse(BaseModel):
     model_config = ConfigDict(extra="ignore", populate_by_name=True)
     data: Annotated[
@@ -12009,27 +13052,86 @@ class ResourceGroupMemberDto(BaseModel):
     ] = None
 
 
-class RevisionDiffDto(BaseModel):
+class RevisionDto(BaseModel):
     model_config = ConfigDict(extra="ignore", populate_by_name=True)
-    left: RevisionDto
-    right: RevisionDto
-    hunks: Annotated[
-        list[RevisionDiffHunkDto],
-        Field(description="File and field-level hunks (bounded)"),
+    id: Annotated[UUID, Field(description="Revision identifier")]
+    definition_id: Annotated[
+        UUID, Field(alias="definitionId", description="Parent definition")
     ]
-
-
-class RollbackPreviewDto(BaseModel):
-    model_config = ConfigDict(extra="ignore", populate_by_name=True)
-    target: RevisionDto
-    current: DefinitionHeadDto | None = None
-    affected_monitors: Annotated[
-        list[MonitorDto],
+    number: Annotated[
+        int, Field(description="Monotonic revision number within the definition")
+    ]
+    digest: Annotated[
+        str,
         Field(
-            alias="affectedMonitors",
-            description="Monitors sharing this definition and environment",
+            description="Closure digest from POST /bundles (sha256:<hex>)", min_length=1
         ),
     ]
+    entrypoint: Annotated[
+        str, Field(description="Entrypoint file that runs", min_length=1)
+    ]
+    files: Annotated[list[str], Field(description="Paths present in the zip")]
+    keys: Annotated[list[str], Field(description="Secret key names the code demands")]
+    download_until: Annotated[
+        AwareDatetime | None,
+        Field(
+            alias="downloadUntil", description="When package bytes expire for download"
+        ),
+    ] = None
+    purged_at: Annotated[
+        AwareDatetime | None,
+        Field(alias="purgedAt", description="When package bytes were purged"),
+    ] = None
+    git_sha: Annotated[
+        str | None,
+        Field(alias="gitSha", description="Git commit SHA when sourced from Git"),
+    ] = None
+    git_message: Annotated[
+        str | None, Field(alias="gitMessage", description="Git commit message")
+    ] = None
+    git_file: Annotated[
+        str | None, Field(alias="gitFile", description="Declaring Git file path")
+    ] = None
+    authored_by: Annotated[
+        str | None, Field(alias="authoredBy", description="Who authored this package")
+    ] = None
+    source: CodeSource | None = None
+    created_at: Annotated[
+        AwareDatetime,
+        Field(alias="createdAt", description="When the revision was minted"),
+    ]
+    state: Annotated[
+        str | None,
+        Field(
+            description="draft, tested_passed, tested_failed, live, previous, or discarded"
+        ),
+    ] = None
+    test_run_id: Annotated[
+        UUID | None,
+        Field(alias="testRunId", description="Latest validation run for this revision"),
+    ] = None
+    test_outcome: Annotated[
+        str | None,
+        Field(
+            alias="testOutcome",
+            description="Latest test outcome; absent until a test finishes",
+        ),
+    ] = None
+    live_stats: Annotated[RevisionLiveStatsDto | None, Field(alias="liveStats")] = None
+    expires_at: Annotated[
+        AwareDatetime | None,
+        Field(
+            alias="expiresAt",
+            description="When this draft expires; preserved after discard",
+        ),
+    ] = None
+    created_by_kind: Annotated[
+        str | None,
+        Field(alias="createdByKind", description="Tool that created this draft"),
+    ] = None
+    base_revision: Annotated[
+        RevisionReferenceDto | None, Field(alias="baseRevision")
+    ] = None
 
 
 class RunArtifactDto(BaseModel):
@@ -12168,6 +13270,197 @@ class RunExecutionDto(BaseModel):
     ]
 
 
+class RunFacetDto(BaseModel):
+    model_config = ConfigDict(extra="ignore", populate_by_name=True)
+    field: Annotated[str, Field(description="Filter field these values describe")]
+    values: Annotated[
+        list[Value], Field(description="Values selected by the other filters")
+    ]
+
+
+class RunHistogramBucketDto(BaseModel):
+    model_config = ConfigDict(extra="ignore", populate_by_name=True)
+    start: Annotated[
+        AwareDatetime, Field(description="Inclusive UTC start of this bucket")
+    ]
+    counts: Annotated[
+        list[RunOutcomeCountDto], Field(description="Health-voting run attempt counts")
+    ]
+
+
+class RunMetricsSummaryDto(BaseModel):
+    model_config = ConfigDict(extra="ignore", populate_by_name=True)
+    from_: Annotated[
+        AwareDatetime,
+        Field(alias="from", description="Inclusive start of the enqueue-time window"),
+    ]
+    to: Annotated[
+        AwareDatetime, Field(description="Inclusive end of the enqueue-time window")
+    ]
+    matching_run_count: Annotated[
+        int,
+        Field(
+            alias="matchingRunCount",
+            description="Runs matching the complete list filter",
+        ),
+    ]
+    duration_sample_count: Annotated[
+        int,
+        Field(
+            alias="durationSampleCount",
+            description="Finished matching runs with a measured execution duration",
+        ),
+    ]
+    p95_duration_ms: Annotated[
+        float | None,
+        Field(
+            alias="p95DurationMs",
+            description="95th percentile execution duration in milliseconds; null when no durations were measured",
+        ),
+    ] = None
+    evidence_eligible_run_count: Annotated[
+        int,
+        Field(
+            alias="evidenceEligibleRunCount",
+            description="Runs with a known capture policy",
+        ),
+    ]
+    evidence_unknown_policy_run_count: Annotated[
+        int,
+        Field(
+            alias="evidenceUnknownPolicyRunCount",
+            description="Runs with a missing or incomplete capture policy",
+        ),
+    ]
+    evidence_incomplete_run_count: Annotated[
+        int | None,
+        Field(
+            alias="evidenceIncompleteRunCount",
+            description="Eligible runs with required evidence missing, processing, failed, or expired",
+        ),
+    ] = None
+    evidence_processing_run_count: Annotated[
+        int | None,
+        Field(
+            alias="evidenceProcessingRunCount",
+            description="Eligible runs with required evidence still processing",
+        ),
+    ] = None
+    evidence_no_evidence_policy_run_count: Annotated[
+        int | None,
+        Field(
+            alias="evidenceNoEvidencePolicyRunCount",
+            description="Eligible runs with no evidence required by their recorded policy",
+        ),
+    ] = None
+    evidence_complete_run_count: Annotated[
+        int | None,
+        Field(
+            alias="evidenceCompleteRunCount",
+            description="Eligible runs with all required evidence available",
+        ),
+    ] = None
+    available_artifact_count: Annotated[
+        int | None,
+        Field(
+            alias="availableArtifactCount",
+            description="Required artifact records with an available unexpired object key",
+        ),
+    ] = None
+    processing_artifact_count: Annotated[
+        int | None,
+        Field(
+            alias="processingArtifactCount",
+            description="Required artifact records still processing",
+        ),
+    ] = None
+    failed_artifact_count: Annotated[
+        int | None,
+        Field(
+            alias="failedArtifactCount",
+            description="Required artifact records with a failed upload",
+        ),
+    ] = None
+    expired_artifact_count: Annotated[
+        int | None,
+        Field(
+            alias="expiredArtifactCount",
+            description="Required artifact records marked expired or past their expiry",
+        ),
+    ] = None
+    missing_artifact_kind_count: Annotated[
+        int | None,
+        Field(
+            alias="missingArtifactKindCount",
+            description="Required evidence kinds with no artifact record after the run finished",
+        ),
+    ] = None
+    intentional_no_evidence_artifact_count: Annotated[
+        int | None,
+        Field(
+            alias="intentionalNoEvidenceArtifactCount",
+            description="Required artifact records explicitly suppressed, not reached, or not captured",
+        ),
+    ] = None
+    outcome_counts: Annotated[
+        list[RunOutcomeCountDto] | None,
+        Field(
+            alias="outcomeCounts",
+            description="Health-voting run attempts by projected outcome",
+        ),
+    ] = None
+    excluded_run_count: Annotated[
+        int | None,
+        Field(
+            alias="excludedRunCount",
+            description="Matching attempts that do not vote on health",
+        ),
+    ] = None
+    cycle_count: Annotated[
+        int | None,
+        Field(
+            alias="cycleCount",
+            description="Distinct scheduled cycle identities in the filtered population",
+        ),
+    ] = None
+    failed_cycle_count: Annotated[
+        int | None,
+        Field(
+            alias="failedCycleCount",
+            description="Recorded complete cycles with a final failed or timed-out region; display count",
+        ),
+    ] = None
+    display_group_count: Annotated[
+        int | None,
+        Field(
+            alias="displayGroupCount",
+            description="Cycle and manual-trigger groups in the filtered population",
+        ),
+    ] = None
+    health_voting_p95_duration_ms: Annotated[
+        float | None,
+        Field(
+            alias="healthVotingP95DurationMs",
+            description="95th-percentile duration of health-voting run attempts",
+        ),
+    ] = None
+    session_last_run_at: Annotated[
+        AwareDatetime | None,
+        Field(
+            alias="sessionLastRunAt",
+            description="Latest session enqueue within retention, independent of the window",
+        ),
+    ] = None
+    buckets: Annotated[
+        list[RunHistogramBucketDto] | None,
+        Field(description="UTC time buckets of health-voting run attempts"),
+    ] = None
+    facets: Annotated[
+        list[RunFacetDto] | None,
+        Field(description="Run facets respecting the other active filters"),
+    ] = None
+
+
 class RunNetworkDto(BaseModel):
     model_config = ConfigDict(extra="ignore", populate_by_name=True)
     data: Annotated[
@@ -12198,11 +13491,17 @@ class SecretAuditDto(BaseModel):
     updated_by: Annotated[UserDto | None, Field(alias="updatedBy")] = None
 
 
-class SecretUsageDto(BaseModel):
+class SecretValueStampDto(BaseModel):
     model_config = ConfigDict(extra="ignore", populate_by_name=True)
-    monitors: Annotated[
-        list[MonitorDto], Field(description="Monitors that reference this secret")
-    ]
+    environment: Summary
+    updated_at: Annotated[
+        AwareDatetime | None,
+        Field(
+            alias="updatedAt",
+            description="When this environment value was last written",
+        ),
+    ] = None
+    updated_by: Annotated[ActorDisplayDto | None, Field(alias="updatedBy")] = None
 
 
 class ServiceIncidentDetailDto(BaseModel):
@@ -12323,6 +13622,11 @@ class SingleValueResponseBulkMonitorActionResult(BaseModel):
     data: BulkMonitorActionResult
 
 
+class SingleValueResponseBundleCheckResultDto(BaseModel):
+    model_config = ConfigDict(extra="ignore", populate_by_name=True)
+    data: BundleCheckResultDto
+
+
 class SingleValueResponseCaptureCompareDto(BaseModel):
     model_config = ConfigDict(extra="ignore", populate_by_name=True)
     data: CaptureCompareDto
@@ -12331,11 +13635,6 @@ class SingleValueResponseCaptureCompareDto(BaseModel):
 class SingleValueResponseDashboardOverviewDto(BaseModel):
     model_config = ConfigDict(extra="ignore", populate_by_name=True)
     data: DashboardOverviewDto
-
-
-class SingleValueResponseDefinitionHeadDto(BaseModel):
-    model_config = ConfigDict(extra="ignore", populate_by_name=True)
-    data: DefinitionHeadDto
 
 
 class SingleValueResponseEmailMessageDto(BaseModel):
@@ -12368,14 +13667,14 @@ class SingleValueResponseMonitorAssertionDto(BaseModel):
     data: MonitorAssertionDto
 
 
-class SingleValueResponseMonitorDriftDto(BaseModel):
+class SingleValueResponseMonitorFleetSummaryDto(BaseModel):
     model_config = ConfigDict(extra="ignore", populate_by_name=True)
-    data: MonitorDriftDto
+    data: MonitorFleetSummaryDto
 
 
-class SingleValueResponseMonitorDto(BaseModel):
+class SingleValueResponseMonitorListFacetsDto(BaseModel):
     model_config = ConfigDict(extra="ignore", populate_by_name=True)
-    data: MonitorDto
+    data: MonitorListFacetsDto
 
 
 class SingleValueResponseMonitorRunDurationBatchDto(BaseModel):
@@ -12383,14 +13682,9 @@ class SingleValueResponseMonitorRunDurationBatchDto(BaseModel):
     data: MonitorRunDurationBatchDto
 
 
-class SingleValueResponseMonitorSecretRequestsDto(BaseModel):
+class SingleValueResponseMonitorRunSeriesDto(BaseModel):
     model_config = ConfigDict(extra="ignore", populate_by_name=True)
-    data: MonitorSecretRequestsDto
-
-
-class SingleValueResponseMonitorVersionDto(BaseModel):
-    model_config = ConfigDict(extra="ignore", populate_by_name=True)
-    data: MonitorVersionDto
+    data: MonitorRunSeriesDto
 
 
 class SingleValueResponseNetworkRowDto(BaseModel):
@@ -12403,29 +13697,29 @@ class SingleValueResponseNotificationPolicyDto(BaseModel):
     data: NotificationPolicyDto
 
 
+class SingleValueResponseRegionResultSeriesDto(BaseModel):
+    model_config = ConfigDict(extra="ignore", populate_by_name=True)
+    data: RegionResultSeriesDto
+
+
 class SingleValueResponseResourceGroupMemberDto(BaseModel):
     model_config = ConfigDict(extra="ignore", populate_by_name=True)
     data: ResourceGroupMemberDto
 
 
-class SingleValueResponseRevisionDiffDto(BaseModel):
+class SingleValueResponseRevisionDto(BaseModel):
     model_config = ConfigDict(extra="ignore", populate_by_name=True)
-    data: RevisionDiffDto
+    data: RevisionDto
 
 
-class SingleValueResponseRollbackPreviewDto(BaseModel):
+class SingleValueResponseRunMetricsSummaryDto(BaseModel):
     model_config = ConfigDict(extra="ignore", populate_by_name=True)
-    data: RollbackPreviewDto
+    data: RunMetricsSummaryDto
 
 
 class SingleValueResponseSecretAuditDto(BaseModel):
     model_config = ConfigDict(extra="ignore", populate_by_name=True)
     data: SecretAuditDto
-
-
-class SingleValueResponseSecretUsageDto(BaseModel):
-    model_config = ConfigDict(extra="ignore", populate_by_name=True)
-    data: SecretUsageDto
 
 
 class SingleValueResponseServiceIncidentDetailDto(BaseModel):
@@ -12478,6 +13772,11 @@ class SingleValueResponseSyntheticsFamilyMetricsDto(BaseModel):
     data: SyntheticsFamilyMetricsDto
 
 
+class SingleValueResponseSyntheticsUsagePeriodDto(BaseModel):
+    model_config = ConfigDict(extra="ignore", populate_by_name=True)
+    data: SyntheticsUsagePeriodDto
+
+
 class SingleValueResponseTagDto(BaseModel):
     model_config = ConfigDict(extra="ignore", populate_by_name=True)
     data: TagDto
@@ -12491,6 +13790,11 @@ class SingleValueResponseTestChannelResult(BaseModel):
 class SingleValueResponseTestMatchResult(BaseModel):
     model_config = ConfigDict(extra="ignore", populate_by_name=True)
     data: TestMatchResult
+
+
+class SingleValueResponseTriggerRunsResponse(BaseModel):
+    model_config = ConfigDict(extra="ignore", populate_by_name=True)
+    data: TriggerRunsResponse
 
 
 class SingleValueResponseUptimeDto(BaseModel):
@@ -12696,27 +14000,18 @@ class TableValueResultIntegrationDto(BaseModel):
     total_pages: Annotated[int | None, Field(alias="totalPages")] = None
 
 
-class TableValueResultMonitorDto(BaseModel):
-    model_config = ConfigDict(extra="ignore", populate_by_name=True)
-    data: list[MonitorDto]
-    has_next: Annotated[bool, Field(alias="hasNext")]
-    has_prev: Annotated[bool, Field(alias="hasPrev")]
-    total_elements: Annotated[int | None, Field(alias="totalElements")] = None
-    total_pages: Annotated[int | None, Field(alias="totalPages")] = None
-
-
-class TableValueResultMonitorVersionDto(BaseModel):
-    model_config = ConfigDict(extra="ignore", populate_by_name=True)
-    data: list[MonitorVersionDto]
-    has_next: Annotated[bool, Field(alias="hasNext")]
-    has_prev: Annotated[bool, Field(alias="hasPrev")]
-    total_elements: Annotated[int | None, Field(alias="totalElements")] = None
-    total_pages: Annotated[int | None, Field(alias="totalPages")] = None
-
-
 class TableValueResultNotificationPolicyDto(BaseModel):
     model_config = ConfigDict(extra="ignore", populate_by_name=True)
     data: list[NotificationPolicyDto]
+    has_next: Annotated[bool, Field(alias="hasNext")]
+    has_prev: Annotated[bool, Field(alias="hasPrev")]
+    total_elements: Annotated[int | None, Field(alias="totalElements")] = None
+    total_pages: Annotated[int | None, Field(alias="totalPages")] = None
+
+
+class TableValueResultRevisionDto(BaseModel):
+    model_config = ConfigDict(extra="ignore", populate_by_name=True)
+    data: list[RevisionDto]
     has_next: Annotated[bool, Field(alias="hasNext")]
     has_prev: Annotated[bool, Field(alias="hasPrev")]
     total_elements: Annotated[int | None, Field(alias="totalElements")] = None
@@ -12958,6 +14253,22 @@ class UpdateMonitorRequest(BaseModel):
             description="New ownership source for probe monitors. Null preserves current. Code monitors use takeover",
         ),
     ] = None
+    owner_enforced: Annotated[
+        bool | None,
+        Field(
+            alias="ownerEnforced",
+            description="Only the managedBy tool may change configuration. Null preserves current",
+        ),
+    ] = None
+    owner_project: Annotated[
+        str | None,
+        Field(
+            alias="ownerProject",
+            description="Project the owning tool declares; null preserves current",
+            max_length=255,
+            min_length=0,
+        ),
+    ] = None
     environment_id: Annotated[
         UUID | None,
         Field(
@@ -13008,9 +14319,32 @@ class UpdateMonitorRequest(BaseModel):
             description="Run every location each interval; false rotates one. Null preserves current",
         ),
     ] = None
-    package: MonitorPackageSpec | None = None
+    code: MonitorCodeSpec | None = None
+    acknowledge_rollback: Annotated[
+        str | None,
+        Field(
+            alias="acknowledgeRollback",
+            description="Rolled-back digest this code publish re-applies on purpose",
+        ),
+    ] = None
     status: Annotated[
         str | None, Field(description="Not writable; use pause or resume")
+    ] = None
+    expected_updated_at: Annotated[
+        AwareDatetime | None,
+        Field(
+            alias="expectedUpdatedAt",
+            description="Last updatedAt this edit was based on; null skips the check",
+        ),
+    ] = None
+    secret_keys: Annotated[
+        list[SecretKey1] | None,
+        Field(
+            alias="secretKeys",
+            description="Replace attached secret keys; null preserves current",
+            max_length=256,
+            min_length=0,
+        ),
     ] = None
 
 
@@ -13052,6 +14386,18 @@ class UpdateNotificationPolicyRequest(BaseModel):
     ] = None
 
 
+class ValidateMonitorsRequest(BaseModel):
+    model_config = ConfigDict(extra="forbid", populate_by_name=True)
+    monitors: Annotated[
+        list[CreateMonitorRequest],
+        Field(
+            description="Monitors to check as create payloads, before anything is saved",
+            max_length=100,
+            min_length=1,
+        ),
+    ]
+
+
 class WaitEmailMessageResponse(BaseModel):
     model_config = ConfigDict(extra="ignore", populate_by_name=True)
     message: EmailMessageDto
@@ -13076,7 +14422,7 @@ class AuditEventDto(BaseModel):
         str | None,
         Field(
             alias="actorEmail",
-            description="Email of the actor; null for system actions",
+            description="User email, api-key:{id} for API keys, or system for automated actions",
         ),
     ] = None
     action: Annotated[
@@ -13105,6 +14451,10 @@ class AuditEventDto(BaseModel):
         AwareDatetime,
         Field(alias="createdAt", description="Timestamp when the action was performed"),
     ]
+    changes: Annotated[
+        list[MonitorFieldChange] | None,
+        Field(description="Non-secret settings changed by this action"),
+    ] = None
 
 
 class BatchComponentUptimeDto(BaseModel):
@@ -13148,6 +14498,12 @@ class CheckTypeDetailsDto(RootModel[Http | Tcp | Icmp | Dns | McpServer | Code])
             discriminator="check_type",
         ),
     ]
+
+
+class CreateDraftRevisionResponse(BaseModel):
+    model_config = ConfigDict(extra="ignore", populate_by_name=True)
+    revision: RevisionDto
+    evicted: RevisionDto | None = None
 
 
 class CreateNotificationPolicyRequest(BaseModel):
@@ -13225,22 +14581,86 @@ class CursorPageIncidentActivityEventDto(BaseModel):
     ]
 
 
-class DefinitionDetailDto(BaseModel):
+class DefinitionHeadDto(BaseModel):
     model_config = ConfigDict(extra="ignore", populate_by_name=True)
-    definition: DefinitionDto
-    heads: Annotated[
-        list[DefinitionHeadDto], Field(description="Active Heads per environment")
+    definition_id: Annotated[
+        UUID, Field(alias="definitionId", description="Definition this Head belongs to")
+    ]
+    environment: EnvironmentDto
+    revision: RevisionDto
+    activated_at: Annotated[
+        AwareDatetime,
+        Field(alias="activatedAt", description="When this Head last activated"),
+    ]
+    activated_by: Annotated[
+        str | None,
+        Field(alias="activatedBy", description="Who last activated this Head"),
+    ] = None
+    reason: Annotated[
+        str | None, Field(description="Rollback reason when this Head was restored")
+    ] = None
+    rolled_back_digest: Annotated[
+        str | None,
+        Field(
+            alias="rolledBackDigest",
+            description="Digest the last rollback replaced; cleared by the next publish",
+        ),
+    ] = None
+    linked_incidents: Annotated[
+        list[LinkedIncidentDto] | None,
+        Field(alias="linkedIncidents", description="Open incidents on this monitor"),
+    ] = None
+    note: Annotated[str | None, Field(description="Note from the latest publish")] = (
+        None
+    )
+    activated_by_actor: Annotated[
+        ActorDisplayDto | None, Field(alias="activatedByActor")
+    ] = None
+
+
+class MonitorBatchHistoryDto(BaseModel):
+    model_config = ConfigDict(extra="ignore", populate_by_name=True)
+    monitors: Annotated[
+        list[MonitorBatchHistoryItemDto],
+        Field(
+            description="One entry per requested monitor that exists in the workspace"
+        ),
     ]
 
 
-class IncidentDetailDto(BaseModel):
+class MonitorDriftDto(BaseModel):
     model_config = ConfigDict(extra="ignore", populate_by_name=True)
-    incident: IncidentDto
-    updates: list[IncidentUpdateDto]
-    status_page_incidents: Annotated[
-        list[LinkedStatusPageIncidentDto] | None, Field(alias="statusPageIncidents")
+    fields: Annotated[
+        list[MonitorDriftFieldDto],
+        Field(
+            description="Fields whose live overlay differs from the declared baseline"
+        ),
+    ]
+    code: MonitorDriftCodeDto | None = None
+    settings: Annotated[
+        list[MonitorDriftSettingDto] | None,
+        Field(
+            description="Settings that differ from the last values applied from Git; null without a settings baseline"
+        ),
     ] = None
-    trigger: IncidentTriggerDto | None = None
+
+
+class PickerItem(BaseModel):
+    model_config = ConfigDict(extra="ignore", populate_by_name=True)
+    run_id: Annotated[UUID, Field(alias="runId", description="Finished run identifier")]
+    revision_id: Annotated[
+        UUID, Field(alias="revisionId", description="Revision that run executed")
+    ]
+    finished_at: Annotated[
+        AwareDatetime, Field(alias="finishedAt", description="When that run finished")
+    ]
+    region: Annotated[str | None, Field(description="Region of this finished run")] = (
+        None
+    )
+    outcome: Annotated[
+        str | None, Field(description="Outcome of this finished run")
+    ] = None
+    revision: RevisionDto | None = None
 
 
 class ResourceGroupDto(BaseModel):
@@ -13360,6 +14780,51 @@ class ResourceGroupDto(BaseModel):
     ]
 
 
+class RestorableBinding(BaseModel):
+    model_config = ConfigDict(extra="ignore", populate_by_name=True)
+    status_page: Annotated[StatusPageDto, Field(alias="statusPage")]
+    component: StatusPageBindingSnapshot
+
+
+class RevisionDiffDto(BaseModel):
+    model_config = ConfigDict(extra="ignore", populate_by_name=True)
+    left: RevisionDto
+    right: RevisionDto
+    hunks: Annotated[
+        list[RevisionDiffHunkDto],
+        Field(description="File and field-level hunks (bounded)"),
+    ]
+
+
+class RunDiffDto(BaseModel):
+    model_config = ConfigDict(extra="ignore", populate_by_name=True)
+    baseline_run_id: Annotated[
+        UUID | None,
+        Field(
+            alias="baselineRunId", description="Baseline run; null when no prior pass"
+        ),
+    ] = None
+    baseline_kind: Annotated[
+        str, Field(alias="baselineKind", description="How the baseline was chosen")
+    ]
+    reads_as: Annotated[
+        str,
+        Field(
+            alias="readsAs",
+            description="Human-readable baseline sentence",
+            min_length=1,
+        ),
+    ]
+    rows: Annotated[list[Row], Field(description="One row per step on this run")]
+    picker: Annotated[
+        list[PickerItem],
+        Field(description="Other finished runs of this monitor for the picker"),
+    ]
+    nearest_other_region: Annotated[
+        NearestOtherRegion | None, Field(alias="nearestOtherRegion")
+    ] = None
+
+
 class RunDto(BaseModel):
     model_config = ConfigDict(extra="ignore", populate_by_name=True)
     id: Annotated[UUID, Field(description="Unique run identifier")]
@@ -13390,6 +14855,7 @@ class RunDto(BaseModel):
     revision_id: Annotated[
         UUID, Field(alias="revisionId", description="Revision this run executed")
     ]
+    revision: RevisionDto | None = None
     region: Annotated[str, Field(description="Probe region for this run", min_length=1)]
     source: Annotated[str, Field(description="What triggered this run")]
     counts_toward_health: Annotated[
@@ -13403,6 +14869,10 @@ class RunDto(BaseModel):
         AwareDatetime,
         Field(alias="enqueuedAt", description="When this run was enqueued"),
     ]
+    start_deadline_at: Annotated[
+        AwareDatetime | None,
+        Field(alias="startDeadlineAt", description="When this queued run must start"),
+    ] = None
     evaluation_cycle_id: Annotated[
         UUID | None,
         Field(
@@ -13463,6 +14933,14 @@ class RunDto(BaseModel):
     artifacts_expired_at: Annotated[
         AwareDatetime | None,
         Field(alias="artifactsExpiredAt", description="When artifact bytes expired"),
+    ] = None
+    pinned_at: Annotated[
+        AwareDatetime | None,
+        Field(alias="pinnedAt", description="When this run was pinned past retention"),
+    ] = None
+    purged_at: Annotated[
+        AwareDatetime | None,
+        Field(alias="purgedAt", description="When stored evidence was purged"),
     ] = None
     capture_policy_snapshot: Annotated[
         dict[str, dict[str, Any]],
@@ -13526,6 +15004,129 @@ class RunDto(BaseModel):
             alias="executionAttempts", description="Persisted worker execution attempts"
         ),
     ]
+    url: Annotated[str | None, Field(description="Dashboard URL for this run")] = None
+    trigger_id: Annotated[
+        UUID | None,
+        Field(
+            alias="triggerId",
+            description="Groups runs started by one manual trigger; null for other runs",
+        ),
+    ] = None
+    session: RunSessionContext | None = None
+    runtime_id: Annotated[
+        str | None,
+        Field(alias="runtimeId", description="Runtime profile that executed this run"),
+    ] = None
+    cause: Annotated[
+        str | None,
+        Field(
+            description="Platform cause for an execution error, inconclusive finish, or network failure"
+        ),
+    ] = None
+    billable: Annotated[
+        bool,
+        Field(
+            description="Whether a finished run counts against the included run pool"
+        ),
+    ]
+    failure: RunFailureDto | None = None
+    artifacts_expire_at: Annotated[
+        AwareDatetime | None,
+        Field(alias="artifactsExpireAt", description="When artifact bytes will expire"),
+    ] = None
+
+
+class SecretDto(BaseModel):
+    model_config = ConfigDict(extra="ignore", populate_by_name=True)
+    id: Annotated[UUID, Field(description="Unique secret identifier")]
+    key: Annotated[
+        str, Field(description="Secret key name, unique within the workspace")
+    ]
+    dek_version: Annotated[
+        int,
+        Field(
+            alias="dekVersion", description="DEK version at the time of last encryption"
+        ),
+    ]
+    value_hash: Annotated[
+        str,
+        Field(
+            alias="valueHash",
+            description="SHA-256 hex digest of the current plaintext; use for change detection",
+        ),
+    ]
+    created_at: Annotated[
+        AwareDatetime,
+        Field(alias="createdAt", description="Timestamp when the secret was created"),
+    ]
+    updated_at: Annotated[
+        AwareDatetime,
+        Field(
+            alias="updatedAt", description="Timestamp when the secret was last updated"
+        ),
+    ]
+    used_by_monitors: Annotated[
+        list[MonitorReference] | None,
+        Field(
+            alias="usedByMonitors",
+            description="Monitors that reference this secret in code, authentication, or sessions",
+        ),
+    ] = None
+    values_at: Annotated[
+        list[Summary] | None,
+        Field(
+            alias="valuesAt",
+            description="Environments in which this secret has a value",
+        ),
+    ] = None
+    value_stamp: Annotated[SecretValueStampDto | None, Field(alias="valueStamp")] = None
+
+
+class SecretRequestDto(BaseModel):
+    model_config = ConfigDict(extra="ignore", populate_by_name=True)
+    key: Annotated[str, Field(description="Secret key this monitor requires")]
+    secret: SecretDto | None = None
+    readiness: Annotated[
+        str, Field(description="Whether this key is resolved or missing")
+    ]
+    fulfilled_by: Annotated[
+        str | None,
+        Field(
+            alias="fulfilledBy",
+            description="Fulfilled from environment variables or a secret",
+        ),
+    ] = None
+    declaring_file: Annotated[
+        str | None,
+        Field(
+            alias="declaringFile",
+            description="Declaring file path inside the package zip",
+        ),
+    ] = None
+    declaring_location: Annotated[
+        str | None,
+        Field(
+            alias="declaringLocation",
+            description="Call site from package scan, e.g. signIn(…) · line 6",
+        ),
+    ] = None
+    last_resolved_at: Annotated[
+        AwareDatetime | None,
+        Field(alias="lastResolvedAt", description="When a run last resolved this key"),
+    ] = None
+    last_resolved_run_id: Annotated[
+        UUID | None,
+        Field(alias="lastResolvedRunId", description="Run that last resolved this key"),
+    ] = None
+    demanded: Annotated[
+        bool | None,
+        Field(description="Whether the selected revision statically declares this key"),
+    ] = None
+    attached: Annotated[
+        bool | None,
+        Field(description="Whether this key is attached for vault resolution"),
+    ] = None
+    value_stamp: Annotated[SecretValueStampDto | None, Field(alias="valueStamp")] = None
 
 
 class ServiceDetailDto(BaseModel):
@@ -13588,14 +15189,24 @@ class SingleValueResponseCheckTraceDto(BaseModel):
     data: CheckTraceDto
 
 
-class SingleValueResponseDefinitionDetailDto(BaseModel):
+class SingleValueResponseCreateDraftRevisionResponse(BaseModel):
     model_config = ConfigDict(extra="ignore", populate_by_name=True)
-    data: DefinitionDetailDto
+    data: CreateDraftRevisionResponse
 
 
-class SingleValueResponseIncidentDetailDto(BaseModel):
+class SingleValueResponseDefinitionHeadDto(BaseModel):
     model_config = ConfigDict(extra="ignore", populate_by_name=True)
-    data: IncidentDetailDto
+    data: DefinitionHeadDto
+
+
+class SingleValueResponseMonitorBatchHistoryDto(BaseModel):
+    model_config = ConfigDict(extra="ignore", populate_by_name=True)
+    data: MonitorBatchHistoryDto
+
+
+class SingleValueResponseMonitorDriftDto(BaseModel):
+    model_config = ConfigDict(extra="ignore", populate_by_name=True)
+    data: MonitorDriftDto
 
 
 class SingleValueResponseResourceGroupDto(BaseModel):
@@ -13603,9 +15214,24 @@ class SingleValueResponseResourceGroupDto(BaseModel):
     data: ResourceGroupDto
 
 
+class SingleValueResponseRevisionDiffDto(BaseModel):
+    model_config = ConfigDict(extra="ignore", populate_by_name=True)
+    data: RevisionDiffDto
+
+
+class SingleValueResponseRunDiffDto(BaseModel):
+    model_config = ConfigDict(extra="ignore", populate_by_name=True)
+    data: RunDiffDto
+
+
 class SingleValueResponseRunDto(BaseModel):
     model_config = ConfigDict(extra="ignore", populate_by_name=True)
     data: RunDto
+
+
+class SingleValueResponseSecretDto(BaseModel):
+    model_config = ConfigDict(extra="ignore", populate_by_name=True)
+    data: SecretDto
 
 
 class SingleValueResponseServiceDetailDto(BaseModel):
@@ -13646,9 +15272,9 @@ class TableValueResultResourceGroupDto(BaseModel):
     total_pages: Annotated[int | None, Field(alias="totalPages")] = None
 
 
-class TableValueResultRunDto(BaseModel):
+class TableValueResultSecretDto(BaseModel):
     model_config = ConfigDict(extra="ignore", populate_by_name=True)
-    data: list[RunDto]
+    data: list[SecretDto]
     has_next: Annotated[bool, Field(alias="hasNext")]
     has_prev: Annotated[bool, Field(alias="hasPrev")]
     total_elements: Annotated[int | None, Field(alias="totalElements")] = None
@@ -13788,3 +15414,737 @@ class CursorPageRunDto(BaseModel):
             alias="hasMore", description="Whether more results exist beyond this page"
         ),
     ]
+
+
+class DefinitionDetailDto(BaseModel):
+    model_config = ConfigDict(extra="ignore", populate_by_name=True)
+    definition: DefinitionDto
+    heads: Annotated[
+        list[DefinitionHeadDto], Field(description="Active Heads per environment")
+    ]
+
+
+class IncidentTriggerDto(BaseModel):
+    model_config = ConfigDict(extra="ignore", populate_by_name=True)
+    rule_type: Annotated[
+        str | None,
+        Field(
+            alias="ruleType",
+            description="Trigger rule type (consecutive_failures, failures_in_window, response_time); null when unknown",
+        ),
+    ] = None
+    rule_index: Annotated[
+        int | None,
+        Field(
+            alias="ruleIndex",
+            description="0-based index into the policy trigger_rules array; null when unknown",
+        ),
+    ] = None
+    count: Annotated[
+        int | None,
+        Field(
+            description="Observed failing_streak or failures_in_window from forensics; null when unavailable"
+        ),
+    ] = None
+    threshold: Annotated[
+        int | None,
+        Field(
+            description="Rule required count or threshold_ms from forensics; null when unavailable"
+        ),
+    ] = None
+    last_error: Annotated[
+        str | None,
+        Field(
+            alias="lastError",
+            description="failure_reason from the triggering check result; null when unavailable",
+        ),
+    ] = None
+    first_failed_check_at: Annotated[
+        AwareDatetime | None,
+        Field(
+            alias="firstFailedCheckAt",
+            description="Earliest failing check timestamp in the confirm window when computable; null otherwise",
+        ),
+    ] = None
+    triggering_run: Annotated[RunDto | None, Field(alias="triggeringRun")] = None
+    source: Annotated[
+        str,
+        Field(
+            description="Where the enrichment came from: forensics, checks, or none (STATUS_DATA/manual/no data)",
+            min_length=1,
+        ),
+    ]
+
+
+class MonitorRegionalHealthDto(BaseModel):
+    model_config = ConfigDict(extra="ignore", populate_by_name=True)
+    regional_display_health: Annotated[
+        str | None,
+        Field(
+            alias="regionalDisplayHealth",
+            description="Target evidence from complete fresh parallel cycles; additive only. Consumers retain MonitorDto.displayHealth precedence for blocked, capped and quarantined states",
+        ),
+    ] = None
+    evaluation_cycle_id: Annotated[
+        UUID | None,
+        Field(
+            alias="evaluationCycleId",
+            description="Cycle used for the regional presentation",
+        ),
+    ] = None
+    regions: Annotated[
+        list[Region],
+        Field(description="Latest health-voting execution for each configured region"),
+    ]
+    last_failure: Annotated[RunDto | None, Field(alias="lastFailure")] = None
+    failing_cycle_count: Annotated[
+        int | None,
+        Field(
+            alias="failingCycleCount",
+            description="Failing cycles since evaluation changed; null outside retained history",
+        ),
+    ] = None
+
+
+class MonitorSecretRequestsDto(BaseModel):
+    model_config = ConfigDict(extra="ignore", populate_by_name=True)
+    environment: EnvironmentDto
+    requests: Annotated[
+        list[SecretRequestDto],
+        Field(description="Secret keys this monitor requires and their resolve state"),
+    ]
+    undemanded: Annotated[
+        list[SecretRequestDto] | None,
+        Field(description="Keys retained outside the selected revision scanned demand"),
+    ] = None
+
+
+class MonitorTriageDto(BaseModel):
+    model_config = ConfigDict(extra="ignore", populate_by_name=True)
+    last_check_at: Annotated[
+        AwareDatetime | None,
+        Field(
+            alias="lastCheckAt", description="When the latest completed check finished"
+        ),
+    ] = None
+    latest_run: Annotated[RunDto | None, Field(alias="latestRun")] = None
+    latest_health_run: Annotated[RunDto | None, Field(alias="latestHealthRun")] = None
+    incident: IncidentDto | None = None
+    paused_by: Annotated[UserDto | None, Field(alias="pausedBy")] = None
+    flakiness: Flakiness | None = None
+    restore_blockers: Annotated[
+        list[str],
+        Field(
+            alias="restoreBlockers",
+            description="Reasons this trashed monitor cannot currently be restored",
+        ),
+    ]
+    deleted_bindings: Annotated[
+        list[RestorableBinding],
+        Field(
+            alias="deletedBindings",
+            description="Status-page bindings retained for restoration",
+        ),
+    ]
+
+
+class SingleValueResponseDefinitionDetailDto(BaseModel):
+    model_config = ConfigDict(extra="ignore", populate_by_name=True)
+    data: DefinitionDetailDto
+
+
+class SingleValueResponseIncidentTriggerDto(BaseModel):
+    model_config = ConfigDict(extra="ignore", populate_by_name=True)
+    data: IncidentTriggerDto
+
+
+class SingleValueResponseMonitorRegionalHealthDto(BaseModel):
+    model_config = ConfigDict(extra="ignore", populate_by_name=True)
+    data: MonitorRegionalHealthDto
+
+
+class SingleValueResponseMonitorSecretRequestsDto(BaseModel):
+    model_config = ConfigDict(extra="ignore", populate_by_name=True)
+    data: MonitorSecretRequestsDto
+
+
+class IncidentDetailDto(BaseModel):
+    model_config = ConfigDict(extra="ignore", populate_by_name=True)
+    incident: IncidentDto
+    updates: list[IncidentUpdateDto]
+    status_page_incidents: Annotated[
+        list[LinkedStatusPageIncidentDto] | None, Field(alias="statusPageIncidents")
+    ] = None
+    trigger: IncidentTriggerDto | None = None
+
+
+class MonitorDto(BaseModel):
+    """Note: ``currentStatus`` was removed from this DTO. Inspect ``enabled`` and the incident-policy API to derive a live status for a monitor instead."""
+
+    model_config = ConfigDict(extra="ignore", populate_by_name=True)
+    id: Annotated[UUID, Field(description="Unique monitor identifier")]
+    organization_id: Annotated[
+        int,
+        Field(
+            alias="organizationId", description="Organization this monitor belongs to"
+        ),
+    ]
+    name: Annotated[
+        str, Field(description="Human-readable name for this monitor", min_length=1)
+    ]
+    type: str
+    config: (
+        DnsMonitorConfig
+        | HeartbeatMonitorConfig
+        | HttpMonitorConfig
+        | IcmpMonitorConfig
+        | McpServerMonitorConfig
+        | ScriptMonitorConfig
+        | TcpMonitorConfig
+    )
+    frequency_seconds: Annotated[
+        int,
+        Field(
+            alias="frequencySeconds",
+            description="Check frequency in seconds (30–86400)",
+        ),
+    ]
+    enabled: Annotated[bool, Field(description="Whether the monitor is active")]
+    regions: Annotated[
+        list[str], Field(description="Probe regions where checks are executed")
+    ]
+    managed_by: Annotated[
+        str,
+        Field(
+            alias="managedBy",
+            description="Source that created/owns this monitor: DASHBOARD, CLI, TERRAFORM, MCP, or API",
+        ),
+    ]
+    owner_enforced: Annotated[
+        bool,
+        Field(
+            alias="ownerEnforced",
+            description="Whether only the managedBy tool may change this monitor's configuration",
+        ),
+    ]
+    created_at: Annotated[
+        AwareDatetime,
+        Field(alias="createdAt", description="Timestamp when the monitor was created"),
+    ]
+    updated_at: Annotated[
+        AwareDatetime,
+        Field(
+            alias="updatedAt", description="Timestamp when the monitor was last updated"
+        ),
+    ]
+    assertions: Annotated[
+        list[MonitorAssertionDto] | None,
+        Field(
+            description="Assertions evaluated against each check result; null on list responses"
+        ),
+    ] = None
+    tags: Annotated[
+        list[TagDto] | None, Field(description="Tags applied to this monitor")
+    ] = None
+    ping_url: Annotated[
+        str | None,
+        Field(
+            alias="pingUrl",
+            description="Heartbeat ping URL; populated for HEARTBEAT monitors only",
+        ),
+    ] = None
+    environment: Summary | None = None
+    auth: MonitorAuthConfig | None = None
+    incident_policy: Annotated[
+        IncidentPolicyDto | None, Field(alias="incidentPolicy")
+    ] = None
+    alert_channel_ids: Annotated[
+        list[UUID] | None,
+        Field(
+            alias="alertChannelIds",
+            description="Alert channel IDs linked to this monitor; populated on single-monitor responses",
+        ),
+    ] = None
+    bound_status_page_components: Annotated[
+        list[StatusPageBoundComponentDto] | None,
+        Field(
+            alias="boundStatusPageComponents",
+            description="Status-page components that represent this monitor; omitted when none",
+        ),
+    ] = None
+    current_status: Annotated[
+        str | None,
+        Field(
+            alias="currentStatus",
+            description="Current operational state. One of UP, DOWN, DEGRADED, PAUSED, or UNKNOWN",
+        ),
+    ] = None
+    display_health: Annotated[
+        str | None,
+        Field(
+            alias="displayHealth",
+            description="List and header chip health; not currentStatus and not evaluation state",
+        ),
+    ] = None
+    binding_readiness: Annotated[
+        str | None,
+        Field(
+            alias="bindingReadiness",
+            description="Secret binding state: ready, blocked, or not_applicable",
+        ),
+    ] = None
+    needs_attention: Annotated[
+        bool | None,
+        Field(
+            alias="needsAttention",
+            description="True when the monitor needs operator attention",
+        ),
+    ] = None
+    open_incident: Annotated[
+        UUID | None,
+        Field(alias="openIncident", description="Open confirmed incident id"),
+    ] = None
+    last_run_at: Annotated[
+        AwareDatetime | None,
+        Field(alias="lastRunAt", description="When the latest code run was enqueued"),
+    ] = None
+    last_run_id: Annotated[
+        UUID | None, Field(alias="lastRunId", description="Latest code run id")
+    ] = None
+    resumes_at: Annotated[
+        AwareDatetime | None,
+        Field(alias="resumesAt", description="When a capped monitor resumes"),
+    ] = None
+    capped: MonitorCappedDto | None = None
+    missing_keys: Annotated[
+        list[str] | None,
+        Field(
+            alias="missingKeys",
+            description="Secret keys missing while the monitor is blocked",
+        ),
+    ] = None
+    blocked_keys: Annotated[
+        list[str] | None,
+        Field(
+            alias="blockedKeys",
+            description="Secret keys missing while the monitor is blocked",
+        ),
+    ] = None
+    owner: MonitorOwnerDto | None = None
+    flaky_rate: Annotated[
+        float | None,
+        Field(
+            alias="flakyRate",
+            description="Share of recent cycles that passed only after a retry, 0–1; null when not flaky",
+        ),
+    ] = None
+    flaky_since: Annotated[
+        AwareDatetime | None,
+        Field(
+            alias="flakySince",
+            description="When the first retry-passed cycle in the last 7 days finished",
+        ),
+    ] = None
+    flaky_severity: Annotated[
+        str | None,
+        Field(
+            alias="flakySeverity",
+            description="How flaky the monitor is: LOW, MEDIUM, or HIGH",
+        ),
+    ] = None
+    last_check_outcome: Annotated[
+        str | None,
+        Field(
+            alias="lastCheckOutcome",
+            description="Result of the most recent check in any region: PASSED, DEGRADED, or FAILED",
+        ),
+    ] = None
+    last_check_region: Annotated[
+        str | None,
+        Field(alias="lastCheckRegion", description="Region of the most recent check"),
+    ] = None
+    last_failure_summary: Annotated[
+        str | None,
+        Field(
+            alias="lastFailureSummary",
+            description="Why the latest failing region failed",
+        ),
+    ] = None
+    last_state_change_at: Annotated[
+        AwareDatetime | None,
+        Field(
+            alias="lastStateChangeAt",
+            description="When the monitor last changed state: paused, evaluation change, or incident open or resolve",
+        ),
+    ] = None
+    region_health: Annotated[
+        list[MonitorRegionHealthDto] | None,
+        Field(
+            alias="regionHealth",
+            description="Latest verdict per region the monitor runs from; null while paused",
+        ),
+    ] = None
+    definition_id: Annotated[
+        UUID | None,
+        Field(
+            alias="definitionId",
+            description="Definition id for a browser or multi-step monitor. Null on probe monitors",
+        ),
+    ] = None
+    capture_policy: Annotated[CapturePolicy | None, Field(alias="capturePolicy")] = None
+    secret_keys: Annotated[
+        list[str] | None,
+        Field(
+            alias="secretKeys",
+            description="Explicit attached secret keys; null uses scanned demand",
+        ),
+    ] = None
+    fast_retry_max_attempts: Annotated[
+        int | None,
+        Field(
+            alias="fastRetryMaxAttempts",
+            description="Fast-retry max attempts; null/0 = off",
+        ),
+    ] = None
+    run_parallel: Annotated[
+        bool | None,
+        Field(
+            alias="runParallel",
+            description="When multiple locations are set, run all of them each interval. False rotates one location per interval",
+        ),
+    ] = None
+    muted: Annotated[bool, Field(description="Whether alert delivery is muted")]
+    muted_until: Annotated[
+        AwareDatetime | None,
+        Field(
+            alias="mutedUntil",
+            description="Mute expiry; null means indefinite while muted",
+        ),
+    ] = None
+    mute_reason: Annotated[
+        str | None, Field(alias="muteReason", description="Optional mute reason")
+    ] = None
+    paused_at: Annotated[
+        AwareDatetime | None,
+        Field(alias="pausedAt", description="When the monitor was paused"),
+    ] = None
+    pause_reason: Annotated[
+        str | None, Field(alias="pauseReason", description="Optional pause reason")
+    ] = None
+    pause_expires_at: Annotated[
+        AwareDatetime | None, Field(alias="pauseExpiresAt", description="Pause expiry")
+    ] = None
+    quarantine_owner_id: Annotated[
+        str | None,
+        Field(alias="quarantineOwnerId", description="Quarantine person owner id"),
+    ] = None
+    quarantine_until: Annotated[
+        AwareDatetime | None,
+        Field(
+            alias="quarantineUntil",
+            description="Quarantine expiry; non-null means quarantined",
+        ),
+    ] = None
+    quarantine_reason: Annotated[
+        str | None, Field(alias="quarantineReason", description="Quarantine reason")
+    ] = None
+    usage_projection: Annotated[
+        MonitorUsageProjectionDto | None, Field(alias="usageProjection")
+    ] = None
+    live_revision_id: Annotated[
+        UUID | None,
+        Field(alias="liveRevisionId", description="Revision scheduled runs execute"),
+    ] = None
+    live_revision_digest: Annotated[
+        str | None,
+        Field(
+            alias="liveRevisionDigest",
+            description="Closure digest of the revision scheduled runs execute",
+        ),
+    ] = None
+    triage: MonitorTriageDto | None = None
+    deleted_at: Annotated[
+        AwareDatetime | None,
+        Field(alias="deletedAt", description="When the monitor was moved to Trash"),
+    ] = None
+    deleted_by: Annotated[UserDto | None, Field(alias="deletedBy")] = None
+    created_via: Annotated[
+        str | None,
+        Field(
+            alias="createdVia", description="Client that originally created the monitor"
+        ),
+    ] = None
+
+
+class MonitorVersionDto(BaseModel):
+    model_config = ConfigDict(extra="ignore", populate_by_name=True)
+    id: Annotated[UUID, Field(description="Unique version record identifier")]
+    monitor_id: Annotated[
+        UUID, Field(alias="monitorId", description="Monitor this version belongs to")
+    ]
+    version: Annotated[
+        int, Field(description="Monotonically increasing version number")
+    ]
+    snapshot: MonitorDto
+    changed_by_id: Annotated[
+        int | None,
+        Field(
+            alias="changedById",
+            description="User ID who made the change; null for automated changes",
+        ),
+    ] = None
+    changed_via: Annotated[
+        str,
+        Field(alias="changedVia", description="Change source (DASHBOARD, CLI, API)"),
+    ]
+    change_summary: Annotated[
+        str | None,
+        Field(
+            alias="changeSummary",
+            description="Human-readable description of what changed",
+        ),
+    ] = None
+    created_at: Annotated[
+        AwareDatetime,
+        Field(
+            alias="createdAt", description="Timestamp when this version was recorded"
+        ),
+    ]
+
+
+class RollbackPreviewDto(BaseModel):
+    model_config = ConfigDict(extra="ignore", populate_by_name=True)
+    target: RevisionDto
+    current: DefinitionHeadDto | None = None
+    affected_monitors: Annotated[
+        list[MonitorDto],
+        Field(
+            alias="affectedMonitors",
+            description="Monitors sharing this definition and environment",
+        ),
+    ]
+
+
+class RunRevisionMarkerDto(BaseModel):
+    model_config = ConfigDict(extra="ignore", populate_by_name=True)
+    monitor: MonitorDto
+    revision: RevisionDto
+    activated_at: Annotated[
+        AwareDatetime,
+        Field(
+            alias="activatedAt",
+            description="Latest recorded activation of this revision in the monitor environment",
+        ),
+    ]
+
+
+class RunSkippedEntryDto(BaseModel):
+    model_config = ConfigDict(extra="ignore", populate_by_name=True)
+    id: Annotated[
+        UUID | None,
+        Field(
+            description="Persisted skipped row identity; absent for a plan-disabled interval"
+        ),
+    ] = None
+    kind: Annotated[
+        str,
+        Field(
+            description="not_run for recorded ticks; plan_disabled for a current plan pause"
+        ),
+    ]
+    monitor: MonitorDto | None = None
+    reason: Annotated[
+        str, Field(description="Cause: quota, blocked, spend_cap, or plan_limit")
+    ]
+    region: Annotated[
+        str | None,
+        Field(description="Region; absent when ticks cover multiple regions"),
+    ] = None
+    from_: Annotated[
+        AwareDatetime,
+        Field(alias="from", description="Beginning of the recorded interval"),
+    ]
+    to: Annotated[
+        AwareDatetime,
+        Field(
+            description="End of the interval; current plan pauses end at the query snapshot"
+        ),
+    ]
+    count: Annotated[
+        int | None,
+        Field(
+            description="Recorded ticks in the whole folded row; absent for a plan pause"
+        ),
+    ] = None
+    missing_keys: Annotated[
+        list[str],
+        Field(alias="missingKeys", description="Secret keys recorded as missing"),
+    ]
+    environment: Annotated[
+        str | None, Field(description="Environment recorded when ticks were skipped")
+    ] = None
+
+
+class SecretUsageDto(BaseModel):
+    model_config = ConfigDict(extra="ignore", populate_by_name=True)
+    monitors: Annotated[
+        list[MonitorDto], Field(description="Monitors that reference this secret")
+    ]
+
+
+class SingleValueResponseIncidentDetailDto(BaseModel):
+    model_config = ConfigDict(extra="ignore", populate_by_name=True)
+    data: IncidentDetailDto
+
+
+class SingleValueResponseMonitorDto(BaseModel):
+    model_config = ConfigDict(extra="ignore", populate_by_name=True)
+    data: MonitorDto
+
+
+class SingleValueResponseMonitorVersionDto(BaseModel):
+    model_config = ConfigDict(extra="ignore", populate_by_name=True)
+    data: MonitorVersionDto
+
+
+class SingleValueResponseRollbackPreviewDto(BaseModel):
+    model_config = ConfigDict(extra="ignore", populate_by_name=True)
+    data: RollbackPreviewDto
+
+
+class SingleValueResponseSecretUsageDto(BaseModel):
+    model_config = ConfigDict(extra="ignore", populate_by_name=True)
+    data: SecretUsageDto
+
+
+class TableValueResultMonitorDto(BaseModel):
+    model_config = ConfigDict(extra="ignore", populate_by_name=True)
+    data: list[MonitorDto]
+    has_next: Annotated[bool, Field(alias="hasNext")]
+    has_prev: Annotated[bool, Field(alias="hasPrev")]
+    total_elements: Annotated[int | None, Field(alias="totalElements")] = None
+    total_pages: Annotated[int | None, Field(alias="totalPages")] = None
+
+
+class TableValueResultMonitorVersionDto(BaseModel):
+    model_config = ConfigDict(extra="ignore", populate_by_name=True)
+    data: list[MonitorVersionDto]
+    has_next: Annotated[bool, Field(alias="hasNext")]
+    has_prev: Annotated[bool, Field(alias="hasPrev")]
+    total_elements: Annotated[int | None, Field(alias="totalElements")] = None
+    total_pages: Annotated[int | None, Field(alias="totalPages")] = None
+
+
+class CursorPageRunRevisionMarkerDto(BaseModel):
+    model_config = ConfigDict(extra="ignore", populate_by_name=True)
+    data: Annotated[list[RunRevisionMarkerDto], Field(description="Items on this page")]
+    next_cursor: Annotated[
+        str | None,
+        Field(
+            alias="nextCursor",
+            description="Opaque cursor for the next page; null when there are no more results",
+        ),
+    ] = None
+    has_more: Annotated[
+        bool,
+        Field(
+            alias="hasMore", description="Whether more results exist beyond this page"
+        ),
+    ]
+
+
+class CursorPageRunSkippedEntryDto(BaseModel):
+    model_config = ConfigDict(extra="ignore", populate_by_name=True)
+    data: Annotated[list[RunSkippedEntryDto], Field(description="Items on this page")]
+    next_cursor: Annotated[
+        str | None,
+        Field(
+            alias="nextCursor",
+            description="Opaque cursor for the next page; null when there are no more results",
+        ),
+    ] = None
+    has_more: Annotated[
+        bool,
+        Field(
+            alias="hasMore", description="Whether more results exist beyond this page"
+        ),
+    ]
+
+
+class Item(BaseModel):
+    model_config = ConfigDict(extra="ignore", populate_by_name=True)
+    monitor: MonitorDto
+    bucket: Annotated[
+        str, Field(description="Display bucket: failing, flaky, or healthy")
+    ]
+    worst_region: Annotated[
+        str | None,
+        Field(
+            alias="worstRegion",
+            description="Region deciding this cycle display verdict",
+        ),
+    ] = None
+    streak_started_at: Annotated[
+        AwareDatetime | None,
+        Field(
+            alias="streakStartedAt",
+            description="Earliest recorded failure after the last retained passing group",
+        ),
+    ] = None
+    streak_truncated: Annotated[
+        bool,
+        Field(
+            alias="streakTruncated",
+            description="True when retention prevents proving the failure streak start",
+        ),
+    ]
+    flaky_rate: Annotated[
+        float | None,
+        Field(
+            alias="flakyRate",
+            description="Current seven-day fraction of retry-saved cycles",
+        ),
+    ] = None
+
+
+class RunMonitorStripDto(BaseModel):
+    model_config = ConfigDict(extra="ignore", populate_by_name=True)
+    failing_count: Annotated[
+        int,
+        Field(
+            alias="failingCount",
+            description="Monitors whose latest window group is complete with a failed or timed-out region",
+        ),
+    ]
+    flaky_count: Annotated[
+        int,
+        Field(
+            alias="flakyCount",
+            description="Passing monitors with current seven-day flakiness",
+        ),
+    ]
+    healthy_count: Annotated[
+        int,
+        Field(
+            alias="healthyCount",
+            description="Monitors whose latest window group passed without current flakiness",
+        ),
+    ]
+    unclassified_count: Annotated[
+        int,
+        Field(
+            alias="unclassifiedCount",
+            description="Monitors whose latest voting group is pending or has no passing/failing verdict",
+        ),
+    ]
+    monitors: Annotated[
+        list[Item],
+        Field(
+            description="At most 100 monitor chips; counts cover the complete population"
+        ),
+    ]
+
+
+class SingleValueResponseRunMonitorStripDto(BaseModel):
+    model_config = ConfigDict(extra="ignore", populate_by_name=True)
+    data: RunMonitorStripDto
