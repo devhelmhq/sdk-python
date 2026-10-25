@@ -1,180 +1,41 @@
+"""Page types and blocking page fetchers, kept importable from one place.
+
+The types and envelope validators live in ``devhelm._pages``; the fetchers
+are generated into ``devhelm._sync.pagination`` from the async sources.
+"""
+
 from __future__ import annotations
 
-from dataclasses import dataclass, field
-from typing import Any, Generic, TypeVar
+from devhelm._pages import (
+    CursorPage,
+    Page,
+    _CursorPageEnvelope,
+    _PageEnvelope,
+    _validate_cursor_page,
+    _validate_page,
+)
+from devhelm._sync.pagination import (
+    DEFAULT_CURSOR_LIMIT,
+    DEFAULT_PAGE_SIZE,
+    fetch_all_cursor_pages,
+    fetch_all_pages,
+    fetch_cursor_page,
+    fetch_page,
+    fetch_table,
+)
 
-import httpx
-from pydantic import BaseModel, ConfigDict, ValidationError
-
-from devhelm._errors import DevhelmValidationError
-from devhelm._http import DEFAULT_PAGE_SIZE, api_get
-from devhelm._validation import parse_list
-
-T = TypeVar("T")
-M = TypeVar("M", bound=BaseModel)
-
-
-@dataclass
-class Page(Generic[T]):
-    """A single page from an offset-paginated endpoint."""
-
-    data: list[T] = field(default_factory=list)
-    has_next: bool = False
-    has_prev: bool = False
-    total_elements: int | None = None
-    total_pages: int | None = None
-    next_cursor: str | None = None
-
-
-@dataclass
-class CursorPage(Generic[T]):
-    """A single page from a cursor-paginated endpoint."""
-
-    data: list[T] = field(default_factory=list)
-    next_cursor: str | None = None
-    has_more: bool = False
-
-
-class _PageEnvelope(BaseModel):
-    """Server-side page metadata as a typed model.
-
-    Items are validated separately via ``parse_list(model_class, ...)`` so the
-    envelope only describes the surrounding pagination shape; that keeps this
-    layer P5-clean (no casts) without forcing every model to be expressed
-    twice. ``extra="ignore"`` so additive response fields (``nextCursor``,
-    future envelope keys) cannot break ``list()`` — Postel's Law.
-    """
-
-    model_config = ConfigDict(extra="ignore")
-
-    data: list[Any] = []  # validated separately
-    hasNext: bool = False
-    hasPrev: bool = False
-    totalElements: int | None = None
-    totalPages: int | None = None
-    nextCursor: str | None = None
-
-
-class _CursorPageEnvelope(BaseModel):
-    """Cursor-page envelope. See ``_PageEnvelope`` for the rationale."""
-
-    model_config = ConfigDict(extra="forbid")
-
-    data: list[Any] = []
-    nextCursor: str | None = None
-    hasMore: bool = False
-
-
-def _validate_page(resp: object) -> _PageEnvelope:
-    try:
-        return _PageEnvelope.model_validate(resp)
-    except ValidationError as e:
-        # Surface the structured Pydantic errors so callers can introspect
-        # the failed location instead of getting a string-summarised
-        # `value_error`. Non-`ValidationError` exceptions (network, IO,
-        # programmer mistake) intentionally propagate — wrapping them here
-        # would mask real bugs as fake "validation" failures.
-        raise DevhelmValidationError(
-            "Invalid paginated response envelope", errors=e.errors(), cause=e
-        ) from e
-
-
-def _validate_cursor_page(resp: object) -> _CursorPageEnvelope:
-    try:
-        return _CursorPageEnvelope.model_validate(resp)
-    except ValidationError as e:
-        raise DevhelmValidationError(
-            "Invalid cursor-paginated response envelope", errors=e.errors(), cause=e
-        ) from e
-
-
-def fetch_all_pages(
-    client: httpx.Client,
-    path: str,
-    model_class: type[M],
-    page_size: int = DEFAULT_PAGE_SIZE,
-    *,
-    extra_params: dict[str, Any] | None = None,
-) -> list[M]:
-    """Fetch all pages from an offset-paginated endpoint, validating each item.
-
-    ``extra_params`` is merged into every page request so callers can
-    forward server-side filter kwargs (``enabled``, ``search``, …) that
-    apply uniformly across the whole iteration. Pagination keys
-    (``page``, ``size``) always win over user-supplied ``extra_params``
-    to keep the iterator's invariants intact.
-    """
-    all_items: list[M] = []
-    page = 0
-    base_params = dict(extra_params) if extra_params else {}
-
-    while True:
-        params = {**base_params, "page": page, "size": page_size}
-        resp = api_get(client, path, params=params)
-        envelope = _validate_page(resp)
-        all_items.extend(parse_list(model_class, envelope.data, f"GET {path}"))
-        if not envelope.hasNext:
-            break
-        page += 1
-
-    return all_items
-
-
-def fetch_page(
-    client: httpx.Client,
-    path: str,
-    model_class: type[M],
-    page: int,
-    size: int,
-    *,
-    extra_params: dict[str, Any] | None = None,
-) -> Page[M]:
-    """Fetch a single page from an offset-paginated endpoint with validation.
-
-    ``extra_params`` is merged into the request so callers can forward
-    server-side filter kwargs alongside manual page control.
-    """
-    base_params = dict(extra_params) if extra_params else {}
-    params = {**base_params, "page": page, "size": size}
-    resp = api_get(client, path, params=params)
-    envelope = _validate_page(resp)
-    return Page(
-        data=parse_list(model_class, envelope.data, f"GET {path}"),
-        has_next=envelope.hasNext,
-        has_prev=envelope.hasPrev,
-        total_elements=envelope.totalElements,
-        total_pages=envelope.totalPages,
-        next_cursor=envelope.nextCursor,
-    )
-
-
-def fetch_cursor_page(
-    client: httpx.Client,
-    path: str,
-    model_class: type[M],
-    cursor: str | None = None,
-    limit: int | None = None,
-    *,
-    extra_params: dict[str, Any] | None = None,
-) -> CursorPage[M]:
-    """Fetch a single page from a cursor-paginated endpoint with validation.
-
-    ``extra_params`` is merged into the request so callers can forward
-    server-side filter kwargs (``category``, ``search``, …) alongside the
-    cursor controls. Pagination keys (``cursor``, ``limit``) always win
-    over user-supplied ``extra_params`` to keep the iterator's invariants
-    intact.
-    """
-    params: dict[str, Any] = dict(extra_params) if extra_params else {}
-    if cursor:
-        params["cursor"] = cursor
-    if limit:
-        params["limit"] = limit
-
-    resp = api_get(client, path, params=params or None)
-    envelope = _validate_cursor_page(resp)
-    return CursorPage(
-        data=parse_list(model_class, envelope.data, f"GET {path}"),
-        next_cursor=envelope.nextCursor,
-        has_more=envelope.hasMore,
-    )
+__all__ = [
+    "DEFAULT_CURSOR_LIMIT",
+    "DEFAULT_PAGE_SIZE",
+    "CursorPage",
+    "Page",
+    "_CursorPageEnvelope",
+    "_PageEnvelope",
+    "_validate_cursor_page",
+    "_validate_page",
+    "fetch_all_cursor_pages",
+    "fetch_all_pages",
+    "fetch_cursor_page",
+    "fetch_page",
+    "fetch_table",
+]

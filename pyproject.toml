@@ -51,16 +51,21 @@ dev = [
 ]
 
 [tool.ruff.lint]
-extend-select = ["C90", "I"]
+# ANN401: no `Any` in any annotation (doc 42 §5.1.2). tests/test_public_types.py
+# walks the exported type surface for the same rule.
+extend-select = ["C90", "I", "ANN401"]
 
 [tool.ruff.lint.per-file-ignores]
 "src/devhelm/_generated.py" = ["I001"]
+# Tests decode raw JSON from the harness; the public-API rule is for src/.
+"tests/**" = ["ANN401"]
 
 [tool.ruff.format]
 skip-magic-trailing-comma = true
 
 [tool.ruff.lint.isort]
 split-on-trailing-comma = false
+known-first-party = ["devhelm"]
 
 [tool.ruff.lint.mccabe]
 max-complexity = 15
@@ -77,17 +82,15 @@ mypy_path = "src"
 # everything else. The single justified suppression in there is the
 # `[assignment]` collision documented in scripts/typegen.sh.
 #
-# `disallow_any_explicit` is enforced everywhere except the JSON-boundary
-# modules below. The boundary intentionally uses `Any` to model unparsed
-# JSON values; the resource layer (and everything customers import) is
-# `Any`-free, which is what the docstring on `tests/test_typing.py`
-# actually promises.
+# `disallow_any_explicit` is enforced everywhere except the modules below,
+# which declare pydantic models: the pydantic mypy plugin synthesises
+# ``__init__(**data: Any)`` on every model. No annotation written in this
+# package uses `Any` (free-form JSON is `JsonValue`), which ruff ANN401 and
+# tests/test_public_types.py enforce.
 
 [[tool.mypy.overrides]]
 module = [
-    "devhelm._errors",
-    "devhelm._http",
-    "devhelm._pagination",
+    "devhelm._pages",
     "devhelm._validation",
     "devhelm._generated",
 ]

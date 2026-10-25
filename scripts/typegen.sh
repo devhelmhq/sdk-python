@@ -42,6 +42,9 @@ TOOLS_CMD=$(resolve_openapi_tools)
 echo "=> Preprocessing OpenAPI spec (via @devhelm/openapi-tools)..."
 $TOOLS_CMD preprocess "$INPUT" "$PREPROCESSED"
 
+echo "=> Adding query-parameter models for list endpoints..."
+uv run python "$SCRIPT_DIR/query_models.py" "$PREPROCESSED"
+
 echo "=> Generating Pydantic models from preprocessed spec..."
 
 uv run datamodel-codegen \
@@ -74,6 +77,12 @@ uv run datamodel-codegen \
 # not crash). See scripts/inject_strict_config.py.
 echo "=> Injecting model_config (forbid on requests, ignore on responses)..."
 uv run python "$SCRIPT_DIR/inject_strict_config.py" "$OUTPUT"
+
+# Free-form JSON maps (Map<String, Object> in Java) arrive as
+# dict[str, dict[str, Any]], which rejects scalar values and leaks Any into
+# the public types. Type them as JsonValue. See the script docstring.
+echo "=> Typing free-form JSON as JsonValue..."
+uv run python "$SCRIPT_DIR/rewrite_json_values.py" "$OUTPUT"
 
 # Re-format after injection so the file stays ruff-clean. Non-fatal so the
 # spec-evolution harness keeps moving even if ruff is misconfigured in the

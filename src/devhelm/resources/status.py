@@ -1,17 +1,17 @@
+# Generated from src/devhelm/_async/resources/status.py by scripts/unasync.py.
+# Do not edit: change the async source and run `make unasync`.
 from __future__ import annotations
 
-import httpx
-
 from devhelm._generated import DashboardOverviewDto
-from devhelm._http import api_get
+from devhelm._sync.transport import Client, api_get, as_transport
 from devhelm._validation import parse_single
 
 
 class Status:
     """Dashboard overview."""
 
-    def __init__(self, client: httpx.Client) -> None:
-        self._client = client
+    def __init__(self, client: Client) -> None:
+        self._client = as_transport(client)
 
     def overview(self) -> DashboardOverviewDto:
         """Get the dashboard overview."""

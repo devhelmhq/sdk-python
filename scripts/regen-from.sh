@@ -10,6 +10,8 @@
 #
 # Behavior:
 #   - copies <path-to-spec.json> over docs/openapi/monitoring-api.json
+#   - copies the bundle conformance vectors next to it when the source tree
+#     has them (mono: docs/contracts/bundle-vectors.json, beside docs/openapi/)
 #   - invokes the existing typegen.sh pipeline
 #   - prints absolute path to the regenerated _generated.py on stdout
 #
@@ -44,6 +46,18 @@ INPUT_ABS="$(cd "$(dirname "$INPUT_SPEC")" && pwd)/$(basename "$INPUT_SPEC")"
 TARGET_ABS="$(cd "$(dirname "$TARGET_SPEC")" && pwd)/$(basename "$TARGET_SPEC")"
 if [[ "$INPUT_ABS" != "$TARGET_ABS" ]]; then
   cp "$INPUT_SPEC" "$TARGET_SPEC"
+fi
+
+# Bundle digest conformance vectors (doc 42 §5.3) live beside the spec in
+# mono. Vendor them so tests/test_bundle.py checks the same digests the
+# server computes.
+VECTORS_SRC="$(cd "$(dirname "$INPUT_SPEC")" && pwd)/../contracts/bundle-vectors.json"
+VECTORS_DST="$ROOT_DIR/docs/contracts/bundle-vectors.json"
+if [[ -f "$VECTORS_SRC" ]]; then
+  mkdir -p "$(dirname "$VECTORS_DST")"
+  if [[ "$(cd "$(dirname "$VECTORS_SRC")" && pwd)" != "$(cd "$(dirname "$VECTORS_DST")" && pwd)" ]]; then
+    cp "$VECTORS_SRC" "$VECTORS_DST"
+  fi
 fi
 
 "$SCRIPT_DIR/typegen.sh" >&2

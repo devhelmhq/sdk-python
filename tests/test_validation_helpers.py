@@ -57,14 +57,16 @@ class TestParseStrictEnvelope:
         # Sorted by key for determinism — `x` first, `y` second.
         assert exc_info.value.errors == [
             {
+                "type": "extra_forbidden",
                 "loc": ("x",),
                 "msg": "Extra inputs are not permitted",
-                "type": "extra_forbidden",
+                "input": 1,
             },
             {
+                "type": "extra_forbidden",
                 "loc": ("y",),
                 "msg": "Extra inputs are not permitted",
-                "type": "extra_forbidden",
+                "input": 2,
             },
         ]
 

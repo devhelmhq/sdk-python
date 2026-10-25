@@ -1,6 +1,6 @@
+# Generated from src/devhelm/_async/resources/status_pages.py by scripts/unasync.py.
+# Do not edit: change the async source and run `make unasync`.
 from __future__ import annotations
-
-import httpx
 
 from devhelm._generated import (
     AddCustomDomainRequest,
@@ -13,6 +13,7 @@ from devhelm._generated import (
     CreateStatusPageRequest,
     ReorderComponentsRequest,
     ReorderPageLayoutRequest,
+    SetStatusPageComponentOverrideRequest,
     StatusPageComponentDto,
     StatusPageComponentGroupDto,
     StatusPageCustomDomainDto,
@@ -24,9 +25,24 @@ from devhelm._generated import (
     UpdateStatusPageIncidentRequest,
     UpdateStatusPageRequest,
 )
-from devhelm._http import api_delete, api_get, api_post, api_put, path_param
-from devhelm._pagination import Page, fetch_all_pages, fetch_page
-from devhelm._validation import RequestBody, parse_single, validate_request
+from devhelm._pages import Page
+from devhelm._sync.pagination import fetch_all_pages, fetch_page
+from devhelm._sync.transport import (
+    Client,
+    api_delete,
+    api_get,
+    api_post,
+    api_put,
+    as_transport,
+)
+from devhelm._transport import path_param
+from devhelm._validation import (
+    RequestBody,
+    RequestValue,
+    build_request,
+    parse_single,
+    validate_request,
+)
 
 _BASE = "/api/v1/status-pages"
 
@@ -38,7 +54,7 @@ def _page_path(page_id: int | str) -> str:
 class _Components:
     """Status page component operations."""
 
-    def __init__(self, client: httpx.Client) -> None:
+    def __init__(self, client: Client) -> None:
         self._client = client
 
     def list(self, page_id: int | str) -> list[StatusPageComponentDto]:
@@ -95,12 +111,40 @@ class _Components:
         )
         api_put(self._client, f"{_page_path(page_id)}/components/reorder", body)
 
+    def set_override(
+        self,
+        page_id: int | str,
+        component_id: int | str,
+        body: RequestBody[SetStatusPageComponentOverrideRequest] | None = None,
+        **fields: RequestValue,
+    ) -> StatusPageComponentDto:
+        """Pin a component's public status, overriding the monitor's verdict."""
+        req = build_request(
+            SetStatusPageComponentOverrideRequest,
+            body,
+            fields,
+            "statusPages.components.set_override",
+        )
+        path = f"{_page_path(page_id)}/components/{path_param(component_id)}/override"
+        return parse_single(
+            StatusPageComponentDto, api_put(self._client, path, req), f"PUT {path}"
+        )
+
+    def clear_override(
+        self, page_id: int | str, component_id: int | str
+    ) -> StatusPageComponentDto:
+        """Let the component follow its monitor again."""
+        path = f"{_page_path(page_id)}/components/{path_param(component_id)}/override"
+        return parse_single(
+            StatusPageComponentDto, api_delete(self._client, path), f"DELETE {path}"
+        )
+
 
 class _Groups:
     """Status page component group operations."""
 
-    def __init__(self, client: httpx.Client) -> None:
-        self._client = client
+    def __init__(self, client: Client) -> None:
+        self._client = as_transport(client)
 
     def list(self, page_id: int | str) -> list[StatusPageComponentGroupDto]:
         """List all component groups (with nested components)."""
@@ -151,7 +195,7 @@ class _Groups:
 class _Incidents:
     """Status page incident operations."""
 
-    def __init__(self, client: httpx.Client) -> None:
+    def __init__(self, client: Client) -> None:
         self._client = client
 
     def list(
@@ -262,8 +306,8 @@ class _Incidents:
 class _Maintenance:
     """Status page maintenance window operations."""
 
-    def __init__(self, client: httpx.Client) -> None:
-        self._client = client
+    def __init__(self, client: Client) -> None:
+        self._client = as_transport(client)
 
     def list(
         self, page_id: int | str, *, page: int = 0, size: int = 20
@@ -373,7 +417,7 @@ class _Maintenance:
 class _Subscribers:
     """Status page subscriber operations."""
 
-    def __init__(self, client: httpx.Client) -> None:
+    def __init__(self, client: Client) -> None:
         self._client = client
 
     def list(
@@ -412,8 +456,8 @@ class _Subscribers:
 class _Domains:
     """Status page custom domain operations."""
 
-    def __init__(self, client: httpx.Client) -> None:
-        self._client = client
+    def __init__(self, client: Client) -> None:
+        self._client = as_transport(client)
 
     def list(self, page_id: int | str) -> list[StatusPageCustomDomainDto]:
         """List custom domains on a status page."""
@@ -463,8 +507,8 @@ class StatusPages:
     subscribers: _Subscribers
     domains: _Domains
 
-    def __init__(self, client: httpx.Client) -> None:
-        self._client = client
+    def __init__(self, client: Client) -> None:
+        self._client = as_transport(client)
         self.components = _Components(client)
         self.groups = _Groups(client)
         self.incidents = _Incidents(client)

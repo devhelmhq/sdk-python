@@ -1,0 +1,63 @@
+"""Every SDK error class, importable without shadowing builtins.
+
+``from devhelm import errors`` then ``except errors.PermissionError:`` keeps
+Python's own ``PermissionError`` and ``ValidationError`` names free.
+"""
+
+from devhelm._errors import (
+    CATEGORY_CLASSES,
+    AuthError,
+    BlockedError,
+    ConfirmationRequiredError,
+    ConflictError,
+    DevhelmApiError,
+    DevhelmAuthError,
+    DevhelmConflictError,
+    DevhelmError,
+    DevhelmMonitorTestQueuedError,
+    DevhelmNotFoundError,
+    DevhelmRateLimitError,
+    DevhelmServerError,
+    DevhelmTransportError,
+    DevhelmValidationError,
+    GoneError,
+    NotFoundError,
+    OwnershipError,
+    PermissionError,
+    PlanLimitError,
+    PlatformError,
+    QuotaError,
+    RateLimitError,
+    TransportError,
+    ValidationError,
+    WaitTimeoutError,
+)
+
+__all__ = [
+    "CATEGORY_CLASSES",
+    "AuthError",
+    "BlockedError",
+    "ConfirmationRequiredError",
+    "ConflictError",
+    "DevhelmApiError",
+    "DevhelmAuthError",
+    "DevhelmConflictError",
+    "DevhelmError",
+    "DevhelmMonitorTestQueuedError",
+    "DevhelmNotFoundError",
+    "DevhelmRateLimitError",
+    "DevhelmServerError",
+    "DevhelmTransportError",
+    "DevhelmValidationError",
+    "GoneError",
+    "NotFoundError",
+    "OwnershipError",
+    "PermissionError",
+    "PlanLimitError",
+    "PlatformError",
+    "QuotaError",
+    "RateLimitError",
+    "TransportError",
+    "ValidationError",
+    "WaitTimeoutError",
+]

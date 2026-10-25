@@ -1,22 +1,31 @@
+# Generated from src/devhelm/_async/resources/notification_policies.py by scripts/unasync.py.
+# Do not edit: change the async source and run `make unasync`.
 from __future__ import annotations
-
-import httpx
 
 from devhelm._generated import (
     CreateNotificationPolicyRequest,
     NotificationPolicyDto,
     UpdateNotificationPolicyRequest,
 )
-from devhelm._http import api_delete, api_get, api_post, api_put, path_param
-from devhelm._pagination import Page, fetch_all_pages, fetch_page
+from devhelm._pages import Page
+from devhelm._sync.pagination import fetch_all_pages, fetch_page
+from devhelm._sync.transport import (
+    Client,
+    api_delete,
+    api_get,
+    api_post,
+    api_put,
+    as_transport,
+)
+from devhelm._transport import path_param
 from devhelm._validation import RequestBody, parse_single, validate_request
 
 
 class NotificationPolicies:
     """Routing rules for alerts."""
 
-    def __init__(self, client: httpx.Client) -> None:
-        self._client = client
+    def __init__(self, client: Client) -> None:
+        self._client = as_transport(client)
 
     def list(self) -> list[NotificationPolicyDto]:
         """List all notification policies (auto-paginates)."""

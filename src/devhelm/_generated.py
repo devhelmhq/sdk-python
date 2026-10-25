@@ -2,8 +2,16 @@
 #   filename:  .openapi-preprocessed.json
 
 from __future__ import annotations
-from typing import Annotated, Any, Literal
-from pydantic import AwareDatetime, BaseModel, ConfigDict, EmailStr, Field, RootModel
+from typing import Annotated, Literal
+from pydantic import (
+    AwareDatetime,
+    BaseModel,
+    ConfigDict,
+    EmailStr,
+    Field,
+    JsonValue,
+    RootModel,
+)
 from enum import StrEnum
 from uuid import UUID
 from datetime import date as date_aliased
@@ -282,7 +290,7 @@ class AlertChannelDto(BaseModel):
         str | None,
         Field(
             alias="managedBy",
-            description="Source that created/owns this channel: DASHBOARD, CLI, TERRAFORM, MCP, or API. Null on channels created before this attribution column existed.",
+            description="Source that created/owns this channel: DASHBOARD, GIT, TERRAFORM, MCP or API. Null on channels created before this attribution column existed.",
         ),
     ] = None
     last_delivery_at: Annotated[
@@ -1076,6 +1084,7 @@ class ManagedBy(StrEnum):
     terraform = "TERRAFORM"
     mcp = "MCP"
     api = "API"
+    git = "GIT"
 
 
 class Tool(StrEnum):
@@ -1084,6 +1093,7 @@ class Tool(StrEnum):
     terraform = "TERRAFORM"
     mcp = "MCP"
     api = "API"
+    git = "GIT"
 
 
 class CreateApiKeyRequest(BaseModel):
@@ -1115,7 +1125,7 @@ class CreateApiKeyRequest(BaseModel):
     tool: Annotated[
         Tool | None,
         Field(
-            description="Tool this key writes as on owner-enforced monitors (default: API)"
+            description="Tool this key writes as on owner-enforced monitors (default: API; CLI = GIT until 2027-01-31)"
         ),
     ] = None
 
@@ -2129,12 +2139,11 @@ class Dns(BaseModel):
         str | None, Field(alias="usedResolver", description="Resolver used for lookup")
     ] = None
     records: Annotated[
-        dict[str, list[dict[str, dict[str, Any]]]] | None,
+        dict[str, list[dict[str, JsonValue]]] | None,
         Field(description="Resolved DNS records keyed by record type"),
     ] = None
     attempts: Annotated[
-        list[dict[str, dict[str, Any]]] | None,
-        Field(description="DNS resolution attempts"),
+        list[dict[str, JsonValue]] | None, Field(description="DNS resolution attempts")
     ] = None
     failure_kind: Annotated[
         str | None,
@@ -2753,7 +2762,7 @@ class ErrorResponse(BaseModel):
     ] = None
     next: ErrorNext | None = None
     details: Annotated[
-        dict[str, dict[str, Any]] | None,
+        dict[str, JsonValue] | None,
         Field(
             description="Extra fields for this error, such as a missing secret key and environment"
         ),
@@ -3518,117 +3527,6 @@ class IncidentFailingMemberSnapshotDto(BaseModel):
     ] = None
 
 
-class Status6(StrEnum):
-    watching = "WATCHING"
-    triggered = "TRIGGERED"
-    confirmed = "CONFIRMED"
-    resolved = "RESOLVED"
-
-
-class Source(StrEnum):
-    automatic = "AUTOMATIC"
-    manual = "MANUAL"
-    monitors = "MONITORS"
-    status_data = "STATUS_DATA"
-    resource_group = "RESOURCE_GROUP"
-
-
-class IncidentFilterParams(BaseModel):
-    model_config = ConfigDict(extra="forbid", populate_by_name=True)
-    status: Annotated[
-        Status6 | None,
-        Field(
-            description="Filter by incident lifecycle status; null returns every status"
-        ),
-    ] = None
-    severity: Annotated[
-        Severity1 | None,
-        Field(description="Filter by severity; null returns every severity"),
-    ] = None
-    source: Annotated[
-        Source | None,
-        Field(
-            description="Filter by where the incident originated (auto, manual, third-party)"
-        ),
-    ] = None
-    monitor_id: Annotated[
-        UUID | None,
-        Field(
-            alias="monitorId",
-            description="Only return incidents tied to this monitor ID",
-        ),
-    ] = None
-    service_id: Annotated[
-        UUID | None,
-        Field(
-            alias="serviceId",
-            description="Only return incidents tied to this service ID (third-party services)",
-        ),
-    ] = None
-    resource_group_id: Annotated[
-        UUID | None,
-        Field(
-            alias="resourceGroupId",
-            description="Only return incidents owned by this resource group (incidents.resource_group_id)",
-        ),
-    ] = None
-    tag_id: Annotated[
-        UUID | None,
-        Field(
-            alias="tagId",
-            description="Only return incidents whose monitor carries this tag",
-        ),
-    ] = None
-    environment_id: Annotated[
-        UUID | None,
-        Field(
-            alias="environmentId",
-            description="Only return incidents whose monitor lives in this environment",
-        ),
-    ] = None
-    exclude_id: Annotated[
-        UUID | None,
-        Field(
-            alias="excludeId",
-            description="Exclude this incident ID from results (related-incident lists)",
-        ),
-    ] = None
-    started_from: Annotated[
-        AwareDatetime | None,
-        Field(
-            alias="startedFrom",
-            description="Earliest startedAt to include (inclusive, ISO 8601)",
-        ),
-    ] = None
-    started_to: Annotated[
-        AwareDatetime | None,
-        Field(
-            alias="startedTo",
-            description="Latest startedAt to include (inclusive, ISO 8601)",
-        ),
-    ] = None
-    search: Annotated[
-        str | None,
-        Field(
-            description="Case-insensitive substring match on title or incident ID",
-            max_length=200,
-            min_length=0,
-        ),
-    ] = None
-    page: Annotated[
-        int, Field(description="Zero-based page index (default: 0)", examples=[0], ge=0)
-    ]
-    size: Annotated[
-        int,
-        Field(
-            description="Number of incidents per page (1–200, default: 10)",
-            examples=[10],
-            ge=1,
-            le=200,
-        ),
-    ]
-
-
 class IncidentIoChannelConfig(BaseModel):
     model_config = ConfigDict(extra="ignore", populate_by_name=True)
     channel_type: Annotated[Literal["incident_io"], Field(alias="channelType")] = (
@@ -3846,6 +3744,10 @@ class KeyInfo(BaseModel):
         list[str],
         Field(description="Scopes this key is allowed to call; full grants everything"),
     ]
+    tool: Annotated[
+        str | None,
+        Field(description="Tool this key writes as on owner-enforced monitors"),
+    ] = None
 
 
 class LinearChannelConfig(BaseModel):
@@ -4178,7 +4080,7 @@ class McpServer(BaseModel):
         str | None, Field(alias="protocolVersion", description="MCP protocol version")
     ] = None
     server_info: Annotated[
-        dict[str, dict[str, Any]] | None,
+        dict[str, JsonValue] | None,
         Field(alias="serverInfo", description="MCP server info (name, version, etc.)"),
     ] = None
     tool_count: Annotated[
@@ -4532,7 +4434,7 @@ class MonitorOverlayRequest(BaseModel):
 class MonitorOwnerDto(BaseModel):
     model_config = ConfigDict(extra="ignore", populate_by_name=True)
     type: Annotated[
-        str, Field(description="Owning tool: DASHBOARD, CLI, TERRAFORM, MCP, or API")
+        str, Field(description="Owning tool: DASHBOARD, GIT, TERRAFORM, MCP or API")
     ]
     project: Annotated[
         str | None,
@@ -4623,105 +4525,6 @@ class MonitorRunDurationSummaryDto(BaseModel):
         Field(
             alias="p50DurationMs",
             description="Median execution duration in milliseconds; null when no durations were measured",
-        ),
-    ] = None
-
-
-class MonitorRunListParams(BaseModel):
-    model_config = ConfigDict(extra="forbid", populate_by_name=True)
-    phase: Annotated[
-        str | None,
-        Field(description="Filter by run phase; not_finished excludes finished runs"),
-    ] = None
-    outcome: Annotated[
-        str | None,
-        Field(
-            description="Outcomes, repeated or comma-separated; not_passed includes retries"
-        ),
-    ] = None
-    region: Annotated[str | None, Field(description="Filter by probe region")] = None
-    source: Annotated[
-        str | None, Field(description="Filter by what triggered the run")
-    ] = None
-    q: Annotated[str | None, Field(description="Substring match on headline")] = None
-    revision_id: Annotated[
-        UUID | None,
-        Field(alias="revisionId", description="Only runs for this published revision"),
-    ] = None
-    from_: Annotated[
-        AwareDatetime | None,
-        Field(
-            alias="from",
-            description="Inclusive enqueue lower bound (clamped to 90 days)",
-        ),
-    ] = None
-    to: Annotated[
-        AwareDatetime | None,
-        Field(description="Inclusive enqueue upper bound (default now)"),
-    ] = None
-    cursor: Annotated[
-        str | None,
-        Field(
-            description="Opaque cursor from the previous page; results cover the last 90 days"
-        ),
-    ] = None
-    limit: Annotated[
-        int, Field(description="Page size (1–100, default 25)", ge=1, le=100)
-    ]
-    monitor_type: Annotated[
-        str | None,
-        Field(
-            alias="monitorType", description="Monitor type: BROWSER or MULTI_STEP_API"
-        ),
-    ] = None
-    incident_id: Annotated[
-        UUID | None,
-        Field(
-            alias="incidentId",
-            description="Runs in the incident window, intersected with from and to",
-        ),
-    ] = None
-    branch: Annotated[
-        str | None, Field(description="Exact branch from revision provenance")
-    ] = None
-    flaky: Annotated[
-        bool | None,
-        Field(description="Select monitors currently flaky over the last seven days"),
-    ] = None
-    session_id: Annotated[
-        str | None,
-        Field(alias="sessionId", description="Caller-provided CI session identifier"),
-    ] = None
-    evaluation_cycle_id: Annotated[
-        UUID | None,
-        Field(
-            alias="evaluationCycleId",
-            description="Only runs in this evaluation cycle, including retries",
-        ),
-    ] = None
-    exclude_source: Annotated[
-        str | None,
-        Field(
-            alias="excludeSource",
-            description="Exclude this source; omitted preserves all sources",
-        ),
-    ] = None
-    sort: Annotated[
-        str | None, Field(description="Enqueue order: asc or desc (default: desc)")
-    ] = None
-    step: Annotated[
-        int | None,
-        Field(
-            description="Zero-based failed step index; requires monitor and caseIndex",
-            ge=0,
-        ),
-    ] = None
-    case_index: Annotated[
-        int | None,
-        Field(
-            alias="caseIndex",
-            description="Zero-based case index qualifying the failed step",
-            ge=0,
         ),
     ] = None
 
@@ -4896,49 +4699,6 @@ class MonitorTestResultDto(BaseModel):
         list[AssertionTestResultDto], Field(alias="assertionResults")
     ]
     warnings: list[str] | None = None
-
-
-class MonitorTriageParams(BaseModel):
-    model_config = ConfigDict(extra="forbid", populate_by_name=True)
-    name: Annotated[
-        str | None,
-        Field(description="Exact monitor name, ignoring case and surrounding spaces"),
-    ] = None
-    open_incident: Annotated[
-        bool | None,
-        Field(alias="openIncident", description="Whether a confirmed incident is open"),
-    ] = None
-    muted: Annotated[
-        bool | None, Field(description="Whether alert delivery is currently muted")
-    ] = None
-    quarantined: Annotated[
-        bool | None, Field(description="Whether quarantine has not expired")
-    ] = None
-    paused_before: Annotated[
-        AwareDatetime | None,
-        Field(
-            alias="pausedBefore",
-            description="Only monitors paused before this timestamp",
-        ),
-    ] = None
-    flaky: Annotated[
-        bool | None,
-        Field(description="Whether recent completed cycles recovered on retry"),
-    ] = None
-    group: Annotated[
-        str | None,
-        Field(description="List group: failing, not_running, passing, or paused"),
-    ] = None
-    owner_project: Annotated[
-        str | None,
-        Field(
-            alias="ownerProject",
-            description="Exact project declared by the owning tool",
-        ),
-    ] = None
-    sort: Annotated[
-        str | None, Field(description="Use state for group and streak ordering")
-    ] = None
 
 
 class MonitorUsage(BaseModel):
@@ -5570,13 +5330,6 @@ class OwnerDeclaration(BaseModel):
     ] = None
 
 
-class Pageable(BaseModel):
-    model_config = ConfigDict(extra="ignore", populate_by_name=True)
-    page: Annotated[int, Field(ge=0)]
-    size: Annotated[int, Field(ge=1)]
-    sort: list[str]
-
-
 class PagerDutyChannelConfig(BaseModel):
     model_config = ConfigDict(extra="ignore", populate_by_name=True)
     channel_type: Annotated[Literal["pagerduty"], Field(alias="channelType")] = (
@@ -5710,7 +5463,7 @@ class PolicySnapshotDto(BaseModel):
         ),
     ]
     policy: Annotated[
-        dict[str, dict[str, Any]],
+        dict[str, JsonValue],
         Field(description="Canonical policy document (snake_case, sorted keys)"),
     ]
     engine_version: Annotated[
@@ -5833,7 +5586,7 @@ class PublishRevisionRequest(BaseModel):
     ] = None
 
 
-class Status7(StrEnum):
+class Status6(StrEnum):
     investigating = "INVESTIGATING"
     identified = "IDENTIFIED"
     monitoring = "MONITORING"
@@ -5854,7 +5607,7 @@ class PublishStatusPageIncidentRequest(BaseModel):
         Impact | None, Field(description="Impact level; null keeps draft value")
     ] = None
     status: Annotated[
-        Status7 | None,
+        Status6 | None,
         Field(
             description="Incident status; null keeps draft value (must be an active status)"
         ),
@@ -6557,7 +6310,7 @@ class RuleEvaluationDto(BaseModel):
         ),
     ]
     evaluation_details: Annotated[
-        dict[str, dict[str, Any]],
+        dict[str, JsonValue],
         Field(
             alias="evaluationDetails",
             description="Structured details (e.g. failure counts, response-time aggregates)",
@@ -6603,13 +6356,6 @@ class RunAttemptDto(BaseModel):
     ] = None
 
 
-class RunCaseListParams(BaseModel):
-    model_config = ConfigDict(extra="forbid", populate_by_name=True)
-    attempt: Annotated[
-        int | None, Field(description="Only return cases for this Playwright attempt")
-    ] = None
-
-
 class RunConsoleDto(BaseModel):
     model_config = ConfigDict(extra="ignore", populate_by_name=True)
     state: Annotated[
@@ -6624,22 +6370,6 @@ class RunConsoleDto(BaseModel):
     ]
     lines: Annotated[
         list[ConsoleLineDto] | None, Field(description="Raw lines when ungrouped=true")
-    ] = None
-
-
-class RunConsoleParams(BaseModel):
-    model_config = ConfigDict(extra="forbid", populate_by_name=True)
-    attempt: Annotated[
-        int | None, Field(description="In-check attempt (default selected attempt)")
-    ] = None
-    ungrouped: Annotated[
-        bool | None, Field(description="Return chronological lines instead of groups")
-    ] = None
-    level: Annotated[
-        str | None, Field(description="Filter error, warning, or info")
-    ] = None
-    format: Annotated[
-        str | None, Field(description="raw downloads the ungrouped log as text/plain")
     ] = None
 
 
@@ -6666,20 +6396,12 @@ class RunEventDto(BaseModel):
         Field(alias="artifactId", description="Artifact this event refers to"),
     ] = None
     payload: Annotated[
-        dict[str, dict[str, Any]],
-        Field(description="Small typed payload for this event"),
+        dict[str, JsonValue], Field(description="Small typed payload for this event")
     ]
     created_at: Annotated[
         AwareDatetime,
         Field(alias="createdAt", description="When the event was persisted"),
     ]
-
-
-class RunEventParams(BaseModel):
-    model_config = ConfigDict(extra="forbid", populate_by_name=True)
-    after: Annotated[
-        int | None, Field(description="Replay events with seq greater than this value")
-    ] = None
 
 
 class RunEvidenceDto(BaseModel):
@@ -6742,118 +6464,6 @@ class RunFailureDto(BaseModel):
     ] = None
 
 
-class RunListParams(BaseModel):
-    model_config = ConfigDict(extra="forbid", populate_by_name=True)
-    phase: Annotated[
-        str | None,
-        Field(description="Filter by run phase; not_finished excludes finished runs"),
-    ] = None
-    outcome: Annotated[
-        str | None,
-        Field(
-            description="Outcomes, repeated or comma-separated; not_passed includes retries"
-        ),
-    ] = None
-    region: Annotated[str | None, Field(description="Filter by probe region")] = None
-    source: Annotated[
-        str | None, Field(description="Filter by what triggered the run")
-    ] = None
-    environment_id: Annotated[
-        UUID | None,
-        Field(
-            alias="environmentId",
-            description="Only return runs executed in this environment",
-        ),
-    ] = None
-    from_: Annotated[
-        AwareDatetime | None,
-        Field(
-            alias="from",
-            description="Inclusive enqueue lower bound (default last 24 hours; clamped to 90 days)",
-        ),
-    ] = None
-    to: Annotated[
-        AwareDatetime | None,
-        Field(description="Inclusive enqueue upper bound (default now)"),
-    ] = None
-    q: Annotated[
-        str | None, Field(description="Substring match on monitor name or headline")
-    ] = None
-    cursor: Annotated[
-        str | None, Field(description="Opaque cursor from the previous page")
-    ] = None
-    limit: Annotated[
-        int, Field(description="Page size (1–100, default 50)", ge=1, le=100)
-    ]
-    monitor_id: Annotated[
-        UUID | None, Field(alias="monitorId", description="Only runs for this monitor")
-    ] = None
-    revision_id: Annotated[
-        UUID | None,
-        Field(alias="revisionId", description="Only runs for this revision"),
-    ] = None
-    monitor_type: Annotated[
-        str | None,
-        Field(
-            alias="monitorType", description="Monitor type: BROWSER or MULTI_STEP_API"
-        ),
-    ] = None
-    incident_id: Annotated[
-        UUID | None,
-        Field(
-            alias="incidentId",
-            description="Runs in the incident window, intersected with from and to",
-        ),
-    ] = None
-    branch: Annotated[
-        str | None, Field(description="Exact branch from revision provenance")
-    ] = None
-    flaky: Annotated[
-        bool | None,
-        Field(description="Select monitors currently flaky over the last seven days"),
-    ] = None
-    session_id: Annotated[
-        str | None,
-        Field(alias="sessionId", description="Caller-provided CI session identifier"),
-    ] = None
-    evaluation_cycle_id: Annotated[
-        UUID | None,
-        Field(
-            alias="evaluationCycleId",
-            description="Only runs in this evaluation cycle, including retries",
-        ),
-    ] = None
-    exclude_source: Annotated[
-        str | None,
-        Field(
-            alias="excludeSource",
-            description="Exclude this source; omitted preserves all sources",
-        ),
-    ] = None
-    sort: Annotated[
-        str | None, Field(description="Enqueue order: asc or desc (default: desc)")
-    ] = None
-    step: Annotated[
-        int | None,
-        Field(
-            description="Zero-based failed step index; requires monitor and caseIndex",
-            ge=0,
-        ),
-    ] = None
-    case_index: Annotated[
-        int | None,
-        Field(
-            alias="caseIndex",
-            description="Zero-based case index qualifying the failed step",
-            ge=0,
-        ),
-    ] = None
-    bucket: Annotated[
-        str | None,
-        Field(description="Histogram width: 30m, 1h or 1d; at most 1000 buckets"),
-    ] = None
-
-
 class RunLiveDto(BaseModel):
     model_config = ConfigDict(extra="ignore", populate_by_name=True)
     step_index: Annotated[
@@ -6898,29 +6508,6 @@ class RunnerRegionStatusesDto(BaseModel):
         list[RunnerRegionStatusDto],
         Field(description="Acceptance status per public region"),
     ]
-
-
-class RunNetworkParams(BaseModel):
-    model_config = ConfigDict(extra="forbid", populate_by_name=True)
-    attempt: Annotated[
-        int | None, Field(description="In-check attempt (default selected attempt)")
-    ] = None
-    failed: Annotated[
-        bool | None, Field(description="Only rows with status >= 400 or a failure")
-    ] = None
-    slow: Annotated[
-        bool | None, Field(description="Only rows with durationMs >= 1000")
-    ] = None
-    step_id: Annotated[
-        str | None, Field(alias="stepId", description="Only rows for this step")
-    ] = None
-    xhr: Annotated[
-        bool | None, Field(description="Only xhr, fetch, and api resource types")
-    ] = None
-    source: Annotated[str | None, Field(description="page or request")] = None
-    cursor: Annotated[
-        str | None, Field(description="Opaque cursor from the previous page")
-    ] = None
 
 
 class RunOutcomeCountDto(BaseModel):
@@ -6974,43 +6561,6 @@ class RunSessionContext(BaseModel):
     ] = None
 
 
-class RunSkippedListParams(BaseModel):
-    model_config = ConfigDict(extra="forbid", populate_by_name=True)
-    from_: Annotated[
-        AwareDatetime | None,
-        Field(
-            alias="from",
-            description="Inclusive window start; default last 24 hours, clamped to 90 days",
-        ),
-    ] = None
-    to: Annotated[
-        AwareDatetime | None, Field(description="Inclusive window end; default now")
-    ] = None
-    monitor_id: Annotated[
-        UUID | None,
-        Field(alias="monitorId", description="Only entries for this monitor"),
-    ] = None
-    cursor: Annotated[
-        str | None, Field(description="Opaque cursor returned by this endpoint")
-    ] = None
-    limit: Annotated[
-        int, Field(description="Page size (1–100, default 50)", ge=1, le=100)
-    ]
-    environment_id: Annotated[
-        UUID | None,
-        Field(
-            alias="environmentId",
-            description="Current monitor environment; historical ticks retain their snapshot",
-        ),
-    ] = None
-    monitor_type: Annotated[
-        str | None,
-        Field(
-            alias="monitorType", description="Monitor type: BROWSER or MULTI_STEP_API"
-        ),
-    ] = None
-
-
 class RunStepDto(BaseModel):
     model_config = ConfigDict(extra="ignore", populate_by_name=True)
     id: Annotated[UUID, Field(description="Step identifier")]
@@ -7043,7 +6593,7 @@ class RunStepDto(BaseModel):
     ] = None
     error: Annotated[str | None, Field(description="Error when the step failed")] = None
     assertion: Annotated[
-        dict[str, dict[str, Any]] | None,
+        dict[str, JsonValue] | None,
         Field(description="Assertion or safe wait-result metadata"),
     ] = None
 
@@ -7137,30 +6687,6 @@ class RunTraceSummaryDto(BaseModel):
     text: Annotated[str, Field(description="Plain-text summary, length-capped")]
     truncated: Annotated[
         bool, Field(description="Whether any section was cut to the cap")
-    ]
-
-
-class RunWindowListParams(BaseModel):
-    model_config = ConfigDict(extra="forbid", populate_by_name=True)
-    from_: Annotated[
-        AwareDatetime | None,
-        Field(
-            alias="from",
-            description="Inclusive window start; default last 24 hours, clamped to 90 days",
-        ),
-    ] = None
-    to: Annotated[
-        AwareDatetime | None, Field(description="Inclusive window end; default now")
-    ] = None
-    monitor_id: Annotated[
-        UUID | None,
-        Field(alias="monitorId", description="Only entries for this monitor"),
-    ] = None
-    cursor: Annotated[
-        str | None, Field(description="Opaque cursor returned by this endpoint")
-    ] = None
-    limit: Annotated[
-        int, Field(description="Page size (1–100, default 50)", ge=1, le=100)
     ]
 
 
@@ -7652,7 +7178,7 @@ class SetMonitorAuthRequest(BaseModel):
     config: ApiKeyAuthConfig | BasicAuthConfig | BearerAuthConfig | HeaderAuthConfig
 
 
-class Status8(StrEnum):
+class Status7(StrEnum):
     operational = "OPERATIONAL"
     degraded_performance = "DEGRADED_PERFORMANCE"
     partial_outage = "PARTIAL_OUTAGE"
@@ -7663,7 +7189,7 @@ class Status8(StrEnum):
 class SetStatusPageComponentOverrideRequest(BaseModel):
     model_config = ConfigDict(extra="forbid", populate_by_name=True)
     status: Annotated[
-        Status8,
+        Status7,
         Field(
             description="Override status while active; takes precedence over binding until expiry/clear"
         ),
@@ -9291,12 +8817,16 @@ class To(StrEnum):
     terraform = "TERRAFORM"
     mcp = "MCP"
     api = "API"
+    git = "GIT"
 
 
 class TransferMonitorRequest(BaseModel):
     model_config = ConfigDict(extra="forbid", populate_by_name=True)
     to: Annotated[
-        To, Field(description="New owning tool: DASHBOARD, CLI, TERRAFORM, MCP, or API")
+        To,
+        Field(
+            description="New owning tool: DASHBOARD, GIT, TERRAFORM, MCP or API (CLI = GIT until 2027-01-31)"
+        ),
     ]
     reason: Annotated[
         str,
@@ -9330,7 +8860,7 @@ class Scope(StrEnum):
     any_region = "any_region"
 
 
-class Severity3(StrEnum):
+class Severity2(StrEnum):
     down = "down"
     degraded = "degraded"
 
@@ -9373,7 +8903,7 @@ class TriggerRule(BaseModel):
         ),
     ] = None
     severity: Annotated[
-        Severity3, Field(description="Incident severity when this rule fires")
+        Severity2, Field(description="Incident severity when this rule fires")
     ]
     aggregation_type: Annotated[
         AggregationType | None,
@@ -9451,7 +8981,7 @@ class UpdateApiKeyRequest(BaseModel):
     ]
 
 
-class Severity4(StrEnum):
+class Severity3(StrEnum):
     fail = "fail"
     warn = "warn"
 
@@ -9504,7 +9034,7 @@ class UpdateAssertionRequest(BaseModel):
         Field(discriminator="type"),
     ]
     severity: Annotated[
-        Severity4 | None, Field(description="New outcome severity: FAIL or WARN")
+        Severity3 | None, Field(description="New outcome severity: FAIL or WARN")
     ] = None
 
 
@@ -9549,7 +9079,7 @@ class UpdateEmailChannelConfig(BaseModel):
     ]
 
 
-class Status9(StrEnum):
+class Status8(StrEnum):
     active = "active"
     disabled = "disabled"
     pending_dns = "pending_dns"
@@ -9559,7 +9089,7 @@ class Status9(StrEnum):
 class UpdateEmailDomainRequest(BaseModel):
     model_config = ConfigDict(extra="forbid", populate_by_name=True)
     status: Annotated[
-        Status9 | None,
+        Status8 | None,
         Field(
             description="Domain lifecycle. Custom domains become active only via POST /verify"
         ),
@@ -9659,7 +9189,7 @@ class UpdateIncidentPolicyRequest(BaseModel):
     recovery: RecoveryPolicy
 
 
-class Severity5(StrEnum):
+class Severity4(StrEnum):
     down = "DOWN"
     degraded = "DEGRADED"
     maintenance = "MAINTENANCE"
@@ -9676,7 +9206,7 @@ class UpdateIncidentRequest(BaseModel):
         ),
     ] = None
     severity: Annotated[
-        Severity5 | None,
+        Severity4 | None,
         Field(
             description="New severity: DOWN, DEGRADED, or MAINTENANCE; null preserves current"
         ),
@@ -10063,7 +9593,7 @@ class UpdateResourceGroupRequest(BaseModel):
         ManagedBy | None,
         Field(
             alias="managedBy",
-            description="New attribution source: DASHBOARD, CLI, TERRAFORM, MCP, or API; null preserves current value.",
+            description="New attribution source: DASHBOARD, GIT, TERRAFORM, MCP or API (CLI = GIT until 2027-01-31); null preserves current value.",
         ),
     ] = None
 
@@ -10254,7 +9784,7 @@ class UpdateStatusPageComponentRequest(BaseModel):
     ] = None
 
 
-class Status10(StrEnum):
+class Status9(StrEnum):
     investigating = "INVESTIGATING"
     identified = "IDENTIFIED"
     monitoring = "MONITORING"
@@ -10272,7 +9802,7 @@ class UpdateStatusPageIncidentRequest(BaseModel):
         ),
     ] = None
     status: Annotated[
-        Status10 | None, Field(description="New status; null preserves current")
+        Status9 | None, Field(description="New status; null preserves current")
     ] = None
     impact: Annotated[
         Impact | None, Field(description="New impact level; null preserves current")
@@ -10341,7 +9871,7 @@ class UpdateStatusPageIncidentUpdateRequest(BaseModel):
         ),
     ]
     status: Annotated[
-        Status10 | None,
+        Status9 | None,
         Field(
             description="Replacement lifecycle status for this update; null preserves current"
         ),
@@ -10383,7 +9913,7 @@ class UpdateStatusPageRequest(BaseModel):
         ManagedBy | None,
         Field(
             alias="managedBy",
-            description="New attribution source: DASHBOARD, CLI, TERRAFORM, MCP, or API; null preserves current value.",
+            description="New attribution source: DASHBOARD, GIT, TERRAFORM, MCP or API (CLI = GIT until 2027-01-31); null preserves current value.",
         ),
     ] = None
 
@@ -10484,7 +10014,7 @@ class UpdateWebhookEndpointRequest(BaseModel):
     ] = None
 
 
-class Status12(StrEnum):
+class Status11(StrEnum):
     active = "active"
     disabled = "disabled"
 
@@ -10499,7 +10029,7 @@ class UpdateWebhookInboxRequest(BaseModel):
             min_length=0,
         ),
     ] = None
-    status: Annotated[Status12 | None, Field(description="Inbox lifecycle")] = None
+    status: Annotated[Status11 | None, Field(description="Inbox lifecycle")] = None
     http_response: Annotated[
         InboundWebhookHttpResponsePatch | None, Field(alias="httpResponse")
     ] = None
@@ -11145,6 +10675,170 @@ class ZapierChannelConfig(BaseModel):
     ]
 
 
+class RunListParams(BaseModel):
+    model_config = ConfigDict(extra="forbid", populate_by_name=True)
+    phase: Annotated[
+        str | None,
+        Field(description="Filter by run phase; not_finished excludes finished runs"),
+    ] = None
+    outcome: Annotated[
+        str | None,
+        Field(
+            description="Outcomes, repeated or comma-separated; not_passed includes retries"
+        ),
+    ] = None
+    region: Annotated[str | None, Field(description="Filter by probe region")] = None
+    source: Annotated[
+        str | None, Field(description="Filter by what triggered the run")
+    ] = None
+    environment_id: Annotated[
+        UUID | None,
+        Field(
+            alias="environmentId",
+            description="Only return runs executed in this environment",
+        ),
+    ] = None
+    from_: Annotated[
+        AwareDatetime | None,
+        Field(
+            alias="from",
+            description="Inclusive enqueue lower bound (default last 24 hours; clamped to 90 days)",
+        ),
+    ] = None
+    to: Annotated[
+        AwareDatetime | None,
+        Field(description="Inclusive enqueue upper bound (default now)"),
+    ] = None
+    q: Annotated[
+        str | None, Field(description="Substring match on monitor name or headline")
+    ] = None
+    cursor: Annotated[
+        str | None, Field(description="Opaque cursor from the previous page")
+    ] = None
+    limit: Annotated[
+        int | None, Field(description="Page size (1–100, default 50)", ge=1, le=100)
+    ] = None
+    monitor_id: Annotated[
+        UUID | None, Field(alias="monitorId", description="Only runs for this monitor")
+    ] = None
+    revision_id: Annotated[
+        UUID | None,
+        Field(alias="revisionId", description="Only runs for this revision"),
+    ] = None
+    monitor_type: Annotated[
+        str | None,
+        Field(
+            alias="monitorType", description="Monitor type: BROWSER or MULTI_STEP_API"
+        ),
+    ] = None
+    incident_id: Annotated[
+        UUID | None,
+        Field(
+            alias="incidentId",
+            description="Runs in the incident window, intersected with from and to",
+        ),
+    ] = None
+    branch: Annotated[
+        str | None, Field(description="Exact branch from revision provenance")
+    ] = None
+    flaky: Annotated[
+        bool | None,
+        Field(description="Select monitors currently flaky over the last seven days"),
+    ] = None
+    session_id: Annotated[
+        str | None,
+        Field(alias="sessionId", description="Caller-provided CI session identifier"),
+    ] = None
+    evaluation_cycle_id: Annotated[
+        UUID | None,
+        Field(
+            alias="evaluationCycleId",
+            description="Only runs in this evaluation cycle, including retries",
+        ),
+    ] = None
+    exclude_source: Annotated[
+        str | None,
+        Field(
+            alias="excludeSource",
+            description="Exclude this source; omitted preserves all sources",
+        ),
+    ] = None
+    sort: Annotated[
+        str | None, Field(description="Enqueue order: asc or desc (default: desc)")
+    ] = None
+    step: Annotated[
+        int | None,
+        Field(
+            description="Zero-based failed step index; requires monitor and caseIndex",
+            ge=0,
+        ),
+    ] = None
+    case_index: Annotated[
+        int | None,
+        Field(
+            alias="caseIndex",
+            description="Zero-based case index qualifying the failed step",
+            ge=0,
+        ),
+    ] = None
+    adhoc: Annotated[
+        bool | None,
+        Field(
+            description="Include ad-hoc validation runs that have no monitor (default: false)"
+        ),
+    ] = None
+    bucket: Annotated[
+        str | None,
+        Field(description="Histogram width: 30m, 1h or 1d; at most 1000 buckets"),
+    ] = None
+
+
+class RunCaseListParams(BaseModel):
+    model_config = ConfigDict(extra="forbid", populate_by_name=True)
+    attempt: Annotated[
+        int | None, Field(description="Only return cases for this Playwright attempt")
+    ] = None
+
+
+class RunConsoleParams(BaseModel):
+    model_config = ConfigDict(extra="forbid", populate_by_name=True)
+    attempt: Annotated[
+        int | None, Field(description="In-check attempt (default selected attempt)")
+    ] = None
+    ungrouped: Annotated[
+        bool | None, Field(description="Return chronological lines instead of groups")
+    ] = None
+    level: Annotated[
+        str | None, Field(description="Filter error, warning, or info")
+    ] = None
+    format: Annotated[
+        str | None, Field(description="raw downloads the ungrouped log as text/plain")
+    ] = None
+
+
+class RunNetworkParams(BaseModel):
+    model_config = ConfigDict(extra="forbid", populate_by_name=True)
+    attempt: Annotated[
+        int | None, Field(description="In-check attempt (default selected attempt)")
+    ] = None
+    failed: Annotated[
+        bool | None, Field(description="Only rows with status >= 400 or a failure")
+    ] = None
+    slow: Annotated[
+        bool | None, Field(description="Only rows with durationMs >= 1000")
+    ] = None
+    step_id: Annotated[
+        str | None, Field(alias="stepId", description="Only rows for this step")
+    ] = None
+    xhr: Annotated[
+        bool | None, Field(description="Only xhr, fetch, and api resource types")
+    ] = None
+    source: Annotated[str | None, Field(description="page or request")] = None
+    cursor: Annotated[
+        str | None, Field(description="Opaque cursor from the previous page")
+    ] = None
+
+
 class AcknowledgeAllIncidentsResponse(BaseModel):
     model_config = ConfigDict(extra="ignore", populate_by_name=True)
     acknowledged: Annotated[
@@ -11269,7 +10963,7 @@ class BulkMonitorActionRequest(BaseModel):
         int | None,
         Field(
             alias="frequencySeconds",
-            description="New check frequency in seconds (10–86400), required for UPDATE_SCHEDULE",
+            description="Check frequency in seconds for UPDATE_SCHEDULE; minimum depends on plan",
             ge=10,
             le=86400,
         ),
@@ -11465,7 +11159,7 @@ class CreateAlertChannelRequest(BaseModel):
         ManagedBy | None,
         Field(
             alias="managedBy",
-            description="Source creating this channel: DASHBOARD, CLI, TERRAFORM, MCP, or API. Defaults to API when omitted.",
+            description="Source creating this channel: DASHBOARD, GIT, TERRAFORM, MCP or API (CLI = GIT until 2027-01-31). Defaults to API when omitted.",
         ),
     ] = None
 
@@ -11555,7 +11249,7 @@ class CreateMonitorRequest(BaseModel):
         int | None,
         Field(
             alias="frequencySeconds",
-            description="Check frequency in seconds (10–86400). Null defaults to the plan minimum",
+            description="Check frequency in seconds; minimum depends on plan (default: plan minimum)",
             ge=10,
             le=86400,
         ),
@@ -11573,7 +11267,7 @@ class CreateMonitorRequest(BaseModel):
         ManagedBy | None,
         Field(
             alias="managedBy",
-            description="Source that created this monitor: DASHBOARD, CLI, TERRAFORM, MCP, or API. Defaults to API",
+            description="Source that created this monitor: DASHBOARD, GIT, TERRAFORM, MCP or API (CLI = GIT until 2027-01-31). Defaults to API",
         ),
     ] = None
     owner_enforced: Annotated[
@@ -11755,7 +11449,7 @@ class CreateResourceGroupRequest(BaseModel):
         ManagedBy | None,
         Field(
             alias="managedBy",
-            description="Source creating this group: DASHBOARD, CLI, TERRAFORM, MCP, or API. Defaults to API when omitted.",
+            description="Source creating this group: DASHBOARD, GIT, TERRAFORM, MCP or API (CLI = GIT until 2027-01-31). Defaults to API when omitted.",
         ),
     ] = None
 
@@ -11808,7 +11502,7 @@ class CreateStatusPageRequest(BaseModel):
         ManagedBy | None,
         Field(
             alias="managedBy",
-            description="Source creating this page: DASHBOARD, CLI, TERRAFORM, MCP, or API. Defaults to API when omitted.",
+            description="Source creating this page: DASHBOARD, GIT, TERRAFORM, MCP or API (CLI = GIT until 2027-01-31). Defaults to API when omitted.",
         ),
     ] = None
 
@@ -12850,7 +12544,8 @@ class MonitorTestRequest(BaseModel):
         | McpServerMonitorConfig
         | ScriptMonitorConfig
         | TcpMonitorConfig
-    )
+        | None
+    ) = None
     assertions: Annotated[
         list[CreateAssertionRequest] | None,
         Field(description="Optional assertions to evaluate against the test result"),
@@ -12859,11 +12554,19 @@ class MonitorTestRequest(BaseModel):
         UUID | None,
         Field(
             alias="environmentId",
-            description="Environment to test against; null uses the monitor environment",
+            description="Environment to run in; required for browser and multi-step API code",
         ),
     ] = None
     code: MonitorCodeSpec | None = None
     session: RunSessionContext | None = None
+    region: Annotated[
+        str | None,
+        Field(
+            description="Probe region for a code-bundle test (default: us-east)",
+            max_length=64,
+            min_length=0,
+        ),
+    ] = None
 
 
 class NetworkRowDto(BaseModel):
@@ -14032,7 +13735,7 @@ class StatusPageDto(BaseModel):
         str | None,
         Field(
             alias="managedBy",
-            description="Source that created/owns this status page: DASHBOARD, CLI, TERRAFORM, MCP, or API. Null on pages created before this attribution column existed.",
+            description="Source that created/owns this status page: DASHBOARD, GIT, TERRAFORM, MCP or API. Null on pages created before this attribution column existed.",
         ),
     ] = None
     created_at: Annotated[AwareDatetime, Field(alias="createdAt")]
@@ -14330,7 +14033,7 @@ class UpdateAlertChannelRequest(BaseModel):
         ManagedBy | None,
         Field(
             alias="managedBy",
-            description="New attribution source: DASHBOARD, CLI, TERRAFORM, MCP, or API; null preserves current value.",
+            description="New attribution source: DASHBOARD, GIT, TERRAFORM, MCP or API (CLI = GIT until 2027-01-31); null preserves current value.",
         ),
     ] = None
     enabled: Annotated[
@@ -14365,7 +14068,7 @@ class UpdateMonitorRequest(BaseModel):
         int | None,
         Field(
             alias="frequencySeconds",
-            description="New check frequency in seconds (10–86400). Null preserves current",
+            description="Check frequency in seconds; minimum depends on plan. Null preserves current",
             ge=10,
             le=86400,
         ),
@@ -14901,7 +14604,7 @@ class ResourceGroupDto(BaseModel):
         str | None,
         Field(
             alias="managedBy",
-            description="Source that created/owns this group: DASHBOARD, CLI, TERRAFORM, MCP, or API. Null on groups created before this attribution column existed.",
+            description="Source that created/owns this group: DASHBOARD, GIT, TERRAFORM, MCP or API. Null on groups created before this attribution column existed.",
         ),
     ] = None
     created_at: Annotated[
@@ -14969,8 +14672,12 @@ class RunDto(BaseModel):
         Field(alias="organizationId", description="Organization this run belongs to"),
     ]
     monitor_id: Annotated[
-        UUID, Field(alias="monitorId", description="Monitor this run belongs to")
-    ]
+        UUID | None,
+        Field(
+            alias="monitorId",
+            description="Monitor this run belongs to; null for an ad-hoc validation run",
+        ),
+    ] = None
     monitor_name: Annotated[
         str | None, Field(alias="monitorName", description="Monitor display name")
     ] = None
@@ -15031,6 +14738,10 @@ class RunDto(BaseModel):
     outcome: Annotated[
         str | None, Field(description="Outcome; null until the run is finished")
     ] = None
+    flaky: Annotated[
+        bool,
+        Field(description="Whether the run passed only after at least one fast retry"),
+    ]
     headline: Annotated[str | None, Field(description="Last control headline")] = None
     execution_line: Annotated[
         str | None, Field(alias="executionLine", description="Live execution one-liner")
@@ -15079,14 +14790,14 @@ class RunDto(BaseModel):
         Field(alias="purgedAt", description="When stored evidence was purged"),
     ] = None
     capture_policy_snapshot: Annotated[
-        dict[str, dict[str, Any]],
+        dict[str, JsonValue],
         Field(
             alias="capturePolicySnapshot",
             description="Capture settings frozen at create",
         ),
     ]
     binding_version_snapshot: Annotated[
-        dict[str, dict[str, Any]],
+        dict[str, JsonValue],
         Field(
             alias="bindingVersionSnapshot",
             description="Resolved secret key names frozen at create",
@@ -15742,7 +15453,7 @@ class MonitorDto(BaseModel):
         int,
         Field(
             alias="frequencySeconds",
-            description="Check frequency in seconds (30–86400)",
+            description="Check frequency in seconds; minimum depends on plan",
         ),
     ]
     enabled: Annotated[bool, Field(description="Whether the monitor is active")]
@@ -15753,7 +15464,7 @@ class MonitorDto(BaseModel):
         str,
         Field(
             alias="managedBy",
-            description="Source that created/owns this monitor: DASHBOARD, CLI, TERRAFORM, MCP, or API",
+            description="Source that created/owns this monitor: DASHBOARD, GIT, TERRAFORM, MCP or API",
         ),
     ]
     owner_enforced: Annotated[
@@ -16031,7 +15742,10 @@ class MonitorVersionDto(BaseModel):
     ] = None
     changed_via: Annotated[
         str,
-        Field(alias="changedVia", description="Change source (DASHBOARD, CLI, API)"),
+        Field(
+            alias="changedVia",
+            description="Change source: API, DASHBOARD, GIT, TERRAFORM or MCP",
+        ),
     ]
     change_summary: Annotated[
         str | None,

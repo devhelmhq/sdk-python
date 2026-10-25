@@ -1,9 +1,10 @@
+# Generated from src/devhelm/_async/resources/deploy_lock.py by scripts/unasync.py.
+# Do not edit: change the async source and run `make unasync`.
 from __future__ import annotations
 
-import httpx
-
 from devhelm._generated import AcquireDeployLockRequest, DeployLockDto
-from devhelm._http import api_delete, api_get, api_post, path_param
+from devhelm._sync.transport import Client, api_delete, api_get, api_post, as_transport
+from devhelm._transport import path_param
 from devhelm._validation import (
     RequestBody,
     parse_single,
@@ -15,8 +16,8 @@ from devhelm._validation import (
 class DeployLock:
     """Deploy lock for safe deployments."""
 
-    def __init__(self, client: httpx.Client) -> None:
-        self._client = client
+    def __init__(self, client: Client) -> None:
+        self._client = as_transport(client)
 
     def acquire(self, body: RequestBody[AcquireDeployLockRequest]) -> DeployLockDto:
         """Acquire a deploy lock."""
