@@ -3,6 +3,7 @@ incident extensions and status-page component overrides (doc 42 §8/§9)."""
 
 from __future__ import annotations
 
+from pathlib import Path
 from typing import Any
 
 import httpx
@@ -298,6 +299,45 @@ def test_bundles_create_and_check(router: Router) -> None:
         "files": {"a.spec.ts": "import './c'"},
         "entrypoint": "a.spec.ts",
     }
+
+
+def test_bundles_upload_ships_include_fixture(router: Router, tmp_path: Path) -> None:
+    (tmp_path / ".git").mkdir()
+    entry = tmp_path / "checks" / "order.spec.ts"
+    entry.parent.mkdir()
+    entry.write_text("import { test } from '@playwright/test'\n")
+    fixture = tmp_path / "fixtures" / "order.json"
+    fixture.parent.mkdir()
+    fixture.write_text('{"id": 1}\n')
+    (tmp_path / "fixtures" / "unused.json").write_text("{}")
+    sent = {
+        "checks/order.spec.ts": entry.read_bytes(),
+        "fixtures/order.json": fixture.read_bytes(),
+    }
+
+    def upload(_req: httpx.Request) -> httpx.Response:
+        return httpx.Response(
+            201,
+            json=single(
+                {
+                    "digest": bundle_digest(sent),
+                    "uploadDigest": bundle_digest(sent),
+                    "files": sorted(sent),
+                    "keys": [],
+                    "size": 40,
+                }
+            ),
+        )
+
+    router.add("POST", "/api/v1/bundles", handler=upload)
+    out = Bundles(router.client()).create(
+        {"entrypoint": str(entry), "include": ["fixtures/order.json"]}
+    )
+    body = body_of(router.calls[0])
+    assert set(body["files"]) == set(sent)
+    assert body["include"] == ["fixtures/order.json"]
+    assert body["entrypoint"] == "checks/order.spec.ts"
+    assert "fixtures/order.json" in out.files
 
 
 def test_bundles_refuse_dotfiles_client_side(router: Router) -> None:

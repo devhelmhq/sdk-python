@@ -19,7 +19,8 @@ asyncio client, and typed errors per category.
   resolve the import closure. No Node, no JavaScript parsing.
   `devhelm.bundle_digest(files)` exposes the digest.
 - `include` adds files nothing imports (fixtures, data) to the default set
-  and names them to the server so the closure keeps them.
+  and sends them as `CreateBundleRequest.include` (JSON) or the `include`
+  query parameter (zip), so the server keeps them in the closure.
 - `environment=` (slug or id) on create, update, restore, `test_adhoc`,
   `monitors.list` and `secrets.list`.
 - Monitors: `test` (validation run), `probe` (uptime result), `test_adhoc`,

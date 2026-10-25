@@ -128,14 +128,14 @@ def from_memory(code: FilesCode) -> CollectedBundle:
             field="code.entrypoint",
         )
     include = tuple(normalize_path(p) for p in code.get("include", []))
-    unknown = [p for p in include if p not in files]
-    if unknown:
-        raise client_error(
-            "validation",
-            "MONITOR_PACKAGE_PATH_INVALID",
-            f"include names {unknown[0]}, which is not one of the files",
-            field="code.include",
-        )
+    for index, path in enumerate(include):
+        if path not in files:
+            raise client_error(
+                "validation",
+                "MONITOR_PACKAGE_PATH_INVALID",
+                f"include names {path}, which is not one of the files",
+                field=f"include[{index}]",
+            )
     check_limits(files)
     return CollectedBundle(
         entrypoint=entrypoint,
