@@ -19,7 +19,9 @@ directory. Paths are sent relative to the root. The default include set is
 the entry file's directory, recursively, minus ``node_modules/``, ``.git/``,
 ``dist/``, ``build/``, ``coverage/``, ``*.map``, dotfiles (``.env*``
 included) and anything ``.devhelmignore`` (gitignore syntax) matches.
-``include`` globs (relative to the root) replace that default. The session
+``include`` globs (relative to the root) add files that must ship although
+nothing imports them (fixtures, data); they are named to the server so it
+keeps them in the closure. The session
 setup file (``auth.setup.ts`` next to the entry file) is always sent when it
 exists. Symlinks are refused.
 """

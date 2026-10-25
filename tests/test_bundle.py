@@ -250,7 +250,7 @@ def test_devhelmignore_in_entry_dir_is_relative_to_it(tmp_path: Path) -> None:
     assert set(bundle.files) == {"checks/a.spec.ts", "checks/sub/local.ts"}
 
 
-def test_include_globs_replace_default_set(tmp_path: Path) -> None:
+def test_include_globs_add_to_default_set(tmp_path: Path) -> None:
     (tmp_path / ".git").mkdir()
     entry = _write(tmp_path, "checks/web/a.spec.ts")
     _write(tmp_path, "checks/web/sibling.ts")
@@ -262,12 +262,40 @@ def test_include_globs_replace_default_set(tmp_path: Path) -> None:
     bundle = collect(
         {"entrypoint": str(entry), "include": ["checks/**/*.ts", "./shared/util.ts"]}
     )
+    # The entry directory always ships; include adds files nothing imports,
+    # and those are named to the server.
     assert set(bundle.files) == {
         "checks/web/a.spec.ts",
         "checks/web/sibling.ts",
         "checks/api/b.ts",
         "shared/util.ts",
     }
+    assert bundle.include == (
+        "checks/api/b.ts",
+        "checks/web/a.spec.ts",
+        "checks/web/sibling.ts",
+        "shared/util.ts",
+    )
+
+
+def test_include_ships_fixture_nothing_imports(tmp_path: Path) -> None:
+    (tmp_path / ".git").mkdir()
+    entry = _write(tmp_path, "checks/order.spec.ts")
+    _write(tmp_path, "fixtures/order.json", "{}")
+    _write(tmp_path, "fixtures/unused.json", "{}")
+    bundle = collect({"entrypoint": str(entry), "include": ["fixtures/order.json"]})
+    assert set(bundle.files) == {"checks/order.spec.ts", "fixtures/order.json"}
+    assert bundle.include == ("fixtures/order.json",)
+
+
+def test_in_memory_include_must_name_a_file() -> None:
+    files = {"a.spec.ts": "x", "fixtures/order.json": "{}"}
+    bundle = collect(
+        FilesCode(entrypoint="a.spec.ts", files=files, include=["fixtures/order.json"])
+    )
+    assert bundle.include == ("fixtures/order.json",)
+    with pytest.raises(DevhelmApiError):
+        collect(FilesCode(entrypoint="a.spec.ts", files=files, include=["nope.json"]))
 
 
 def test_setup_file_always_included(tmp_path: Path) -> None:
@@ -275,8 +303,10 @@ def test_setup_file_always_included(tmp_path: Path) -> None:
     entry = _write(tmp_path, "checks/a.spec.ts")
     _write(tmp_path, "checks/auth.setup.ts")
     _write(tmp_path, "checks/other.ts")
+    _write(tmp_path, "other/x.ts")
     bundle = collect({"entrypoint": str(entry), "include": ["nothing/*.ts"]})
-    assert set(bundle.files) == {"checks/a.spec.ts", "checks/auth.setup.ts"}
+    assert "checks/auth.setup.ts" in bundle.files
+    assert "other/x.ts" not in bundle.files
 
 
 def test_custom_setup_file(tmp_path: Path) -> None:

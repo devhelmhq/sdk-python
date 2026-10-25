@@ -40,16 +40,17 @@ if run.outcome == "passed":
 | Form | Example | What is sent |
 |---|---|---|
 | A path | `code="./checks/checkout.spec.ts"` | The entry file's directory, recursively |
-| Entry + include globs | `code={"entrypoint": "checks/checkout.spec.ts", "include": ["checks/**/*.ts", "fixtures/*.json"]}` | The files the globs match, plus the entry |
-| In memory | `code={"entrypoint": "a.spec.ts", "files": {"a.spec.ts": src, "data.json": raw}}` | Exactly those files; nothing is read from disk |
+| Entry + include globs | `code={"entrypoint": "checks/checkout.spec.ts", "include": ["fixtures/order.json"]}` | The entry file's directory, plus the files the globs match (fixtures, data nothing imports) |
+| In memory | `code={"entrypoint": "a.spec.ts", "files": {"a.spec.ts": src, "data.json": raw}, "include": ["data.json"]}` | Exactly those files; nothing is read from disk |
 
 The SDK does not parse JavaScript and needs no Node: it uploads the file set
 and the server resolves the import closure. The bundle root is `root=` when
 given, else the nearest directory with `.git`, else the entry file's
 directory. The default set leaves out `node_modules/`, `.git/`, `dist/`,
 `build/`, `coverage/`, `*.map`, dotfiles (`.env*` included) and whatever
-`.devhelmignore` (gitignore syntax) matches. `auth.setup.ts` next to the entry
-file is always sent. Symlinks are refused; a set is capped at 256 files and
+`.devhelmignore` (gitignore syntax) matches. `include` names files that must
+ship although nothing imports them; the server keeps them in the closure.
+`auth.setup.ts` next to the entry file is always sent. Symlinks are refused; a set is capped at 256 files and
 5 MB. `devhelm.bundle_digest(files)` computes the same D-12 digest as the
 server and the other SDKs.
 

@@ -216,11 +216,6 @@ def test_code_check_lifecycle(  # noqa: C901 (one journey, read top to bottom)
     devhelm.monitors.delete(created.id)
 
 
-@pytest.mark.xfail(
-    strict=True,
-    reason="API: POST /monitors returns liveRevisionId=null for code monitors; "
-    "GET has it (reported to Wave 0)",
-)
 @pytest.mark.parametrize(("kind", "entry", "src"), CASES)
 def test_create_response_carries_live_revision(
     devhelm: Devhelm, environment: str, kind: str, entry: str, src: str
@@ -282,3 +277,46 @@ def test_async_client_reads(environment: str) -> None:
             assert len(page.data) <= 5
 
     asyncio.run(go())
+
+
+def test_adhoc_code_test_without_a_monitor(devhelm: Devhelm, environment: str) -> None:
+    # W0-3: a validation run of code no monitor has saved yet.
+    code = _code("adhoc.spec.ts", BROWSER_SPEC + f"\n// {secrets.token_hex(4)}\n")
+    run = _run_or_held(
+        lambda: devhelm.monitors.test_adhoc(
+            type="BROWSER", environment=environment, code=code
+        )
+    )
+    if run is not None:
+        _assert_run(run)
+        assert run.source == "remote_validation"
+        assert run.monitor_id is None
+
+
+def test_bundle_vectors_match_server(devhelm: Devhelm) -> None:
+    # E14.1: the server's digests for the conformance vectors' text files
+    # match the vectors (and so the other SDKs).
+    import json
+    from pathlib import Path
+
+    vectors = json.loads(
+        (
+            Path(__file__).parent.parent / "docs/contracts/bundle-vectors.json"
+        ).read_text()
+    )["vectors"]
+    checked = 0
+    for vector in vectors:
+        request, expect = vector["request"], vector["expect"]
+        if (
+            "refusal" in expect
+            or request.get("binaryFiles")
+            or not request.get("entrypoint")
+        ):
+            continue
+        bundle = devhelm.bundles.create(
+            FilesCode(entrypoint=request["entrypoint"], files=request["files"])
+        )
+        assert bundle.upload_digest == expect["uploadDigest"], vector["name"]
+        assert bundle.digest == expect["digest"], vector["name"]
+        checked += 1
+    assert checked

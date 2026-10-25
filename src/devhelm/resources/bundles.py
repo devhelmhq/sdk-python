@@ -22,7 +22,7 @@ from devhelm._generated import (
     MonitorCodeSpec,
 )
 from devhelm._sync.transport import Client, api_post, api_post_bytes, as_transport
-from devhelm._validation import parse_single
+from devhelm._validation import RequestValue, parse_single, validate_request
 
 _PATH = "/api/v1/bundles"
 
@@ -33,9 +33,15 @@ def upload_collected(
     """``POST /bundles`` as JSON when every file is UTF-8 text, else as a zip."""
     text = bundle.as_text()
     if text is not None:
-        body = CreateBundleRequest(
-            files=text, entrypoint=bundle.entrypoint, runtime_id=runtime_id
-        )
+        fields: dict[str, RequestValue] = {
+            "files": text,
+            "entrypoint": bundle.entrypoint,
+            "runtimeId": runtime_id,
+        }
+        if bundle.include and "include" in CreateBundleRequest.model_fields:
+            # Files nothing imports that the closure must keep (W0-13).
+            fields["include"] = list(bundle.include)
+        body = validate_request(CreateBundleRequest, fields, "bundles.create")
         raw = api_post(client, _PATH, body)
     else:
         raw = api_post_bytes(

@@ -18,6 +18,8 @@ asyncio client, and typed errors per category.
   D-12 digest (`BUNDLE_DIGEST_MISMATCH` otherwise) and lets the server
   resolve the import closure. No Node, no JavaScript parsing.
   `devhelm.bundle_digest(files)` exposes the digest.
+- `include` adds files nothing imports (fixtures, data) to the default set
+  and names them to the server so the closure keeps them.
 - `environment=` (slug or id) on create, update, restore, `test_adhoc`,
   `monitors.list` and `secrets.list`.
 - Monitors: `test` (validation run), `probe` (uptime result), `test_adhoc`,
@@ -62,6 +64,10 @@ asyncio client, and typed errors per category.
 - Free-form JSON fields (`capturePolicySnapshot`, `details`, …) are typed
   `JsonValue` instead of `dict[str, dict[str, Any]]`, which also fixes
   decoding scalar values in them.
+- Regenerated from the Wave 0 spec: `RunDto.flaky`, nullable
+  `RunDto.monitorId`, owner `GIT`. Run list, cases, console and network
+  filters are generated `*Params` models built from the operations' query
+  parameters (`scripts/query_models.py`).
 - The offset-page envelope (`TableValueResult`) is sealed again: an unknown
   top-level key raises.
 

@@ -10,7 +10,7 @@ from dataclasses import dataclass
 from pathlib import Path
 from typing import TypedDict, final
 
-from typing_extensions import NotRequired
+from typing_extensions import NotRequired, TypeGuard
 
 from devhelm._bundle.digest import bundle_digest, normalize_path, path_error
 from devhelm._bundle.ignore import IgnoreRules
@@ -30,7 +30,8 @@ DEFAULT_SETUP_FILE = "auth.setup.ts"
 
 @final
 class IncludeCode(TypedDict):
-    """``code`` as an entry file plus include globs relative to the root."""
+    """``code`` as an entry file plus ``include`` globs (relative to the root)
+    for files that must ship although nothing imports them (fixtures, data)."""
 
     entrypoint: str
     include: NotRequired[list[str]]
@@ -38,10 +39,14 @@ class IncludeCode(TypedDict):
 
 @final
 class FilesCode(TypedDict):
-    """``code`` held in memory: bundle-relative paths to file contents."""
+    """``code`` held in memory: bundle-relative paths to file contents.
+
+    ``include`` names files among ``files`` that must ship although nothing
+    imports them."""
 
     entrypoint: str
     files: Mapping[str, str | bytes]
+    include: NotRequired[list[str]]
 
 
 CodeInput = str | os.PathLike[str] | IncludeCode | FilesCode
@@ -56,6 +61,8 @@ class CollectedBundle:
     digest: str
     root: Path | None
     source: CodeSource | None
+    # Paths the server keeps although nothing imports them (``include``).
+    include: tuple[str, ...] = ()
 
     @property
     def size(self) -> int:
@@ -96,8 +103,7 @@ def check_limits(files: Mapping[str, bytes]) -> None:
         "validation",
         "BUNDLE_TOO_LARGE",
         f"Bundle has {len(files)} files and {total} bytes; the limit is "
-        f"{MAX_FILES} files and {MAX_BYTES} bytes. Narrow it with include= or "
-        ".devhelmignore.",
+        f"{MAX_FILES} files and {MAX_BYTES} bytes. Narrow it with .devhelmignore.",
         details={
             "files": len(files),
             "bytes": total,
@@ -121,6 +127,15 @@ def from_memory(code: FilesCode) -> CollectedBundle:
             f"entrypoint {entrypoint} is not one of the files",
             field="code.entrypoint",
         )
+    include = tuple(normalize_path(p) for p in code.get("include", []))
+    unknown = [p for p in include if p not in files]
+    if unknown:
+        raise client_error(
+            "validation",
+            "MONITOR_PACKAGE_PATH_INVALID",
+            f"include names {unknown[0]}, which is not one of the files",
+            field="code.include",
+        )
     check_limits(files)
     return CollectedBundle(
         entrypoint=entrypoint,
@@ -128,6 +143,7 @@ def from_memory(code: FilesCode) -> CollectedBundle:
         digest=bundle_digest(files),
         root=None,
         source=None,
+        include=include,
     )
 
 
@@ -155,10 +171,10 @@ def from_disk(
     ignore = IgnoreRules.load(
         root, [d for d in reversed(chain) if d.is_relative_to(root)]
     )
-    if include:
-        selected = include_files(root, include, ignore)
-    else:
-        selected = set(walk(entry.parent, root, ignore))
+    # The default set always ships; ``include`` adds files nothing imports.
+    selected = set(walk(entry.parent, root, ignore))
+    included = include_files(root, include, ignore) if include else set()
+    selected |= included
     selected.add(entry)
     setup = entry.parent / (setup_file or DEFAULT_SETUP_FILE)
     if setup.is_file():
@@ -177,6 +193,7 @@ def from_disk(
         digest=bundle_digest(files),
         root=root,
         source=detect_source(entry, root),
+        include=tuple(sorted(normalize_path(rel(p, root)) for p in included)),
     )
 
 
@@ -187,8 +204,12 @@ def collect(
     setup_file: str | None = None,
 ) -> CollectedBundle:
     """Resolve ``code`` to the files to upload. Reads the disk, never the network."""
-    if isinstance(code, dict):
-        if "files" in code:
-            return from_memory(code)
-        return from_disk(code["entrypoint"], code.get("include"), root, setup_file)
-    return from_disk(code, None, root, setup_file)
+    if not isinstance(code, dict):
+        return from_disk(code, None, root, setup_file)
+    if _in_memory(code):
+        return from_memory(code)
+    return from_disk(code["entrypoint"], code.get("include"), root, setup_file)
+
+
+def _in_memory(code: IncludeCode | FilesCode) -> TypeGuard[FilesCode]:
+    return "files" in code
