@@ -1,4 +1,4 @@
-.PHONY: build test lint lint-fix typecheck typegen clean release help
+.PHONY: build test lint lint-fix typecheck typegen unasync clean release help
 
 build:  ## Build the package
 	uv run python -m build
@@ -6,9 +6,10 @@ build:  ## Build the package
 test:  ## Run unit tests
 	uv run pytest
 
-lint:  ## Run ruff linter + formatter check
+lint:  ## Run ruff linter + formatter check, and check the sync client is fresh
 	uv run ruff check src/ tests/
 	uv run ruff format --check src/ tests/
+	uv run python scripts/unasync.py --check
 
 lint-fix:  ## Auto-fix lint and format issues
 	uv run ruff check --fix src/ tests/
@@ -16,6 +17,9 @@ lint-fix:  ## Auto-fix lint and format issues
 
 typecheck:  ## Run mypy strict type checking
 	uv run mypy src/
+
+unasync:  ## Regenerate the sync client from src/devhelm/_async
+	uv run python scripts/unasync.py
 
 typegen:  ## Regenerate Pydantic models from OpenAPI spec
 	./scripts/typegen.sh

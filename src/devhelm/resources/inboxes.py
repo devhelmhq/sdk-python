@@ -1,3 +1,5 @@
+# Generated from src/devhelm/_async/resources/inboxes.py by scripts/unasync.py.
+# Do not edit: change the async source and run `make unasync`.
 """Inbound HTTP capture inboxes.
 
 ``client.webhooks`` stays outbound alert delivery. ``client.inboxes`` is the
@@ -8,33 +10,39 @@ from __future__ import annotations
 
 import builtins
 import json
+from collections.abc import Mapping
 from dataclasses import dataclass
 from datetime import datetime
 from pathlib import Path
 from uuid import UUID
 
-import httpx
+from pydantic import JsonValue
 
 from devhelm._errors import DevhelmValidationError
 from devhelm._generated import (
     CreateWebhookInboxRequest,
     InboundWebhookHttpResponse,
+    InboundWebhookHttpResponsePatch,
     UpdateWebhookInboxRequest,
     WaitHttpMatchers,
     WaitWebhookEventRequest,
     WebhookEventDto,
     WebhookInboxDto,
 )
-from devhelm._http import api_delete, api_get, api_patch, api_post, path_param
-from devhelm._pagination import (
-    CursorPage,
-    Page,
-    fetch_all_pages,
-    fetch_cursor_page,
-    fetch_page,
+from devhelm._pages import CursorPage, Page
+from devhelm._sync.pagination import fetch_all_pages, fetch_cursor_page, fetch_page
+from devhelm._sync.transport import (
+    Client,
+    api_delete,
+    api_get,
+    api_patch,
+    api_post,
+    as_transport,
 )
+from devhelm._transport import path_param
 from devhelm._validation import (
     RequestBody,
+    RequestValue,
     parse_keyed_envelope,
     parse_single,
     validate_request,
@@ -214,11 +222,11 @@ class Event(ListedEvent):
             raise DevhelmValidationError("Event body is not on this response")
         return self.body
 
-    def json(self) -> object:
+    def json(self) -> JsonValue:
         """Parse the captured body as JSON."""
         raw = self.text()
         try:
-            parsed: object = json.loads(raw)
+            parsed: JsonValue = json.loads(raw)
         except json.JSONDecodeError as exc:
             raise DevhelmValidationError("Event body is not JSON") from exc
         return parsed
@@ -267,8 +275,8 @@ class Inbox:
 class Inboxes:
     """Create capture URLs and wait for the requests sent to them."""
 
-    def __init__(self, client: httpx.Client) -> None:
-        self._client = client
+    def __init__(self, client: Client) -> None:
+        self._client = as_transport(client)
 
     def list(self, *, search: str | None = None) -> list[Inbox]:
         rows = fetch_all_pages(
@@ -317,12 +325,14 @@ class Inboxes:
         *,
         name: str,
         status: str | None = None,
-        http_response: object | None = None,
+        http_response: InboundWebhookHttpResponsePatch
+        | Mapping[str, RequestValue]
+        | None = None,
         cors: bool | None = None,
         retention_days: int | None = None,
         max_events: int | None = None,
     ) -> Inbox:
-        raw: dict[str, object] = {"name": name}
+        raw: dict[str, RequestValue] = {"name": name}
         if status is not None:
             raw["status"] = status
         if http_response is not None:
@@ -365,7 +375,7 @@ class Inboxes:
             if http is None
             else validate_request(WaitHttpMatchers, http, "inboxes.wait")
         )
-        fields: dict[str, object] = {"timeoutMs": timeout_ms}
+        fields: dict[str, RequestValue] = {"timeoutMs": timeout_ms}
         if received_after is not None:
             fields["receivedAfter"] = received_after
         if matchers is not None:

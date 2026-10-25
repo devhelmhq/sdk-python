@@ -1,3 +1,5 @@
+# Generated from src/devhelm/_async/resources/services.py by scripts/unasync.py.
+# Do not edit: change the async source and run `make unasync`.
 """Status Data catalog: third-party service status, components, incidents,
 uptime, and maintenances.
 
@@ -13,7 +15,6 @@ import builtins
 from datetime import date, datetime
 from typing import TypeVar
 
-import httpx
 from pydantic import BaseModel
 
 from devhelm._generated import (
@@ -31,8 +32,10 @@ from devhelm._generated import (
     ServiceLiveStatusDto,
     ServiceUptimeResponse,
 )
-from devhelm._http import api_get, path_param
-from devhelm._pagination import CursorPage, Page, _validate_page, fetch_cursor_page
+from devhelm._pages import CursorPage, Page, _validate_page
+from devhelm._sync.pagination import fetch_cursor_page
+from devhelm._sync.transport import Client, api_get, as_transport
+from devhelm._transport import path_param
 from devhelm._validation import parse_list, parse_single
 
 M = TypeVar("M", bound=BaseModel)
@@ -81,8 +84,8 @@ def _service_path(slug_or_id: str) -> str:
 class Services:
     """Status Data catalog: vendor services, components, incidents, uptime."""
 
-    def __init__(self, client: httpx.Client) -> None:
-        self._client = client
+    def __init__(self, client: Client) -> None:
+        self._client = as_transport(client)
 
     def _fetch_table(
         self, path: str, model_class: type[M], params: _ParamDict | None = None

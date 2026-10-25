@@ -1,3 +1,5 @@
+# Generated from src/devhelm/_async/resources/signed_download.py by scripts/unasync.py.
+# Do not edit: change the async source and run `make unasync`.
 """Download helpers for short-lived signed object URLs."""
 
 from __future__ import annotations
@@ -8,7 +10,7 @@ import httpx
 
 from devhelm._errors import DevhelmTransportError
 from devhelm._generated import SignedDownload
-from devhelm._http import api_get
+from devhelm._sync.transport import Client, api_get
 from devhelm._validation import parse_single
 
 WAIT_SLACK_SECONDS = 10.0
@@ -20,15 +22,17 @@ def wait_timeout_seconds(timeout_ms: int) -> float:
     return timeout_ms / 1000 + WAIT_SLACK_SECONDS
 
 
-def fetch_signed(client: httpx.Client, path: str) -> tuple[SignedDownload, bytes]:
+def fetch_signed(client: Client, path: str) -> tuple[SignedDownload, bytes]:
     """GET a signed-download envelope, then fetch the URL with no API token."""
     signed = parse_single(SignedDownload, api_get(client, path), f"GET {path}")
     return signed, read_signed_url(signed.url)
 
 
 def read_signed_url(url: str) -> bytes:
+    """Fetch a signed URL without the API token (the URL carries its own grant)."""
     try:
-        response = httpx.get(url, timeout=60.0, follow_redirects=True)
+        with httpx.Client(timeout=60.0, follow_redirects=True) as http:
+            response = http.get(url)
     except httpx.HTTPError as exc:
         raise DevhelmTransportError(f"{type(exc).__name__}: {exc}", cause=exc) from exc
     if response.is_error:

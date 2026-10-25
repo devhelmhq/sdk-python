@@ -1,3 +1,5 @@
+# Generated from src/devhelm/_async/resources/forensics.py by scripts/unasync.py.
+# Do not edit: change the async source and run `make unasync`.
 """Forensic read-only endpoints: incident timelines, check traces, policy
 snapshots, rule evaluations, and state transitions.
 
@@ -12,7 +14,6 @@ from __future__ import annotations
 from datetime import datetime
 from typing import TypeVar
 
-import httpx
 from pydantic import BaseModel
 
 from devhelm._generated import (
@@ -22,8 +23,9 @@ from devhelm._generated import (
     PolicySnapshotDto,
     RuleEvaluationDto,
 )
-from devhelm._http import api_get, path_param
-from devhelm._pagination import Page, _validate_page
+from devhelm._pages import Page, _validate_page
+from devhelm._sync.transport import Client, api_get, as_transport
+from devhelm._transport import path_param
 from devhelm._validation import parse_list, parse_single
 
 M = TypeVar("M", bound=BaseModel)
@@ -45,8 +47,8 @@ def _format_instant(value: datetime | str | None) -> str | None:
 class Forensics:
     """Read-only forensic endpoints for detection audit trails."""
 
-    def __init__(self, client: httpx.Client) -> None:
-        self._client = client
+    def __init__(self, client: Client) -> None:
+        self._client = as_transport(client)
 
     def incident_timeline(self, id: int | str) -> IncidentTimelineDto:
         """Full reconstructed timeline for an incident: state transitions,

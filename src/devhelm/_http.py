@@ -1,39 +1,83 @@
+"""Client configuration: credentials, base URL, tenant and surface headers.
+
+Resolution order (doc 42 §5.2):
+
+* token: explicit option → ``DEVHELM_API_TOKEN`` → the CLI's current context
+  in ``~/.devhelm/contexts.json``. No token is a client-side
+  ``ValidationError`` with code ``NO_TOKEN``.
+* base URL: explicit option → ``DEVHELM_API_URL`` → the CLI context's URL
+  (when the token came from it) → ``https://api.devhelm.io``.
+* ``x-phelm-org-id`` / ``x-phelm-workspace-id``: explicit options →
+  ``DEVHELM_ORG_ID`` / ``DEVHELM_WORKSPACE_ID``.
+
+Every request also carries ``X-DevHelm-Client: <surface>/<version>``
+(``sdk-python/1.13.0``; wrappers such as the MCP server pass their own
+surface), which the API records as the revision's ``createdByKind``.
+
+The ``api_*`` helpers here are the blocking request functions from
+``devhelm._sync.transport``, kept importable from this module.
+"""
+
 from __future__ import annotations
 
+import json
 import os
 from dataclasses import dataclass, field
 from importlib.metadata import PackageNotFoundError
 from importlib.metadata import version as _pkg_version
-from typing import Any
-from urllib.parse import quote
+from pathlib import Path
 
 import httpx
-from pydantic import BaseModel
 
-from devhelm._errors import (
-    DevhelmTransportError,
-    DevhelmValidationError,
-    error_from_response,
+from devhelm._errors import client_error
+from devhelm._sync.transport import (
+    Transport,
+    api_delete,
+    api_get,
+    api_post,
+    api_post_with_status,
+    api_put,
+)
+from devhelm._sync.transport import api_patch as api_patch
+from devhelm._transport import (
+    CLIENT_HEADER,
+    JsonResponse,
+    checked_json,
+    decode_body,
+    path_param,
+    serialize_body,
 )
 
 DEFAULT_BASE_URL = "https://api.devhelm.io"
 DEFAULT_PAGE_SIZE = 200
 
-# Default surface identifier sent on every authenticated request. Wrappers
-# (e.g. the MCP server) override this at construction time so the API can
-# attribute usage to the right devtool. See ``DevhelmConfig.surface``.
+# Default surface identifier for the telemetry headers. Wrappers (the MCP
+# server) override it at construction time.
 DEFAULT_SURFACE = "sdk-py"
+# ``X-DevHelm-Client`` names surfaces as doc 42 §5.2 lists them.
+CLIENT_NAMES = {"sdk-py": "sdk-python"}
+
+__all__ = [
+    "DEFAULT_BASE_URL",
+    "DEFAULT_PAGE_SIZE",
+    "DEFAULT_SURFACE",
+    "DevhelmConfig",
+    "Transport",
+    "api_delete",
+    "api_get",
+    "api_patch",
+    "api_post",
+    "api_post_with_status",
+    "api_put",
+    "build_async_client",
+    "build_client",
+    "checked_fetch",
+    "path_param",
+]
 
 
 def _sdk_version() -> str:
-    """Resolve the installed package version once at import time.
-
-    Uses ``importlib.metadata`` instead of hardcoding so a single source of
-    truth (``pyproject.toml``) flows through to the wire telemetry header.
-    Falls back to ``"unknown"`` for editable / source-tree installs that
-    don't yet have a dist-info directory; the API treats that as "no version
-    reported" rather than rejecting the request.
-    """
+    """The installed package version (``unknown`` for a source tree)."""
     try:
         return _pkg_version("devhelm")
     except PackageNotFoundError:
@@ -45,55 +89,83 @@ class DevhelmConfig:
     """Configuration for the DevHelm API client."""
 
     token: str
-    base_url: str = DEFAULT_BASE_URL
+    base_url: str | None = None
     org_id: str | None = None
     workspace_id: str | None = None
     timeout: float = 30.0
-    # Devtool surface identifier reported to the API for adoption and
-    # version-distribution telemetry. Defaults to ``"sdk-py"``; wrappers
-    # such as the MCP server pass ``"mcp"`` instead so their traffic is
-    # attributed correctly. See https://devhelm.io/telemetry for the full
-    # contract and opt-out semantics.
+    # Devtool surface identifier reported to the API. Defaults to
+    # ``"sdk-py"``; wrappers such as the MCP server pass ``"mcp"``.
     surface: str = DEFAULT_SURFACE
-    # Surface version. Defaults to the installed ``devhelm`` package
-    # version; wrappers should pass their own package version.
+    # Surface version. Defaults to the installed ``devhelm`` version.
     surface_version: str | None = None
-    # Surface-specific metadata forwarded as ``X-DevHelm-*`` headers (e.g.
-    # the MCP server attaches ``mcp_client``). Keys are normalised to
-    # lower-kebab-case and mapped onto ``X-DevHelm-<key>`` on the wire.
+    # Surface-specific metadata forwarded as ``X-DevHelm-<key>`` headers.
     surface_metadata: dict[str, str] = field(default_factory=dict)
 
 
-def _resolve(value: str | None, env_key: str, label: str) -> str:
-    result = value or os.environ.get(env_key)
-    if not result:
-        raise DevhelmValidationError(
-            f"{label} is required. Pass it to Devhelm() or set {env_key}."
+@dataclass(frozen=True)
+class _CliContext:
+    token: str
+    api_url: str
+
+
+def _cli_context() -> _CliContext | None:
+    """The CLI's current context from ``~/.devhelm/contexts.json``, if any.
+
+    Read-only and best effort: a missing or malformed file means no context.
+    """
+    path = Path.home() / ".devhelm" / "contexts.json"
+    try:
+        raw = json.loads(path.read_text())
+    except (OSError, ValueError):
+        return None
+    if not isinstance(raw, dict):
+        return None
+    contexts = raw.get("contexts")
+    current = raw.get("current")
+    if not isinstance(contexts, dict) or not isinstance(current, str):
+        return None
+    ctx = contexts.get(current)
+    if not isinstance(ctx, dict):
+        return None
+    token = ctx.get("token")
+    api_url = ctx.get("apiUrl")
+    if not isinstance(token, str) or not token:
+        return None
+    return _CliContext(token=token, api_url=api_url if isinstance(api_url, str) else "")
+
+
+def resolve_credentials(config: DevhelmConfig) -> tuple[str, str]:
+    """Return ``(token, base_url)`` per the resolution order above."""
+    token = config.token or os.environ.get("DEVHELM_API_TOKEN") or ""
+    context = None if token else _cli_context()
+    if context is not None:
+        token = context.token
+    if not token:
+        raise client_error(
+            "validation",
+            "NO_TOKEN",
+            "No API token. Pass token= to Devhelm(), set DEVHELM_API_TOKEN, "
+            "or run `devhelm auth login`.",
+            next_command="devhelm auth login",
         )
-    return result
-
-
-def _resolve_optional(value: str | None, env_key: str, default: str) -> str:
-    return value or os.environ.get(env_key) or default
+    base_url = (
+        config.base_url
+        or os.environ.get("DEVHELM_API_URL")
+        or (context.api_url if context is not None else "")
+        or DEFAULT_BASE_URL
+    )
+    return token, base_url.rstrip("/")
 
 
 def _telemetry_headers(config: DevhelmConfig) -> dict[str, str]:
-    """Build the ``X-DevHelm-Surface*`` headers for one client instance.
-
-    Returns an empty dict when ``DEVHELM_TELEMETRY=0`` so the API receives
-    no surface signal at all. The opt-out is intentionally a single env var
-    rather than a constructor flag — users opt out once for the whole
-    process, not per call site. See https://devhelm.io/telemetry.
-    """
+    """``X-DevHelm-Surface*`` headers; none when ``DEVHELM_TELEMETRY=0``."""
     if os.environ.get("DEVHELM_TELEMETRY", "").strip() == "0":
         return {}
     headers: dict[str, str] = {
         "X-DevHelm-Surface": config.surface,
         "X-DevHelm-Surface-Version": config.surface_version or _sdk_version(),
-        # Always identify the underlying SDK so the API can distinguish
-        # "raw SDK call" from "wrapper-on-top-of-SDK call" (the latter
-        # overrides ``Surface`` to e.g. ``mcp`` but the SDK fingerprint
-        # stays available for debugging client-version skew).
+        # Always identify the underlying SDK so the API can tell a raw SDK
+        # call from a wrapper built on it.
         "X-DevHelm-Sdk-Name": "sdk-py",
     }
     for key, value in config.surface_metadata.items():
@@ -101,175 +173,45 @@ def _telemetry_headers(config: DevhelmConfig) -> dict[str, str]:
     return headers
 
 
-def build_client(config: DevhelmConfig) -> httpx.Client:
-    """Create a configured httpx.Client with auth and tenant headers."""
-    base_url = config.base_url.rstrip("/")
-    token = _resolve(config.token, "DEVHELM_API_TOKEN", "token")
-    org_id = _resolve_optional(config.org_id, "DEVHELM_ORG_ID", "1")
-    workspace_id = config.workspace_id or os.environ.get("DEVHELM_WORKSPACE_ID") or None
+def client_header(config: DevhelmConfig) -> str:
+    """``X-DevHelm-Client`` value: ``sdk-python/<version>`` or the wrapper's."""
+    name = CLIENT_NAMES.get(config.surface, config.surface)
+    return f"{name}/{config.surface_version or _sdk_version()}"
+
+
+def _headers(config: DevhelmConfig, token: str) -> dict[str, str]:
+    org_id = config.org_id or os.environ.get("DEVHELM_ORG_ID") or "1"
+    workspace_id = config.workspace_id or os.environ.get("DEVHELM_WORKSPACE_ID")
     headers = {
         "Authorization": f"Bearer {token}",
         "Content-Type": "application/json",
         "x-phelm-org-id": org_id,
+        CLIENT_HEADER: client_header(config),
         **_telemetry_headers(config),
     }
     if workspace_id:
         headers["x-phelm-workspace-id"] = workspace_id
-
-    return httpx.Client(base_url=base_url, headers=headers, timeout=config.timeout)
-
-
-def path_param(value: str | int) -> str:
-    """URL-encode a path parameter."""
-    return quote(str(value), safe="")
+    return headers
 
 
-_JsonResponse = dict[str, object] | list[object] | None
-
-
-def _serialize_body(
-    body: BaseModel | dict[str, object] | None,
-) -> dict[str, object] | None:
-    """Convert a Pydantic model to a JSON-serializable dict.
-
-    Rejects raw dicts to prevent callers from bypassing Pydantic
-    validation. All request bodies must be validated model instances.
-    """
-    if isinstance(body, BaseModel):
-        return body.model_dump(mode="json", by_alias=True, exclude_none=True)
-    if isinstance(body, dict):
-        raise DevhelmValidationError(
-            "Raw dicts are not accepted as request bodies. "
-            "Use the generated Pydantic model instead."
-        )
-    return body
-
-
-def _decode_body(response: httpx.Response) -> _JsonResponse:
-    """Narrow ``httpx.Response.json()`` (typed `Any`) into the SDK's
-    declared `_JsonResponse` shape at a single boundary.
-
-    httpx never types its decoded body, so without this funnel every caller
-    site would have to suppress mypy's no-any-return diagnostic. Centralising
-    the narrowing lets the rest of the SDK keep mypy clean (P5: zero casts
-    outside generated files) while preserving honest semantics — a non-JSON
-    body still raises through `httpx`/`json` rather than being silently
-    re-typed.
-    """
-    body = response.json()
-    if body is None or isinstance(body, (dict, list)):
-        return body
-    # The API contract is "JSON object, JSON array, or empty body". Anything
-    # else (a bare scalar) is a server-side bug we want to surface loudly,
-    # not silently reshape into an unknown.
-    raise DevhelmValidationError(
-        "Expected a JSON object, JSON array, or empty body from the server, "
-        f"got {type(body).__name__}."
+def build_client(config: DevhelmConfig) -> httpx.Client:
+    """Create a configured ``httpx.Client`` with auth and tenant headers."""
+    token, base_url = resolve_credentials(config)
+    return httpx.Client(
+        base_url=base_url, headers=_headers(config, token), timeout=config.timeout
     )
 
 
-def checked_fetch(response: httpx.Response) -> _JsonResponse:
-    """Check an httpx response and raise a typed DevhelmApiError on failure."""
-    if response.is_success:
-        if response.status_code == 204:
-            return None
-        return _decode_body(response)
-    raise error_from_response(
-        response.status_code,
-        response.text,
-        request_id=response.headers.get("x-request-id"),
-        retry_after=response.headers.get("retry-after"),
+def build_async_client(config: DevhelmConfig) -> httpx.AsyncClient:
+    """Create a configured ``httpx.AsyncClient`` with auth and tenant headers."""
+    token, base_url = resolve_credentials(config)
+    return httpx.AsyncClient(
+        base_url=base_url, headers=_headers(config, token), timeout=config.timeout
     )
 
 
-# ---------------------------------------------------------------------------
-# Transport-error wrapping
-# ---------------------------------------------------------------------------
-
-
-def _wrap_transport_errors(send: Any) -> httpx.Response:
-    """Run ``send()`` and translate httpx transport failures into
-    `DevhelmTransportError`, preserving ``__cause__``.
-
-    httpx-level exceptions that indicate the request never reached the server
-    (or the server's response never reached us) are wrapped here. We let
-    `httpx.HTTPStatusError`-style failures fall through unchanged because
-    those should not occur — `checked_fetch` reads `response.is_success`
-    explicitly rather than calling `.raise_for_status()`.
-    """
-    try:
-        result = send()
-    except httpx.HTTPError as exc:
-        raise DevhelmTransportError(f"{type(exc).__name__}: {exc}", cause=exc) from exc
-    if not isinstance(result, httpx.Response):
-        # Defensive: every httpx.Client.{get,post,...} returns httpx.Response.
-        # Anyone who feeds `_wrap_transport_errors` a callable that returns
-        # something else has a bug we want to surface immediately, not bury.
-        raise TypeError(
-            f"Expected httpx.Response from transport call, got {type(result).__name__}"
-        )
-    return result
-
-
-def api_get(
-    client: httpx.Client, path: str, params: dict[str, Any] | None = None
-) -> _JsonResponse:
-    return checked_fetch(
-        _wrap_transport_errors(lambda: client.get(path, params=params))
-    )
-
-
-def api_post(
-    client: httpx.Client,
-    path: str,
-    body: BaseModel | dict[str, object] | None = None,
-    *,
-    timeout: float | None = None,
-) -> _JsonResponse:
-    if body is None:
-        send = (
-            (lambda: client.post(path))
-            if timeout is None
-            else (lambda: client.post(path, timeout=timeout))
-        )
-        return checked_fetch(_wrap_transport_errors(send))
-    payload = _serialize_body(body)
-    send = (
-        (lambda: client.post(path, json=payload))
-        if timeout is None
-        else (lambda: client.post(path, json=payload, timeout=timeout))
-    )
-    return checked_fetch(_wrap_transport_errors(send))
-
-
-def api_post_with_status(
-    client: httpx.Client, path: str, body: BaseModel | None = None
-) -> tuple[int, _JsonResponse]:
-    """POST that also returns the success status code, for endpoints whose
-    success body depends on it (e.g. 200 vs 202)."""
-    if body is None:
-        response = _wrap_transport_errors(lambda: client.post(path))
-    else:
-        payload = _serialize_body(body)
-        response = _wrap_transport_errors(lambda: client.post(path, json=payload))
-    return response.status_code, checked_fetch(response)
-
-
-def api_put(
-    client: httpx.Client, path: str, body: BaseModel | dict[str, object] | None
-) -> _JsonResponse:
-    payload = _serialize_body(body)
-    return checked_fetch(_wrap_transport_errors(lambda: client.put(path, json=payload)))
-
-
-def api_patch(
-    client: httpx.Client, path: str, body: BaseModel | dict[str, object] | None
-) -> _JsonResponse:
-    payload = _serialize_body(body)
-    return checked_fetch(
-        _wrap_transport_errors(lambda: client.patch(path, json=payload))
-    )
-
-
-def api_delete(client: httpx.Client, path: str) -> None:
-    checked_fetch(_wrap_transport_errors(lambda: client.delete(path)))
+# Kept for callers of the pre-transport helpers.
+_JsonResponse = JsonResponse
+_serialize_body = serialize_body
+_decode_body = decode_body
+checked_fetch = checked_json

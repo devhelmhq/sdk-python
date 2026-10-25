@@ -1,0 +1,409 @@
+"""Inbound HTTP capture inboxes.
+
+``client.webhooks`` stays outbound alert delivery. ``client.inboxes`` is the
+capture URL a sender hits, plus ``wait`` for the captured request.
+"""
+
+from __future__ import annotations
+
+import builtins
+import json
+from collections.abc import Mapping
+from dataclasses import dataclass
+from datetime import datetime
+from pathlib import Path
+from uuid import UUID
+
+from pydantic import JsonValue
+
+from devhelm._async.pagination import fetch_all_pages, fetch_cursor_page, fetch_page
+from devhelm._async.resources.signed_download import (
+    DEFAULT_WAIT_MS,
+    fetch_signed,
+    wait_timeout_seconds,
+    write_download,
+)
+from devhelm._async.transport import (
+    Client,
+    api_delete,
+    api_get,
+    api_patch,
+    api_post,
+    as_transport,
+)
+from devhelm._errors import DevhelmValidationError
+from devhelm._generated import (
+    CreateWebhookInboxRequest,
+    InboundWebhookHttpResponse,
+    InboundWebhookHttpResponsePatch,
+    UpdateWebhookInboxRequest,
+    WaitHttpMatchers,
+    WaitWebhookEventRequest,
+    WebhookEventDto,
+    WebhookInboxDto,
+)
+from devhelm._pages import CursorPage, Page
+from devhelm._transport import path_param
+from devhelm._validation import (
+    RequestBody,
+    RequestValue,
+    parse_keyed_envelope,
+    parse_single,
+    validate_request,
+)
+
+BASE = "/api/v1/webhook/inboxes"
+
+
+@dataclass(frozen=True, slots=True)
+class InboxActivityBucket:
+    hour: str
+    event_count: int
+
+
+@dataclass(frozen=True, slots=True)
+class InboxActivity:
+    inbox_id: UUID
+    buckets: list[InboxActivityBucket]
+
+
+def _query(**values: str | None) -> dict[str, str] | None:
+    params: dict[str, str] = {}
+    for key, value in values.items():
+        if value is not None:
+            params[key] = value
+    return params or None
+
+
+def _invalid(context: str) -> DevhelmValidationError:
+    return DevhelmValidationError(f"Invalid activity response from {context}")
+
+
+def _count(value: object, context: str) -> int:
+    if isinstance(value, bool) or not isinstance(value, int):
+        raise _invalid(context)
+    return value
+
+
+def _activity_row(item: object, context: str) -> InboxActivity:
+    if not isinstance(item, dict):
+        raise _invalid(context)
+    inbox_id = item.get("inboxId")
+    buckets = item.get("buckets")
+    if not isinstance(inbox_id, str) or not isinstance(buckets, list):
+        raise _invalid(context)
+    try:
+        parsed_id = UUID(inbox_id)
+    except ValueError as exc:
+        raise DevhelmValidationError(
+            f"Invalid activity response from {context}", cause=exc
+        ) from exc
+    parsed: list[InboxActivityBucket] = []
+    for bucket in buckets:
+        if not isinstance(bucket, dict):
+            raise _invalid(context)
+        hour = bucket.get("hour")
+        if not isinstance(hour, str):
+            raise _invalid(context)
+        parsed.append(
+            InboxActivityBucket(
+                hour=hour, event_count=_count(bucket.get("eventCount"), context)
+            )
+        )
+    return InboxActivity(inbox_id=parsed_id, buckets=parsed)
+
+
+def _read_activity(raw: object, context: str) -> list[InboxActivity]:
+    if not isinstance(raw, dict):
+        raise _invalid(context)
+    data = raw.get("data")
+    if not isinstance(data, list):
+        raise _invalid(context)
+    return [_activity_row(item, context) for item in data]
+
+
+class InboxEvents:
+    """Events stored on one inbox."""
+
+    def __init__(self, inboxes: Inboxes, inbox_id: str) -> None:
+        self._inboxes = inboxes
+        self._inbox_id = inbox_id
+
+    async def list(
+        self,
+        *,
+        cursor: str | None = None,
+        limit: int | None = None,
+        method: str | None = None,
+        path: str | None = None,
+    ) -> CursorPage[ListedEvent]:
+        page = await fetch_cursor_page(
+            self._inboxes._client,
+            f"{BASE}/{path_param(self._inbox_id)}/events",
+            WebhookEventDto,
+            cursor,
+            limit,
+            extra_params=_query(method=method, path=path),
+        )
+        return CursorPage(
+            data=[self._inboxes._bind_listed(self._inbox_id, row) for row in page.data],
+            next_cursor=page.next_cursor,
+            has_more=page.has_more,
+        )
+
+    async def get(self, event_id: str) -> Event:
+        path = f"{BASE}/{path_param(self._inbox_id)}/events/{path_param(event_id)}"
+        row = parse_single(
+            WebhookEventDto, await api_get(self._inboxes._client, path), f"GET {path}"
+        )
+        return self._inboxes._bind_detail(self._inbox_id, row)
+
+    async def delete(self, event_id: str) -> None:
+        await api_delete(
+            self._inboxes._client,
+            f"{BASE}/{path_param(self._inbox_id)}/events/{path_param(event_id)}",
+        )
+
+    async def clear(self) -> None:
+        await api_delete(
+            self._inboxes._client, f"{BASE}/{path_param(self._inbox_id)}/events"
+        )
+
+
+class ListedEvent:
+    """One captured HTTP request. List rows omit the full body."""
+
+    def __init__(self, inboxes: Inboxes, inbox_id: str, dto: WebhookEventDto) -> None:
+        self._inboxes = inboxes
+        self._inbox_id = inbox_id
+        self.id = dto.id
+        self.inbox_id = dto.inbox_id
+        self.received_at = dto.received_at
+        self.size_bytes = dto.size_bytes
+        self.source_ip = dto.source_ip
+        self.headers = dto.headers
+        self.method = dto.method
+        self.path = dto.path
+        self.query = dto.query
+        self.url = dto.url
+        self.host = dto.host
+        self.body_preview = dto.body_preview
+        self.body = dto.body
+        self.sha256 = dto.sha256
+
+    async def raw(self) -> bytes:
+        """Download the captured request body."""
+        _signed, data = await fetch_signed(self._inboxes._client, self._raw_path())
+        return data
+
+    async def save(self, path: str | Path) -> Path:
+        """Write the captured body. A directory path uses the signed filename."""
+        signed, data = await fetch_signed(self._inboxes._client, self._raw_path())
+        return write_download(data, signed.filename, path)
+
+    async def delete(self) -> None:
+        await api_delete(
+            self._inboxes._client,
+            f"{BASE}/{path_param(self._inbox_id)}/events/{path_param(str(self.id))}",
+        )
+
+    def _raw_path(self) -> str:
+        return (
+            f"{BASE}/{path_param(self._inbox_id)}/events/{path_param(str(self.id))}/raw"
+        )
+
+
+class Event(ListedEvent):
+    """A single captured request, including the full UTF-8 body."""
+
+    def text(self) -> str:
+        """Return the captured body. Signature checks use this string."""
+        if self.body is None:
+            raise DevhelmValidationError("Event body is not on this response")
+        return self.body
+
+    def json(self) -> JsonValue:
+        """Parse the captured body as JSON."""
+        raw = self.text()
+        try:
+            parsed: JsonValue = json.loads(raw)
+        except json.JSONDecodeError as exc:
+            raise DevhelmValidationError("Event body is not JSON") from exc
+        return parsed
+
+
+class Inbox:
+    """A capture URL and the calls that use it."""
+
+    def __init__(self, inboxes: Inboxes, dto: WebhookInboxDto) -> None:
+        self._inboxes = inboxes
+        self.id: UUID = dto.id
+        self.workspace_id = dto.workspace_id
+        self.name = dto.name
+        self.status = dto.status
+        self.public_token = dto.public_token
+        self.http_url = dto.http_url
+        self.http_response: InboundWebhookHttpResponse = dto.http_response
+        self.cors = dto.cors
+        self.retention_days = dto.retention_days
+        self.max_events = dto.max_events
+        self.created_at = dto.created_at
+        self.updated_at = dto.updated_at
+        self.events = InboxEvents(inboxes, str(dto.id))
+
+    async def wait(
+        self,
+        *,
+        timeout_ms: int = DEFAULT_WAIT_MS,
+        received_after: datetime | None = None,
+        http: RequestBody[WaitHttpMatchers] | None = None,
+    ) -> Event:
+        return await self._inboxes.wait(
+            str(self.id),
+            timeout_ms=timeout_ms,
+            received_after=received_after,
+            http=http,
+        )
+
+    async def update(self, body: RequestBody[UpdateWebhookInboxRequest]) -> Inbox:
+        return await self._inboxes.update(str(self.id), body)
+
+    async def delete(self) -> None:
+        await self._inboxes.delete(str(self.id))
+
+
+class Inboxes:
+    """Create capture URLs and wait for the requests sent to them."""
+
+    def __init__(self, client: Client) -> None:
+        self._client = as_transport(client)
+
+    async def list(self, *, search: str | None = None) -> list[Inbox]:
+        rows = await fetch_all_pages(
+            self._client, BASE, WebhookInboxDto, extra_params=_query(search=search)
+        )
+        return [self._bind(row) for row in rows]
+
+    async def list_page(
+        self, page: int, size: int, *, search: str | None = None
+    ) -> Page[Inbox]:
+        result = await fetch_page(
+            self._client,
+            BASE,
+            WebhookInboxDto,
+            page,
+            size,
+            extra_params=_query(search=search),
+        )
+        return Page(
+            data=[self._bind(row) for row in result.data],
+            has_next=result.has_next,
+            has_prev=result.has_prev,
+            total_elements=result.total_elements,
+            total_pages=result.total_pages,
+            next_cursor=result.next_cursor,
+        )
+
+    async def activity(
+        self, inbox_ids: builtins.list[str]
+    ) -> builtins.list[InboxActivity]:
+        """Last-24h request counts. An empty id list does not call the API."""
+        if not inbox_ids:
+            return []
+        path = f"{BASE}/activity"
+        return _read_activity(
+            await api_get(self._client, path, params={"inboxIds": ",".join(inbox_ids)}),
+            f"GET {path}",
+        )
+
+    async def get(self, id: str) -> Inbox:
+        path = f"{BASE}/{path_param(id)}"
+        return self._bind(
+            parse_single(
+                WebhookInboxDto, await api_get(self._client, path), f"GET {path}"
+            )
+        )
+
+    async def create(
+        self,
+        *,
+        name: str,
+        status: str | None = None,
+        http_response: InboundWebhookHttpResponsePatch
+        | Mapping[str, RequestValue]
+        | None = None,
+        cors: bool | None = None,
+        retention_days: int | None = None,
+        max_events: int | None = None,
+    ) -> Inbox:
+        raw: dict[str, RequestValue] = {"name": name}
+        if status is not None:
+            raw["status"] = status
+        if http_response is not None:
+            raw["httpResponse"] = http_response
+        if cors is not None:
+            raw["cors"] = cors
+        if retention_days is not None:
+            raw["retentionDays"] = retention_days
+        if max_events is not None:
+            raw["maxEvents"] = max_events
+        body = validate_request(CreateWebhookInboxRequest, raw, "inboxes.create")
+        return self._bind(
+            parse_single(
+                WebhookInboxDto,
+                await api_post(self._client, BASE, body),
+                f"POST {BASE}",
+            )
+        )
+
+    async def update(
+        self, id: str, body: RequestBody[UpdateWebhookInboxRequest]
+    ) -> Inbox:
+        payload = validate_request(UpdateWebhookInboxRequest, body, "inboxes.update")
+        path = f"{BASE}/{path_param(id)}"
+        return self._bind(
+            parse_single(
+                WebhookInboxDto,
+                await api_patch(self._client, path, payload),
+                f"PATCH {path}",
+            )
+        )
+
+    async def delete(self, id: str) -> None:
+        await api_delete(self._client, f"{BASE}/{path_param(id)}")
+
+    async def wait(
+        self,
+        id: str,
+        *,
+        timeout_ms: int = DEFAULT_WAIT_MS,
+        received_after: datetime | None = None,
+        http: RequestBody[WaitHttpMatchers] | None = None,
+    ) -> Event:
+        matchers = (
+            None
+            if http is None
+            else validate_request(WaitHttpMatchers, http, "inboxes.wait")
+        )
+        fields: dict[str, RequestValue] = {"timeoutMs": timeout_ms}
+        if received_after is not None:
+            fields["receivedAfter"] = received_after
+        if matchers is not None:
+            fields["http"] = matchers
+        body = validate_request(WaitWebhookEventRequest, fields, "inboxes.wait")
+        path = f"{BASE}/{path_param(id)}/wait"
+        raw = await api_post(
+            self._client, path, body, timeout=wait_timeout_seconds(timeout_ms)
+        )
+        return self._bind_detail(
+            id, parse_keyed_envelope(WebhookEventDto, raw, "event", f"POST {path}")
+        )
+
+    def _bind(self, dto: WebhookInboxDto) -> Inbox:
+        return Inbox(self, dto)
+
+    def _bind_listed(self, inbox_id: str, dto: WebhookEventDto) -> ListedEvent:
+        return ListedEvent(self, inbox_id, dto)
+
+    def _bind_detail(self, inbox_id: str, dto: WebhookEventDto) -> Event:
+        return Event(self, inbox_id, dto)

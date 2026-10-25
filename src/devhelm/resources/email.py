@@ -1,3 +1,5 @@
+# Generated from src/devhelm/_async/resources/email.py by scripts/unasync.py.
+# Do not edit: change the async source and run `make unasync`.
 """Inbound email capture.
 
 ``address()`` returns a full mailbox. The first call allocates a DevHelm-owned
@@ -14,8 +16,6 @@ from datetime import datetime
 from pathlib import Path
 from uuid import UUID
 
-import httpx
-
 from devhelm._errors import DevhelmValidationError
 from devhelm._generated import (
     CreateEmailDomainRequest,
@@ -30,16 +30,20 @@ from devhelm._generated import (
     UpdateEmailDomainRequest,
     WaitEmailMessageRequest,
 )
-from devhelm._http import api_delete, api_get, api_patch, api_post, path_param
-from devhelm._pagination import (
-    CursorPage,
-    Page,
-    fetch_all_pages,
-    fetch_cursor_page,
-    fetch_page,
+from devhelm._pages import CursorPage, Page
+from devhelm._sync.pagination import fetch_all_pages, fetch_cursor_page, fetch_page
+from devhelm._sync.transport import (
+    Client,
+    api_delete,
+    api_get,
+    api_patch,
+    api_post,
+    as_transport,
 )
+from devhelm._transport import path_param
 from devhelm._validation import (
     RequestBody,
+    RequestValue,
     parse_keyed_envelope,
     parse_single,
     validate_request,
@@ -313,7 +317,7 @@ class Address:
         html: str | None = None,
         headers: dict[str, list[str]] | None = None,
     ) -> InjectEmailMessageResponse:
-        raw: dict[str, object] = {"to": self.email, "from": from_}
+        raw: dict[str, RequestValue] = {"to": self.email, "from": from_}
         if subject is not None:
             raw["subject"] = subject
         if text is not None:
@@ -417,7 +421,7 @@ class EmailDomains:
         return Domain(self, row)
 
     def create(self, *, name: str | None = None) -> Domain:
-        raw: dict[str, object] = {"kind": "custom", "name": name} if name else {}
+        raw: dict[str, RequestValue] = {"kind": "custom", "name": name} if name else {}
         body = validate_request(CreateEmailDomainRequest, raw, "email.domains.create")
         row = parse_single(
             EmailDomainDto,
@@ -452,8 +456,8 @@ class EmailDomains:
 class Email:
     """Mailboxes for signup and notification tests."""
 
-    def __init__(self, client: httpx.Client) -> None:
-        self._client = client
+    def __init__(self, client: Client) -> None:
+        self._client = as_transport(client)
         self.domains = EmailDomains(self)
 
     def address(
@@ -514,7 +518,7 @@ class Email:
         for domain in self.domains.list():
             if domain.kind == "assigned" and domain.status == "active":
                 return domain.name
-        return self.domains.create().name
+        return (self.domains.create()).name
 
     def _wait_body(
         self,
@@ -524,7 +528,7 @@ class Email:
         subject_contains: str | None,
         extra: dict[str, str],
     ) -> WaitEmailMessageRequest:
-        fields: dict[str, object] = {"timeoutMs": timeout_ms, **extra}
+        fields: dict[str, RequestValue] = {"timeoutMs": timeout_ms, **extra}
         if received_after is not None:
             fields["receivedAfter"] = received_after
         if subject_contains is not None:
