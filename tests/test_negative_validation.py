@@ -104,6 +104,7 @@ def _monitor(**kw: object) -> dict[str, Any]:
         "enabled": True,
         "regions": ["us-east"],
         "managedBy": "DASHBOARD",
+        "ownerEnforced": False,
         "muted": False,
         "createdAt": NOW,
         "updatedAt": NOW,

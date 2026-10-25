@@ -73,6 +73,8 @@ AlertDeliveryDtoStatus = Literal[
     "SKIPPED_RATE_LIMITED",
 ]
 ApiKeyAuthConfigType = Literal["api_key"]
+ApiKeyCreateResponseTool = Literal["DASHBOARD", "CLI", "TERRAFORM", "MCP", "API"]
+ApiKeyDtoTool = Literal["DASHBOARD", "CLI", "TERRAFORM", "MCP", "API"]
 AssertionResultDtoSeverity = Literal["fail", "warn"]
 AssertionTestResultDtoAssertionType = Literal[
     "status_code",
@@ -123,9 +125,19 @@ BasicAuthConfigType = Literal["basic"]
 BearerAuthConfigType = Literal["bearer"]
 BodyContainsAssertionType = Literal["body_contains"]
 BulkMonitorActionRequestAction = Literal[
-    "PAUSE", "RESUME", "DELETE", "ADD_TAG", "REMOVE_TAG"
+    "PAUSE",
+    "RESUME",
+    "DELETE",
+    "ADD_TAG",
+    "REMOVE_TAG",
+    "UPDATE_SCHEDULE",
+    "RUN",
+    "MUTE",
+    "UNMUTE",
+    "ACKNOWLEDGE",
 ]
 CaptureCompareDtoBaselineKind = Literal["last_pass_this_step_this_region"]
+CapturePolicyNetwork = Literal["always", "on_failure", "off"]
 CapturePolicyScreenshots = Literal["always", "on_failure", "off"]
 CapturePolicyTrace = Literal["always", "on_failure", "off"]
 CapturePolicyVideo = Literal["always", "on_failure", "off"]
@@ -138,6 +150,7 @@ ConfirmationPolicyType = Literal["multi_region"]
 CreateAlertChannelRequestManagedBy = Literal[
     "DASHBOARD", "CLI", "TERRAFORM", "MCP", "API"
 ]
+CreateApiKeyRequestTool = Literal["DASHBOARD", "CLI", "TERRAFORM", "MCP", "API"]
 CreateAssertionRequestSeverity = Literal["fail", "warn"]
 CreateEmailDomainRequestKind = Literal["assigned", "custom"]
 CreateInviteRequestRoleOffered = Literal["OWNER", "ADMIN", "MEMBER"]
@@ -186,6 +199,19 @@ CreateWebhookInboxRequestStatus = Literal["active", "disabled"]
 DatadogChannelConfigChannelType = Literal["datadog"]
 DayIncidentImpact = Literal["NONE", "MINOR", "MAJOR", "CRITICAL"]
 DayIncidentStatus = Literal["INVESTIGATING", "IDENTIFIED", "MONITORING", "RESOLVED"]
+DemoBookingDtoState = Literal[
+    "RECEIVED",
+    "CREATING",
+    "RECONCILING",
+    "CONFIRMED",
+    "SLOT_UNAVAILABLE",
+    "PROVIDER_UNAVAILABLE",
+    "NEEDS_FOLLOW_UP",
+    "CANCELED",
+]
+DeviceTokenDtoStatus = Literal[
+    "authorization_pending", "slow_down", "expired", "denied", "complete"
+]
 DiscordChannelConfigChannelType = Literal["discord"]
 DnsCheckType = Literal["dns"]
 DnsExpectedCnameAssertionType = Literal["dns_expected_cname"]
@@ -208,7 +234,368 @@ EmailDomainDtoKind = Literal["assigned", "custom"]
 EmailDomainDtoStatus = Literal[
     "active", "disabled", "pending_dns", "verification_failed"
 ]
+EntitlementResponseTier = Literal[
+    "FREE", "STARTER", "PRO", "TEAM", "BUSINESS", "ENTERPRISE"
+]
 ErrorResponseReason = Literal["scope", "role"]
+EvidencePurgedMetadataKind = Literal["evidence_purged"]
+FindingCode = Literal[
+    "MONITOR_CONFIG_TYPE_MISMATCH",
+    "MONITOR_FREQUENCY_BELOW_PLAN_MIN",
+    "MONITOR_LIMIT_REACHED",
+    "MONITOR_AUTH_TYPE_UNSUPPORTED",
+    "MONITOR_HEARTBEAT_REGIONS_NOT_SUPPORTED",
+    "MONITOR_HEARTBEAT_INTERVAL_TOO_SHORT",
+    "MONITOR_HEARTBEAT_GRACE_TOO_SHORT",
+    "MONITOR_HEARTBEAT_GRACE_EXCEEDS_INTERVAL",
+    "MONITOR_HTTP_HEADERS_TOO_MANY",
+    "MONITOR_HTTP_HEADER_RESERVED",
+    "MONITOR_HTTP_BODY_METHOD_INVALID",
+    "MONITOR_HTTP_BODY_TOO_LARGE",
+    "MONITOR_ASSERTION_TYPE_NOT_ALLOWED",
+    "MONITOR_ALERT_CHANNEL_NOT_FOUND",
+    "MONITOR_TAGS_ADD_INVALID",
+    "MONITOR_TAGS_REMOVE_INVALID",
+    "MONITOR_TOKEN_ROTATION_HEARTBEAT_ONLY",
+    "MONITOR_CODE_CHECK_NOT_AVAILABLE",
+    "MONITOR_CODE_CHECK_LIMIT_REACHED",
+    "MONITOR_CODE_CHECK_REGION_UNAVAILABLE",
+    "MONITOR_CODE_CHECK_TEST_UNAVAILABLE",
+    "MONITOR_TEST_BUNDLE_UNAVAILABLE",
+    "MONITOR_BROWSER_CHECKS_DISABLED",
+    "MONITOR_ENVIRONMENT_REQUIRED",
+    "MONITOR_ENVIRONMENT_CLEAR_FORBIDDEN",
+    "MONITOR_PACKAGE_XOR_DEFINITION",
+    "MONITOR_PACKAGE_DIGEST_INVALID",
+    "MONITOR_PACKAGE_NOT_SUPPORTED",
+    "MONITOR_PACKAGE_PATH_INVALID",
+    "MONITOR_PACKAGE_CONCURRENT",
+    "MONITOR_DEFINITION_HAS_NO_REVISION",
+    "MONITOR_DEFINITION_IN_USE",
+    "MONITOR_STATUS_NOT_WRITABLE",
+    "MONITOR_PAUSED",
+    "MONITOR_OVERLAY_EXPIRES_IN_PAST",
+    "MONITOR_QUARANTINE_FIELDS_REQUIRED",
+    "MONITOR_MANAGED_BY_TAKEOVER_REQUIRED",
+    "MONITOR_HISTORY_PARAM_INVALID",
+    "MONITOR_TAKEOVER_FIELD_UNKNOWN",
+    "MONITOR_CAPTURE_POLICY_INVALID",
+    "MONITOR_RUN_PARALLEL_CODE_ONLY",
+    "REVISION_PACKAGE_BYTES_UNAVAILABLE",
+    "MONITOR_CODE_TYPE_REQUIRED",
+    "MONITOR_DEFINITION_REQUIRED",
+    "REVISION_NOT_ON_DEFINITION",
+    "REVISION_DIFF_CROSS_DEFINITION",
+    "DEFINITION_HEAD_INCOMPLETE",
+    "MONITOR_ASSERTION_NOT_SUPPORTED_FOR_TYPE",
+    "MONITOR_AUTH_ALREADY_EXISTS",
+    "MONITOR_AUTH_NOT_SUPPORTED_FOR_TYPE",
+    "MONITOR_AUTH_VAULT_FOREIGN_ORG",
+    "ALERT_CHANNEL_DISABLED",
+    "ALERT_CHANNEL_PLAN_REQUIRED",
+    "ALERT_CHANNEL_TYPE_IMMUTABLE",
+    "ALERT_CHANNEL_CONFIG_INVALID",
+    "ALERT_CHANNEL_SLACK_WEBHOOK_INVALID",
+    "ALERT_CHANNEL_DISCORD_WEBHOOK_INVALID",
+    "ALERT_CHANNEL_TEAMS_WEBHOOK_INVALID",
+    "ALERT_CHANNEL_TEAMS_WEBHOOK_CLASSIC_RETIRED",
+    "ALERT_CHANNEL_TEAMS_WEBHOOK_HOST",
+    "ALERT_CHANNEL_WEBHOOK_URL_INVALID",
+    "ALERT_CHANNEL_WEBHOOK_HEADER_RESERVED",
+    "ALERT_CHANNEL_OPSGENIE_REGION_INVALID",
+    "ALERT_CHANNEL_PAGERDUTY_SEVERITY_INVALID",
+    "ALERT_CHANNEL_GOOGLE_CHAT_WEBHOOK_INVALID",
+    "ALERT_CHANNEL_PHONE_NUMBER_INVALID",
+    "ALERT_CHANNEL_PHONE_NUMBER_UNVERIFIED",
+    "ALERT_CHANNEL_PHONE_NUMBERS_COUNT_INVALID",
+    "ALERT_CHANNEL_PHONE_NUMBER_REQUIRED",
+    "ALERT_CHANNEL_VERIFIED_PHONE_NOT_FOUND",
+    "ALERT_CHANNEL_PHONE_DESTINATION_MISMATCH",
+    "ALERT_CHANNEL_VOICE_LANGUAGE_INVALID",
+    "NOTIFICATION_POLICY_RULE_TYPE_REQUIRED",
+    "NOTIFICATION_POLICY_RULE_TYPE_INVALID",
+    "NOTIFICATION_POLICY_RULE_VALUE_REQUIRED",
+    "NOTIFICATION_POLICY_RULE_VALUE_INVALID",
+    "NOTIFICATION_POLICY_RULE_VALUES_REQUIRED",
+    "NOTIFICATION_POLICY_RULE_MONITOR_IDS_REQUIRED",
+    "NOTIFICATION_POLICY_RULE_REGIONS_REQUIRED",
+    "NOTIFICATION_POLICY_RULE_INCIDENT_STATUS_REQUIRED",
+    "NOTIFICATION_POLICY_RULE_INCIDENT_STATUS_INVALID",
+    "NOTIFICATION_POLICY_RULE_INCIDENT_STATUS_CONFLICT",
+    "NOTIFICATION_POLICY_ESCALATION_REQUIRED",
+    "NOTIFICATION_POLICY_STEPS_REQUIRED",
+    "NOTIFICATION_POLICY_ON_RESOLVE_INVALID",
+    "NOTIFICATION_POLICY_ON_REOPEN_INVALID",
+    "NOTIFICATION_POLICY_STEP_CHANNELS_EMPTY",
+    "NOTIFICATION_POLICY_STEP_DELAY_NEGATIVE",
+    "NOTIFICATION_POLICY_STEP_DELAY_TOO_LARGE",
+    "NOTIFICATION_POLICY_STEP_REPEAT_INVALID",
+    "NOTIFICATION_POLICY_STEP_REPEAT_TOO_LARGE",
+    "NOTIFICATION_POLICY_STEPS_TOO_MANY",
+    "NOTIFICATION_POLICY_STEP_CHANNEL_NOT_FOUND",
+    "NOTIFICATION_POLICY_DELETE_BLOCKED",
+    "MONITOR_POLICY_TRIGGER_RULES_EMPTY",
+    "MONITOR_POLICY_RULE_TYPE_REQUIRED",
+    "MONITOR_POLICY_RULE_SEVERITY_REQUIRED",
+    "MONITOR_POLICY_CONFIRMATION_REQUIRED",
+    "MONITOR_POLICY_CONFIRMATION_TYPE_REQUIRED",
+    "MONITOR_POLICY_CONFIRMATION_REGIONS_TOO_FEW",
+    "MONITOR_POLICY_CONFIRMATION_WAIT_TOO_SHORT",
+    "MONITOR_POLICY_CONFIRMATION_WAIT_BELOW_INVARIANT",
+    "MONITOR_POLICY_RECOVERY_REQUIRED",
+    "MONITOR_POLICY_RECOVERY_SUCCESSES_TOO_FEW",
+    "MONITOR_POLICY_RECOVERY_REGIONS_TOO_FEW",
+    "MONITOR_POLICY_RECOVERY_COOLDOWN_OUT_OF_RANGE",
+    "MONITOR_POLICY_FIELD_REQUIRED",
+    "MONITOR_POLICY_FIELD_NOT_POSITIVE",
+    "MONITOR_POLICY_FIELD_OUT_OF_RANGE",
+    "URL_INVALID",
+    "URL_SCHEME_UNSUPPORTED",
+    "URL_HOST_REQUIRED",
+    "URL_HOST_PRIVATE",
+    "RESOURCE_GROUP_LIMIT_REACHED",
+    "RESOURCE_GROUP_MEMBER_LIMIT_REACHED",
+    "RESOURCE_GROUP_MEMBER_ALREADY_PRESENT",
+    "RESOURCE_GROUP_MEMBER_TYPE_INVALID",
+    "RESOURCE_GROUP_THRESHOLD_VALUE_REQUIRED",
+    "RESOURCE_GROUP_THRESHOLD_TYPE_REQUIRED",
+    "RESOURCE_GROUP_THRESHOLD_OUT_OF_RANGE",
+    "RESOURCE_GROUP_SLUG_GENERATION_FAILED",
+    "STATUS_PAGE_LIMIT_REACHED",
+    "STATUS_PAGE_SLUG_TAKEN",
+    "STATUS_PAGE_SLUG_REQUIRED",
+    "STATUS_PAGE_SLUG_RESERVED",
+    "STATUS_PAGE_VISIBILITY_UNSUPPORTED",
+    "STATUS_PAGE_FEATURE_PLAN_REQUIRED",
+    "STATUS_PAGE_HOSTNAME_FIRST_PARTY_RESERVED",
+    "STATUS_PAGE_HOSTNAME_TLD_RESERVED",
+    "STATUS_PAGE_HOSTNAME_TAKEN",
+    "STATUS_PAGE_DOMAIN_NOT_VERIFIED",
+    "STATUS_PAGE_COMPONENT_GROUP_NOT_FOUND",
+    "STATUS_PAGE_COMPONENT_MONITOR_REQUIRED",
+    "STATUS_PAGE_COMPONENT_GROUP_REQUIRED",
+    "STATUS_PAGE_COMPONENT_STATIC_REFS_INVALID",
+    "STATUS_PAGE_COMPONENT_SUBSCRIPTION_REQUIRED",
+    "STATUS_PAGE_COMPONENT_SUBSCRIPTION_NOT_FOUND",
+    "STATUS_PAGE_COMPONENT_DEPENDENCY_REFS_INVALID",
+    "STATUS_PAGE_COMPONENT_SUBSCRIPTION_REFS_INVALID",
+    "STATUS_PAGE_NOTIFICATION_DELIVERY_RETRY_NOT_FAILED",
+    "STATUS_PAGE_NOTIFICATION_DELIVERY_RETRY_TERMINAL",
+    "STATUS_PAGE_MEASURED_UPTIME_MONITOR_ONLY",
+    "STATUS_PAGE_COMPONENT_OVERRIDE_EXPIRES_AT_IN_PAST",
+    "STATUS_PAGE_COMPONENT_OVERRIDE_EXPIRES_AT_EXCEEDS_MAX",
+    "STATUS_PAGE_SUBSCRIBER_DESTINATION_REQUIRED",
+    "STATUS_PAGE_SUBSCRIBER_DESTINATION_INVALID",
+    "STATUS_PAGE_SUBSCRIBER_COMPONENT_NOT_FOUND",
+    "SP_INCIDENT_PUBLISH_RESOLVED",
+    "SP_INCIDENT_DISMISS_PUBLISHED",
+    "SP_INCIDENT_SCHEDULED_FOR_REQUIRED",
+    "SP_INCIDENT_SCHEDULED_UNTIL_BEFORE_FOR",
+    "SP_INCIDENT_AUTO_RESOLVE_REQUIRES_UNTIL",
+    "SP_INCIDENT_COMPONENT_FOREIGN",
+    "SP_INCIDENT_MONITORING_INCIDENT_NOT_FOUND",
+    "SUBSCRIPTION_PRICE_INACTIVE",
+    "SUBSCRIPTION_PRICE_UNAVAILABLE",
+    "SUBSCRIPTION_ALREADY_ACTIVE",
+    "SUBSCRIPTION_NOT_ACTIVE",
+    "SUBSCRIPTION_NO_SCHEDULED_CHANGE",
+    "SUBSCRIPTION_CHANGE_PENDING",
+    "SUBSCRIPTION_CANCELING",
+    "SUBSCRIPTION_CADENCE_UNAVAILABLE",
+    "SUBSCRIPTION_PRICES_INVALID",
+    "BILLING_OVERAGE_CAP_INVALID",
+    "BILLING_OVERAGE_NOT_ACTIVE",
+    "SERVICE_SUBSCRIPTION_FREE_TIER_LIMIT",
+    "SERVICE_SUBSCRIPTION_SERVICE_UNAVAILABLE",
+    "ACTOR_BAD_REQUEST",
+    "ORGANIZATION_ID_REQUIRED",
+    "WORKSPACE_REQUIRED",
+    "WORKSPACE_INTERNAL_ACTOR_NO_WORKSPACE",
+    "WORKSPACE_NOT_FOUND_ON_ORG",
+    "ENVIRONMENT_LIMIT_REACHED",
+    "ENVIRONMENT_SLUG_TAKEN",
+    "ENVIRONMENT_DELETE_BLOCKED",
+    "INBOUND_INBOX_NAME_BLANK",
+    "INBOUND_HTTP_RESPONSE_DELAY_INVALID",
+    "INBOUND_HTTP_RESPONSE_STATUS_INVALID",
+    "INBOUND_HTTP_RESPONSE_BODY_TOO_LARGE",
+    "INBOUND_HTTP_RESPONSE_BODY_INVALID",
+    "INBOUND_HTTP_RESPONSE_CONTENT_TYPE_INVALID",
+    "INBOUND_HTTP_RESPONSE_HEADERS_INVALID",
+    "INBOUND_EVENTS_CURSOR_INVALID",
+    "INBOUND_EVENTS_LIMIT_OUT_OF_RANGE",
+    "INBOUND_DOMAIN_CUSTOM_NAME_REQUIRED",
+    "INBOUND_DOMAIN_IN_ASSIGNED_ZONE",
+    "INBOUND_DOMAIN_NAME_TAKEN",
+    "INBOUND_DOMAIN_KIND_INVALID",
+    "INBOUND_DOMAIN_STATUS_INVALID",
+    "INBOUND_DOMAIN_NAME_INVALID",
+    "INBOUND_INJECT_TO_BLANK",
+    "INBOUND_INJECT_FROM_BLANK",
+    "INBOUND_INJECT_DOMAIN_DISABLED",
+    "INBOUND_INJECT_TO_INVALID",
+    "INBOUND_INJECT_FROM_INVALID",
+    "INBOUND_INJECT_HEADER_INVALID",
+    "INBOUND_WAIT_TO_REQUIRED",
+    "INBOUND_WAIT_TO_INVALID",
+    "INBOUND_WAIT_DOMAIN_REQUIRED",
+    "INBOUND_WEBHOOK_INBOX_LIMIT_REACHED",
+    "INBOUND_EMAIL_DOMAIN_LIMIT_REACHED",
+    "INBOUND_CUSTOM_MX_PLAN_REQUIRED",
+    "INBOUND_RETENTION_ABOVE_PLAN",
+    "INBOUND_EVENTS_MONTHLY_LIMIT_REACHED",
+    "INBOUND_ACTIVITY_INBOX_IDS_REQUIRED",
+    "INBOUND_ACTIVITY_INBOX_IDS_TOO_MANY",
+    "INBOUND_ACTIVITY_DOMAIN_IDS_REQUIRED",
+    "INBOUND_ACTIVITY_DOMAIN_IDS_TOO_MANY",
+    "TAG_NAME_TAKEN",
+    "SAVED_VIEW_TABLE_UNKNOWN",
+    "SAVED_VIEW_LIMIT_REACHED",
+    "SAVED_VIEW_FILTERS_TOO_LARGE",
+    "SECRET_KEY_TAKEN",
+    "SECRET_ENVIRONMENT_VALUE_BLANK",
+    "SECRET_REQUEST_ENVIRONMENT_QUERY",
+    "SECRET_REQUEST_HEAD_REQUIRED",
+    "SECRET_REQUEST_REMAP_SECRET_ID",
+    "SESSION_SETUP_FILE_BLANK",
+    "SESSION_HEAD_REQUIRED",
+    "RUN_NO_HEAD",
+    "RUN_KEYS_MISSING",
+    "SYNTHETICS_USAGE_CAPPED",
+    "RUN_LIST_PARAM_INVALID",
+    "ARTIFACT_BYTES_TOO_LARGE",
+    "SUPERVISOR_TOKEN_INVALID",
+    "LEASE_COMPLETION_CONFLICT",
+    "LEASE_FENCE_REJECTED",
+    "CAPACITY_TARGET_INVALID",
+    "ADMISSIONS_NOT_HELD",
+    "RUNTIME_UNKNOWN",
+    "RUNTIME_RETIRED",
+    "RUNTIME_NOT_AVAILABLE",
+    "RUNTIME_UNAVAILABLE",
+    "RUNTIME_EOL",
+    "RUNTIME_AMBIGUOUS",
+    "RUNTIME_DIGEST_IMMUTABLE",
+    "RUNTIME_DIGEST_INVALID",
+    "API_KEY_LIMIT_REACHED",
+    "API_KEY_REVOKED",
+    "AUDIT_EXPORT_LIMIT_EXCEEDED",
+    "AUTH_FIELD_BLANK",
+    "AUTH_EMAIL_INVALID",
+    "AUTH_EMAIL_TAKEN",
+    "EMAIL_ALREADY_VERIFIED",
+    "ORG_EMAIL_TAKEN",
+    "ONBOARDING_STAGE_BACKWARD",
+    "INVITE_USER_ALREADY_MEMBER",
+    "INVITE_ALREADY_ACCEPTED",
+    "INVITE_REVOKED",
+    "INVITE_EXPIRED",
+    "INVITE_EMAIL_MISMATCH",
+    "MEMBER_LIMIT_REACHED",
+    "MAINTENANCE_WINDOW_END_BEFORE_START",
+    "FORENSICS_HASH_BLANK",
+    "FORENSICS_HASH_INVALID",
+    "CHECK_RESULTS_LIMIT_OUT_OF_RANGE",
+    "CHECK_RESULTS_WINDOW_INVALID",
+    "CHECK_RESULTS_CURSOR_INVALID",
+    "CHECK_RESULTS_REGION_INVALID",
+    "STATUS_DATA_STATUS_INVALID",
+    "STATUS_DATA_PERIOD_INVALID",
+    "STATUS_DATA_GRANULARITY_INVALID",
+    "STATUS_DATA_GRANULARITY_PERIOD_MISMATCH",
+    "STATUS_DATA_PERIOD_UNKNOWN",
+    "STATUS_DATA_FROM_REQUIRED_WITH_TO",
+    "STATUS_DATA_TO_IN_FUTURE",
+    "STATUS_DATA_FROM_AFTER_TO",
+    "STATUS_DATA_WINDOW_TOO_WIDE",
+    "STATUS_DATA_TYPES_INVALID",
+    "STATUS_DATA_CURSOR_INVALID",
+    "STATUS_DATA_LIMIT_OUT_OF_RANGE",
+    "STATUS_DATA_COMPONENT_IDS_TOO_MANY",
+    "INCIDENT_ACTIVE_EXISTS",
+    "INCIDENT_TRANSITION_INVALID",
+    "INCIDENT_SERVICE_NOT_FOUND",
+    "INCIDENT_SERVICE_INCIDENT_NOT_FOUND",
+    "INCIDENT_SERVICE_MISMATCH",
+    "INCIDENT_EVENTS_CURSOR_INVALID",
+    "INCIDENT_EVENTS_LIMIT_OUT_OF_RANGE",
+    "NOTIFICATION_DISPATCH_INVALID_STATE",
+    "NOTIFICATION_POLICY_DISPATCHES_LIMIT_OUT_OF_RANGE",
+    "NOTIFICATION_POLICY_DISPATCHES_WINDOW_INVALID",
+    "NOTIFICATION_POLICY_DISPATCHES_CURSOR_INVALID",
+    "WEBHOOK_LIMIT_REACHED",
+    "WEBHOOK_URL_BLANK",
+    "WEBHOOK_EVENT_TYPES_INVALID",
+    "WEBHOOK_EVENT_TYPE_INVALID",
+    "ALERT_DELIVERY_RETRY_NOT_FAILED",
+    "ADMIN_BACKFILL_TYPE_UNKNOWN",
+    "ADMIN_PUBLISH_BLOCKED",
+    "ADMIN_ADAPTER_TYPE_UNKNOWN",
+    "ADMIN_SEO_METADATA_INVALID",
+    "ADMIN_RELATED_SERVICES_TOO_MANY",
+    "ADMIN_RELATED_SERVICE_SELF",
+    "ADMIN_PROBE_NO_OFFICIAL_URL",
+    "ADMIN_PROBE_URL_MALFORMED",
+    "ADMIN_LIFECYCLE_TRANSITION_INVALID",
+    "CLOUDFLARE_REQUEST_FAILED",
+    "CLOUDFLARE_API_ERROR",
+    "FIELD_REQUIRED",
+    "FIELD_TOO_SMALL",
+    "FIELD_TOO_LARGE",
+    "FIELD_OUT_OF_RANGE",
+    "FIELD_PATTERN_MISMATCH",
+    "FIELD_INVALID_EMAIL",
+    "FIELD_INVALID_URL",
+    "FIELD_INVALID_FORMAT",
+    "FIELD_INVARIANT_VIOLATED",
+    "FIELD_VALIDATION_FAILED",
+    "REQUEST_BODY_REQUIRED",
+    "REQUEST_BODY_MALFORMED",
+    "REQUEST_BODY_TYPE_MISMATCH",
+    "REQUEST_PARAMETER_REQUIRED",
+    "REQUEST_MEDIA_TYPE_UNSUPPORTED",
+    "CARRIER_CREDITS_EXHAUSTED",
+    "SYNTHETICS_USAGE_RESERVED",
+    "TESTING_QUOTA_EXHAUSTED",
+    "RATE_LIMITED",
+    "NOTIFY_RATE",
+    "SCOPE_REQUIRED",
+    "RUN_TOKEN_ADDRESS_FORBIDDEN",
+    "MONITOR_OWNED_BY_OTHER",
+    "DEPLOY_LOCKED",
+    "LIVE_REVISION_CHANGED",
+    "CONFIRMATION_REQUIRED",
+    "UPDATE_REQUIRED",
+    "CLAIMED",
+    "REVISION_ROLLED_BACK",
+    "REVISION_NEVER_LIVE",
+    "ROLLBACK_INCIDENT_REQUIRED",
+    "REVISION_UNTESTED",
+    "REVISION_DISCARDED",
+    "REVISION_IS_LIVE",
+    "DRAFT_LIMIT",
+    "NO_TOKEN",
+    "CLIENT_TOO_OLD",
+    "MAX_RUNS_EXCEEDED",
+    "IMPORT_NOT_IN_BUNDLE",
+    "USE_PROBE",
+    "IDEMPOTENCY_KEY_REUSED",
+    "IDEMPOTENCY_KEY_IN_PROGRESS",
+    "IDEMPOTENCY_KEY_ORPHANED",
+    "TRIGGER_UNSUPPORTED_TYPE",
+    "ENVIRONMENT_NOT_FOUND",
+    "EVIDENCE_EXPIRED",
+    "RUN_EXPIRED",
+    "BUNDLE_TOO_LARGE",
+    "BUNDLE_NOT_FOUND",
+    "IMPORT_NOT_IN_RUNTIME",
+    "SECRET_LITERAL",
+    "FIELD_UNKNOWN",
+    "API_KEY_EXPIRED",
+    "DEVICE_AUTHORIZATION_NOT_FOUND",
+    "DEVICE_AUTHORIZATION_EXPIRED",
+    "DEVICE_WORKSPACE_ORG_MISMATCH",
+]
 GitLabChannelConfigChannelType = Literal["gitlab"]
 GoogleChatChannelConfigChannelType = Literal["google_chat"]
 HeaderAuthConfigType = Literal["header"]
@@ -257,6 +644,7 @@ JsonPathAssertionOperator = Literal[
 ]
 JsonPathAssertionType = Literal["json_path"]
 LinearChannelConfigChannelType = Literal["linear"]
+LinkedIncidentDtoStatus = Literal["WATCHING", "TRIGGERED", "CONFIRMED", "RESOLVED"]
 LinkedStatusPageIncidentDtoConnectionMode = Literal["AUTO", "MANUAL"]
 LinkedStatusPageIncidentDtoImpact = Literal["NONE", "MINOR", "MAJOR", "CRITICAL"]
 LinkedStatusPageIncidentDtoPageIncidentMode = Literal["MANUAL", "REVIEW", "AUTOMATIC"]
@@ -347,19 +735,64 @@ MonitorDtoDisplayHealth = Literal[
     "infra",
     "flaky",
     "blocked",
+    "capped",
     "paused",
     "never_run",
     "confirming",
 ]
+MonitorDtoFlakySeverity = Literal["low", "medium", "high"]
+MonitorDtoLastCheckOutcome = Literal["passed", "degraded", "failed"]
 MonitorDtoManagedBy = Literal["DASHBOARD", "CLI", "TERRAFORM", "MCP", "API"]
 MonitorDtoType = Literal[
     "HTTP", "DNS", "MCP_SERVER", "TCP", "ICMP", "HEARTBEAT", "BROWSER", "MULTI_STEP_API"
+]
+MonitorFacetDtoField = Literal[
+    "type", "environment", "region", "tag", "owner", "project"
+]
+MonitorFacetValueDtoOwner = Literal["DASHBOARD", "CLI", "TERRAFORM", "MCP", "API"]
+MonitorFacetValueDtoWorstState = Literal[
+    "healthy",
+    "down",
+    "degraded",
+    "recovering",
+    "infra",
+    "flaky",
+    "blocked",
+    "capped",
+    "paused",
+    "never_run",
+    "confirming",
+]
+MonitorHistoryTickDtoOutcome = Literal["passed", "degraded", "failed"]
+MonitorListGroupDtoKey = Literal[
+    "failing", "not_running", "flaky", "passing", "running", "paused"
+]
+MonitorOwnerDtoType = Literal["DASHBOARD", "CLI", "TERRAFORM", "MCP", "API"]
+MonitorOwnershipMetadataFromOwner = Literal[
+    "DASHBOARD", "CLI", "TERRAFORM", "MCP", "API"
+]
+MonitorOwnershipMetadataKind = Literal["monitor_ownership"]
+MonitorOwnershipMetadataToOwner = Literal["DASHBOARD", "CLI", "TERRAFORM", "MCP", "API"]
+MonitorRegionHealthDtoVerdict = Literal["up", "degraded", "down", "paused", "unknown"]
+MonitorRegionalHealthDtoRegionalDisplayHealth = Literal[
+    "healthy",
+    "down",
+    "degraded",
+    "recovering",
+    "infra",
+    "flaky",
+    "blocked",
+    "capped",
+    "paused",
+    "never_run",
+    "confirming",
 ]
 MonitorSessionDtoLifecycle = Literal["active", "expired", "failed", "revoked"]
 MonitorSessionDtoReusePolicy = Literal["reuse", "every_run", "on_failure"]
 MonitorTestRequestType = Literal[
     "HTTP", "DNS", "MCP_SERVER", "TCP", "ICMP", "HEARTBEAT", "BROWSER", "MULTI_STEP_API"
 ]
+MonitorValidationFindingDtoSeverity = Literal["ERROR", "WARNING"]
 MonitorVersionDtoChangedVia = Literal["API", "DASHBOARD", "CLI", "TERRAFORM"]
 NotificationDispatchDtoCompletionReason = Literal["EXHAUSTED", "RESOLVED", "NO_STEPS"]
 NotificationDispatchDtoStatus = Literal[
@@ -372,6 +805,15 @@ OrgIncidentAnnotationDtoStatus = Literal[
 ]
 PagerDutyChannelConfigChannelType = Literal["pagerduty"]
 PhoneCallChannelConfigChannelType = Literal["phone_call"]
+PickerItemOutcome = Literal[
+    "passed",
+    "failed",
+    "execution_error",
+    "timed_out",
+    "passed_on_retry",
+    "cancelled",
+    "inconclusive",
+]
 PlanInfoTier = Literal["FREE", "STARTER", "PRO", "TEAM", "BUSINESS", "ENTERPRISE"]
 PublishStatusPageIncidentRequestImpact = Literal["NONE", "MINOR", "MAJOR", "CRITICAL"]
 PublishStatusPageIncidentRequestStatus = Literal[
@@ -395,6 +837,11 @@ ResponseTimeAssertionType = Literal["response_time"]
 ResponseTimeWarnAssertionType = Literal["response_time_warn"]
 ResultSummaryDtoCurrentStatus = Literal["up", "degraded", "down", "paused", "unknown"]
 RevisionDiffHunkDtoChange = Literal["added", "removed", "changed"]
+RevisionDtoCreatedByKind = Literal["dashboard", "git", "terraform", "api", "mcp"]
+RevisionDtoState = Literal[
+    "draft", "tested_passed", "tested_failed", "live", "previous", "discarded"
+]
+RevisionDtoTestOutcome = Literal["passed", "failed"]
 RootlyChannelConfigChannelType = Literal["rootly"]
 RowVerdict = Literal["unchanged", "much_slower", "now_failing", "not_reached"]
 RunArtifactDtoCaptureReason = Literal["on_failure", "named_step", "customer"]
@@ -428,6 +875,15 @@ RunDiffDtoBaselineKind = Literal[
     "last_pass_any_revision",
     "attempts_in_run",
     "none",
+    "selected_run",
+]
+RunDtoCause = Literal[
+    "platform",
+    "runtime_unavailable",
+    "testing_quota_exhausted",
+    "no_seat",
+    "lease_lost",
+    "target_unreachable",
 ]
 RunDtoMonitorType = Literal[
     "HTTP", "DNS", "MCP_SERVER", "TCP", "ICMP", "HEARTBEAT", "BROWSER", "MULTI_STEP_API"
@@ -469,6 +925,16 @@ RunEvidenceDtoKind = Literal["screenshot", "trace", "video", "network"]
 RunEvidenceDtoState = Literal["present", "bad", "processing", "expired"]
 RunExecutionDtoMonitorType = Literal[
     "HTTP", "DNS", "MCP_SERVER", "TCP", "ICMP", "HEARTBEAT", "BROWSER", "MULTI_STEP_API"
+]
+RunFailureDtoKind = Literal[
+    "assertion",
+    "timeout",
+    "navigation",
+    "network",
+    "target_blocked",
+    "script_error",
+    "wait_timeout",
+    "setup",
 ]
 RunStepDtoCategory = Literal["named", "assertion", "browser_action"]
 RunStepDtoStatus = Literal[
@@ -601,10 +1067,14 @@ TelegramChannelConfigChannelType = Literal["telegram"]
 TraceEntryPointId = Literal[
     "failing_action", "failing_step", "first_failed_request", "case_start"
 ]
+TransferMonitorRequestTo = Literal["DASHBOARD", "CLI", "TERRAFORM", "MCP", "API"]
 TriggerRuleAggregationType = Literal["all_exceed", "average", "p95", "max"]
 TriggerRuleScope = Literal["per_region", "any_region"]
 TriggerRuleSeverity = Literal["down", "degraded"]
 TriggerRuleType = Literal["consecutive_failures", "failures_in_window", "response_time"]
+TriggerRunRefPhase = Literal[
+    "created", "queued", "starting", "running", "finalizing", "finished"
+]
 UpdateAlertChannelRequestManagedBy = Literal[
     "DASHBOARD", "CLI", "TERRAFORM", "MCP", "API"
 ]
@@ -684,6 +1154,8 @@ __all__ = [
     "AlertDeliveryDtoEventType",
     "AlertDeliveryDtoStatus",
     "ApiKeyAuthConfigType",
+    "ApiKeyCreateResponseTool",
+    "ApiKeyDtoTool",
     "AssertionResultDtoSeverity",
     "AssertionTestResultDtoAssertionType",
     "AssertionTestResultDtoSeverity",
@@ -692,6 +1164,7 @@ __all__ = [
     "BodyContainsAssertionType",
     "BulkMonitorActionRequestAction",
     "CaptureCompareDtoBaselineKind",
+    "CapturePolicyNetwork",
     "CapturePolicyScreenshots",
     "CapturePolicyTrace",
     "CapturePolicyVideo",
@@ -700,6 +1173,7 @@ __all__ = [
     "CodeCheckType",
     "ConfirmationPolicyType",
     "CreateAlertChannelRequestManagedBy",
+    "CreateApiKeyRequestTool",
     "CreateAssertionRequestSeverity",
     "CreateEmailDomainRequestKind",
     "CreateInviteRequestRoleOffered",
@@ -722,6 +1196,8 @@ __all__ = [
     "DatadogChannelConfigChannelType",
     "DayIncidentImpact",
     "DayIncidentStatus",
+    "DemoBookingDtoState",
+    "DeviceTokenDtoStatus",
     "DiscordChannelConfigChannelType",
     "DnsCheckType",
     "DnsExpectedCnameAssertionType",
@@ -740,7 +1216,10 @@ __all__ = [
     "EmailChannelConfigChannelType",
     "EmailDomainDtoKind",
     "EmailDomainDtoStatus",
+    "EntitlementResponseTier",
     "ErrorResponseReason",
+    "EvidencePurgedMetadataKind",
+    "FindingCode",
     "GitLabChannelConfigChannelType",
     "GoogleChatChannelConfigChannelType",
     "HeaderAuthConfigType",
@@ -777,6 +1256,7 @@ __all__ = [
     "JsonPathAssertionOperator",
     "JsonPathAssertionType",
     "LinearChannelConfigChannelType",
+    "LinkedIncidentDtoStatus",
     "LinkedStatusPageIncidentDtoConnectionMode",
     "LinkedStatusPageIncidentDtoImpact",
     "LinkedStatusPageIncidentDtoPageIncidentMode",
@@ -803,11 +1283,25 @@ __all__ = [
     "MonitorDtoBindingReadiness",
     "MonitorDtoCurrentStatus",
     "MonitorDtoDisplayHealth",
+    "MonitorDtoFlakySeverity",
+    "MonitorDtoLastCheckOutcome",
     "MonitorDtoManagedBy",
     "MonitorDtoType",
+    "MonitorFacetDtoField",
+    "MonitorFacetValueDtoOwner",
+    "MonitorFacetValueDtoWorstState",
+    "MonitorHistoryTickDtoOutcome",
+    "MonitorListGroupDtoKey",
+    "MonitorOwnerDtoType",
+    "MonitorOwnershipMetadataFromOwner",
+    "MonitorOwnershipMetadataKind",
+    "MonitorOwnershipMetadataToOwner",
+    "MonitorRegionHealthDtoVerdict",
+    "MonitorRegionalHealthDtoRegionalDisplayHealth",
     "MonitorSessionDtoLifecycle",
     "MonitorSessionDtoReusePolicy",
     "MonitorTestRequestType",
+    "MonitorValidationFindingDtoSeverity",
     "MonitorVersionDtoChangedVia",
     "NotificationDispatchDtoCompletionReason",
     "NotificationDispatchDtoStatus",
@@ -816,6 +1310,7 @@ __all__ = [
     "OrgIncidentAnnotationDtoStatus",
     "PagerDutyChannelConfigChannelType",
     "PhoneCallChannelConfigChannelType",
+    "PickerItemOutcome",
     "PlanInfoTier",
     "PublishStatusPageIncidentRequestImpact",
     "PublishStatusPageIncidentRequestStatus",
@@ -835,6 +1330,9 @@ __all__ = [
     "ResponseTimeWarnAssertionType",
     "ResultSummaryDtoCurrentStatus",
     "RevisionDiffHunkDtoChange",
+    "RevisionDtoCreatedByKind",
+    "RevisionDtoState",
+    "RevisionDtoTestOutcome",
     "RootlyChannelConfigChannelType",
     "RowVerdict",
     "RunArtifactDtoCaptureReason",
@@ -843,6 +1341,7 @@ __all__ = [
     "RunAttemptDtoOutcome",
     "RunCaseDtoStatus",
     "RunDiffDtoBaselineKind",
+    "RunDtoCause",
     "RunDtoMonitorType",
     "RunDtoOutcome",
     "RunDtoPhase",
@@ -851,6 +1350,7 @@ __all__ = [
     "RunEvidenceDtoKind",
     "RunEvidenceDtoState",
     "RunExecutionDtoMonitorType",
+    "RunFailureDtoKind",
     "RunStepDtoCategory",
     "RunStepDtoStatus",
     "RuntimeProfileDtoStatus",
@@ -895,10 +1395,12 @@ __all__ = [
     "TeamsChannelConfigChannelType",
     "TelegramChannelConfigChannelType",
     "TraceEntryPointId",
+    "TransferMonitorRequestTo",
     "TriggerRuleAggregationType",
     "TriggerRuleScope",
     "TriggerRuleSeverity",
     "TriggerRuleType",
+    "TriggerRunRefPhase",
     "UpdateAlertChannelRequestManagedBy",
     "UpdateAssertionRequestSeverity",
     "UpdateDatadogChannelConfigChannelType",

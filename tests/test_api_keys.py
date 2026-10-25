@@ -27,6 +27,7 @@ _API_KEY = {
     "lastUsedAt": None,
     "revokedAt": None,
     "expiresAt": None,
+    "scopes": ["full"],
 }
 
 
