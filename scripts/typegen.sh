@@ -42,6 +42,9 @@ TOOLS_CMD=$(resolve_openapi_tools)
 echo "=> Preprocessing OpenAPI spec (via @devhelm/openapi-tools)..."
 $TOOLS_CMD preprocess "$INPUT" "$PREPROCESSED"
 
+echo "=> Adding query-parameter models for list endpoints..."
+uv run python "$SCRIPT_DIR/query_models.py" "$PREPROCESSED"
+
 echo "=> Generating Pydantic models from preprocessed spec..."
 
 uv run datamodel-codegen \

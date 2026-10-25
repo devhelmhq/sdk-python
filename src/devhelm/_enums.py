@@ -57,7 +57,7 @@ AlertChannelDtoChannelType = Literal[
     "sms",
     "phone_call",
 ]
-AlertChannelDtoManagedBy = Literal["DASHBOARD", "CLI", "TERRAFORM", "MCP", "API"]
+AlertChannelDtoManagedBy = Literal["DASHBOARD", "CLI", "TERRAFORM", "MCP", "API", "GIT"]
 AlertDeliveryDtoEventType = Literal[
     "INCIDENT_CREATED", "INCIDENT_RESOLVED", "INCIDENT_REOPENED"
 ]
@@ -73,8 +73,8 @@ AlertDeliveryDtoStatus = Literal[
     "SKIPPED_RATE_LIMITED",
 ]
 ApiKeyAuthConfigType = Literal["api_key"]
-ApiKeyCreateResponseTool = Literal["DASHBOARD", "CLI", "TERRAFORM", "MCP", "API"]
-ApiKeyDtoTool = Literal["DASHBOARD", "CLI", "TERRAFORM", "MCP", "API"]
+ApiKeyCreateResponseTool = Literal["DASHBOARD", "CLI", "TERRAFORM", "MCP", "API", "GIT"]
+ApiKeyDtoTool = Literal["DASHBOARD", "CLI", "TERRAFORM", "MCP", "API", "GIT"]
 AssertionResultDtoSeverity = Literal["fail", "warn"]
 AssertionTestResultDtoAssertionType = Literal[
     "status_code",
@@ -148,20 +148,22 @@ ChangeStatusRequestStatus = Literal[
 CodeCheckType = Literal["code"]
 ConfirmationPolicyType = Literal["multi_region"]
 CreateAlertChannelRequestManagedBy = Literal[
-    "DASHBOARD", "CLI", "TERRAFORM", "MCP", "API"
+    "DASHBOARD", "CLI", "TERRAFORM", "MCP", "API", "GIT"
 ]
-CreateApiKeyRequestTool = Literal["DASHBOARD", "CLI", "TERRAFORM", "MCP", "API"]
+CreateApiKeyRequestTool = Literal["DASHBOARD", "CLI", "TERRAFORM", "MCP", "API", "GIT"]
 CreateAssertionRequestSeverity = Literal["fail", "warn"]
 CreateEmailDomainRequestKind = Literal["assigned", "custom"]
 CreateInviteRequestRoleOffered = Literal["OWNER", "ADMIN", "MEMBER"]
 CreateManualIncidentRequestSeverity = Literal["DOWN", "DEGRADED", "MAINTENANCE"]
-CreateMonitorRequestManagedBy = Literal["DASHBOARD", "CLI", "TERRAFORM", "MCP", "API"]
+CreateMonitorRequestManagedBy = Literal[
+    "DASHBOARD", "CLI", "TERRAFORM", "MCP", "API", "GIT"
+]
 CreateMonitorRequestType = Literal[
     "HTTP", "DNS", "MCP_SERVER", "TCP", "ICMP", "HEARTBEAT", "BROWSER", "MULTI_STEP_API"
 ]
 CreateResourceGroupRequestHealthThresholdType = Literal["COUNT", "PERCENTAGE"]
 CreateResourceGroupRequestManagedBy = Literal[
-    "DASHBOARD", "CLI", "TERRAFORM", "MCP", "API"
+    "DASHBOARD", "CLI", "TERRAFORM", "MCP", "API", "GIT"
 ]
 CreateStatusPageComponentRequestType = Literal[
     "MONITOR", "GROUP", "STATIC", "DEPENDENCY"
@@ -179,7 +181,7 @@ CreateStatusPageMaintenanceRequestStatus = Literal[
 ]
 CreateStatusPageRequestIncidentMode = Literal["MANUAL", "REVIEW", "AUTOMATIC"]
 CreateStatusPageRequestManagedBy = Literal[
-    "DASHBOARD", "CLI", "TERRAFORM", "MCP", "API"
+    "DASHBOARD", "CLI", "TERRAFORM", "MCP", "API", "GIT"
 ]
 CreateStatusPageRequestVisibility = Literal["PUBLIC", "PASSWORD", "IP_RESTRICTED"]
 CreateWebhookEndpointRequestSubscribedEventsItem = Literal[
@@ -624,11 +626,6 @@ IncidentDtoSource = Literal[
     "AUTOMATIC", "MANUAL", "MONITORS", "STATUS_DATA", "RESOURCE_GROUP"
 ]
 IncidentDtoStatus = Literal["WATCHING", "TRIGGERED", "CONFIRMED", "RESOLVED"]
-IncidentFilterParamsSeverity = Literal["DOWN", "DEGRADED", "MAINTENANCE"]
-IncidentFilterParamsSource = Literal[
-    "AUTOMATIC", "MANUAL", "MONITORS", "STATUS_DATA", "RESOURCE_GROUP"
-]
-IncidentFilterParamsStatus = Literal["WATCHING", "TRIGGERED", "CONFIRMED", "RESOLVED"]
 IncidentIoChannelConfigChannelType = Literal["incident_io"]
 IncidentTriggerDtoSource = Literal["forensics", "checks", "none"]
 IncidentUpdateDtoCreatedBy = Literal["SYSTEM", "USER"]
@@ -643,6 +640,7 @@ JsonPathAssertionOperator = Literal[
     "equals", "contains", "less_than", "greater_than", "matches", "range"
 ]
 JsonPathAssertionType = Literal["json_path"]
+KeyInfoTool = Literal["DASHBOARD", "CLI", "TERRAFORM", "MCP", "API", "GIT"]
 LinearChannelConfigChannelType = Literal["linear"]
 LinkedIncidentDtoStatus = Literal["WATCHING", "TRIGGERED", "CONFIRMED", "RESOLVED"]
 LinkedStatusPageIncidentDtoConnectionMode = Literal["AUTO", "MANUAL"]
@@ -742,14 +740,16 @@ MonitorDtoDisplayHealth = Literal[
 ]
 MonitorDtoFlakySeverity = Literal["low", "medium", "high"]
 MonitorDtoLastCheckOutcome = Literal["passed", "degraded", "failed"]
-MonitorDtoManagedBy = Literal["DASHBOARD", "CLI", "TERRAFORM", "MCP", "API"]
+MonitorDtoManagedBy = Literal["DASHBOARD", "CLI", "TERRAFORM", "MCP", "API", "GIT"]
 MonitorDtoType = Literal[
     "HTTP", "DNS", "MCP_SERVER", "TCP", "ICMP", "HEARTBEAT", "BROWSER", "MULTI_STEP_API"
 ]
 MonitorFacetDtoField = Literal[
     "type", "environment", "region", "tag", "owner", "project"
 ]
-MonitorFacetValueDtoOwner = Literal["DASHBOARD", "CLI", "TERRAFORM", "MCP", "API"]
+MonitorFacetValueDtoOwner = Literal[
+    "DASHBOARD", "CLI", "TERRAFORM", "MCP", "API", "GIT"
+]
 MonitorFacetValueDtoWorstState = Literal[
     "healthy",
     "down",
@@ -767,12 +767,14 @@ MonitorHistoryTickDtoOutcome = Literal["passed", "degraded", "failed"]
 MonitorListGroupDtoKey = Literal[
     "failing", "not_running", "flaky", "passing", "running", "paused"
 ]
-MonitorOwnerDtoType = Literal["DASHBOARD", "CLI", "TERRAFORM", "MCP", "API"]
+MonitorOwnerDtoType = Literal["DASHBOARD", "CLI", "TERRAFORM", "MCP", "API", "GIT"]
 MonitorOwnershipMetadataFromOwner = Literal[
-    "DASHBOARD", "CLI", "TERRAFORM", "MCP", "API"
+    "DASHBOARD", "CLI", "TERRAFORM", "MCP", "API", "GIT"
 ]
 MonitorOwnershipMetadataKind = Literal["monitor_ownership"]
-MonitorOwnershipMetadataToOwner = Literal["DASHBOARD", "CLI", "TERRAFORM", "MCP", "API"]
+MonitorOwnershipMetadataToOwner = Literal[
+    "DASHBOARD", "CLI", "TERRAFORM", "MCP", "API", "GIT"
+]
 MonitorRegionHealthDtoVerdict = Literal["up", "degraded", "down", "paused", "unknown"]
 MonitorRegionalHealthDtoRegionalDisplayHealth = Literal[
     "healthy",
@@ -793,7 +795,9 @@ MonitorTestRequestType = Literal[
     "HTTP", "DNS", "MCP_SERVER", "TCP", "ICMP", "HEARTBEAT", "BROWSER", "MULTI_STEP_API"
 ]
 MonitorValidationFindingDtoSeverity = Literal["ERROR", "WARNING"]
-MonitorVersionDtoChangedVia = Literal["API", "DASHBOARD", "CLI", "TERRAFORM"]
+MonitorVersionDtoChangedVia = Literal[
+    "API", "DASHBOARD", "CLI", "TERRAFORM", "GIT", "MCP"
+]
 NotificationDispatchDtoCompletionReason = Literal["EXHAUSTED", "RESOLVED", "NO_STEPS"]
 NotificationDispatchDtoStatus = Literal[
     "PENDING", "DISPATCHING", "DELIVERED", "ESCALATING", "ACKNOWLEDGED", "COMPLETED"
@@ -828,7 +832,9 @@ RedirectTargetAssertionOperator = Literal[
 RedirectTargetAssertionType = Literal["redirect_target"]
 RegexBodyAssertionType = Literal["regex_body"]
 ResourceGroupDtoHealthThresholdType = Literal["COUNT", "PERCENTAGE"]
-ResourceGroupDtoManagedBy = Literal["DASHBOARD", "CLI", "TERRAFORM", "MCP", "API"]
+ResourceGroupDtoManagedBy = Literal[
+    "DASHBOARD", "CLI", "TERRAFORM", "MCP", "API", "GIT"
+]
 ResourceGroupHealthDtoStatus = Literal["operational", "maintenance", "degraded", "down"]
 ResourceGroupHealthDtoThresholdStatus = Literal["healthy", "degraded", "down"]
 ResourceGroupMemberDtoStatus = Literal["operational", "maintenance", "degraded", "down"]
@@ -1012,7 +1018,7 @@ StatusPageCustomDomainDtoStatus = Literal[
 ]
 StatusPageCustomDomainDtoVerificationMethod = Literal["CNAME", "TXT"]
 StatusPageDtoIncidentMode = Literal["MANUAL", "REVIEW", "AUTOMATIC"]
-StatusPageDtoManagedBy = Literal["DASHBOARD", "CLI", "TERRAFORM", "MCP", "API"]
+StatusPageDtoManagedBy = Literal["DASHBOARD", "CLI", "TERRAFORM", "MCP", "API", "GIT"]
 StatusPageDtoOverallStatus = Literal[
     "OPERATIONAL",
     "DEGRADED_PERFORMANCE",
@@ -1067,7 +1073,7 @@ TelegramChannelConfigChannelType = Literal["telegram"]
 TraceEntryPointId = Literal[
     "failing_action", "failing_step", "first_failed_request", "case_start"
 ]
-TransferMonitorRequestTo = Literal["DASHBOARD", "CLI", "TERRAFORM", "MCP", "API"]
+TransferMonitorRequestTo = Literal["DASHBOARD", "CLI", "TERRAFORM", "MCP", "API", "GIT"]
 TriggerRuleAggregationType = Literal["all_exceed", "average", "p95", "max"]
 TriggerRuleScope = Literal["per_region", "any_region"]
 TriggerRuleSeverity = Literal["down", "degraded"]
@@ -1076,7 +1082,7 @@ TriggerRunRefPhase = Literal[
     "created", "queued", "starting", "running", "finalizing", "finished"
 ]
 UpdateAlertChannelRequestManagedBy = Literal[
-    "DASHBOARD", "CLI", "TERRAFORM", "MCP", "API"
+    "DASHBOARD", "CLI", "TERRAFORM", "MCP", "API", "GIT"
 ]
 UpdateAssertionRequestSeverity = Literal["fail", "warn"]
 UpdateDatadogChannelConfigChannelType = Literal["datadog"]
@@ -1092,7 +1098,9 @@ UpdateIncidentRequestSeverity = Literal["DOWN", "DEGRADED", "MAINTENANCE"]
 UpdateJiraChannelConfigChannelType = Literal["jira"]
 UpdateLinearChannelConfigChannelType = Literal["linear"]
 UpdateMattermostChannelConfigChannelType = Literal["mattermost"]
-UpdateMonitorRequestManagedBy = Literal["DASHBOARD", "CLI", "TERRAFORM", "MCP", "API"]
+UpdateMonitorRequestManagedBy = Literal[
+    "DASHBOARD", "CLI", "TERRAFORM", "MCP", "API", "GIT"
+]
 UpdateOpsGenieChannelConfigChannelType = Literal["opsgenie"]
 UpdatePagerDutyChannelConfigChannelType = Literal["pagerduty"]
 UpdatePhoneCallChannelConfigChannelType = Literal["phone_call"]
@@ -1100,7 +1108,7 @@ UpdatePushbulletChannelConfigChannelType = Literal["pushbullet"]
 UpdatePushoverChannelConfigChannelType = Literal["pushover"]
 UpdateResourceGroupRequestHealthThresholdType = Literal["COUNT", "PERCENTAGE"]
 UpdateResourceGroupRequestManagedBy = Literal[
-    "DASHBOARD", "CLI", "TERRAFORM", "MCP", "API"
+    "DASHBOARD", "CLI", "TERRAFORM", "MCP", "API", "GIT"
 ]
 UpdateRootlyChannelConfigChannelType = Literal["rootly"]
 UpdateSlackChannelConfigChannelType = Literal["slack"]
@@ -1115,7 +1123,7 @@ UpdateStatusPageIncidentUpdateRequestStatus = Literal[
 ]
 UpdateStatusPageRequestIncidentMode = Literal["MANUAL", "REVIEW", "AUTOMATIC"]
 UpdateStatusPageRequestManagedBy = Literal[
-    "DASHBOARD", "CLI", "TERRAFORM", "MCP", "API"
+    "DASHBOARD", "CLI", "TERRAFORM", "MCP", "API", "GIT"
 ]
 UpdateStatusPageRequestVisibility = Literal["PUBLIC", "PASSWORD", "IP_RESTRICTED"]
 UpdateTeamsChannelConfigChannelType = Literal["teams"]
@@ -1242,9 +1250,6 @@ __all__ = [
     "IncidentDtoSeverity",
     "IncidentDtoSource",
     "IncidentDtoStatus",
-    "IncidentFilterParamsSeverity",
-    "IncidentFilterParamsSource",
-    "IncidentFilterParamsStatus",
     "IncidentIoChannelConfigChannelType",
     "IncidentTriggerDtoSource",
     "IncidentUpdateDtoCreatedBy",
@@ -1255,6 +1260,7 @@ __all__ = [
     "JiraChannelConfigChannelType",
     "JsonPathAssertionOperator",
     "JsonPathAssertionType",
+    "KeyInfoTool",
     "LinearChannelConfigChannelType",
     "LinkedIncidentDtoStatus",
     "LinkedStatusPageIncidentDtoConnectionMode",

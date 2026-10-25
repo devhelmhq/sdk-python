@@ -126,7 +126,7 @@ class Runs:
             self._client,
             _BASE,
             RunDto,
-            limit=model.limit,
+            limit=model.limit or DEFAULT_RUN_LIST_LIMIT,
             extra_params=query_from_model(model),
         )
 

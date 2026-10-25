@@ -6,12 +6,14 @@ import base64
 import hashlib
 import io
 import json
+import os
 import shutil
 import struct
 import subprocess
 import unicodedata
 import zipfile
 from pathlib import Path
+from typing import Any
 
 import pytest
 
@@ -439,55 +441,61 @@ def test_detect_source_from_git(
     assert bundle.source.file == "checks/a.spec.ts"
 
 
-# -- conformance vectors (mono docs/contracts/bundle-vectors.json, Wave 0) ---------
+# -- conformance vectors (mono docs/contracts/bundle-vectors.json, W0-9) ----------
+#
+# Each vector is {name, request: {entrypoint?, files, binaryFiles?, symlinks?},
+# expect: {entrypoint, digest, uploadDigest, files} | {refusal: {code}}}.
+# The Python SDK is an include-set client: it hashes what it sends
+# (``uploadDigest``) and the server resolves the closure (``digest`` over
+# ``expect.files``). Both are recomputed here from the request.
 
 
-def _vector_files(raw: dict[str, object]) -> dict[str, bytes]:
-    """A vector's file map: ``path -> str | {"utf8": str} | {"base64": str}``."""
-    out: dict[str, bytes] = {}
-    for path, value in raw.items():
-        if isinstance(value, str):
-            out[path] = value.encode("utf-8")
-        elif isinstance(value, dict) and "base64" in value:
-            out[path] = base64.b64decode(str(value["base64"]))
-        elif isinstance(value, dict) and "utf8" in value:
-            out[path] = str(value["utf8"]).encode("utf-8")
-        else:
-            raise AssertionError(f"unrecognised file encoding for {path!r}: {value!r}")
-    return out
-
-
-def _load_vectors() -> list[dict[str, object]]:
-    """``{"vectors": [...]}`` or a bare list; each vector is a dict."""
-    if not VECTORS.exists():
-        pytest.skip(
-            "docs/contracts/bundle-vectors.json not vendored yet (mono Wave 0, W0-9)"
-        )
+def _load_vectors() -> list[dict[str, Any]]:
     data = json.loads(VECTORS.read_text())
-    vectors = data.get("vectors", []) if isinstance(data, dict) else data
-    assert isinstance(vectors, list) and vectors, "bundle-vectors.json has no vectors"
-    return [v for v in vectors if isinstance(v, dict)]
+    vectors: list[dict[str, Any]] = data["vectors"]
+    assert vectors, "bundle-vectors.json has no vectors"
+    return vectors
 
 
-def test_conformance_vectors() -> None:
-    checked = 0
-    for vector in _load_vectors():
-        name = vector.get("name", "?")
-        raw_files = vector.get("files")
-        expect = vector.get("expect") or vector.get("expected") or {}
-        if not isinstance(raw_files, dict) or not isinstance(expect, dict):
-            continue
-        files = {normalize_path(p): c for p, c in _vector_files(raw_files).items()}
-        # The include-set client only computes the digest of what it sends,
-        # so it checks ``uploadDigest`` (or ``digest`` when the vector's
-        # files are already the closure: no ``entrypoint`` / ``include``).
-        upload = expect.get("uploadDigest")
-        closure_only = "entrypoint" not in vector and "include" not in vector
-        target = upload or (expect.get("digest") if closure_only else None)
-        if isinstance(target, str):
-            assert bundle_digest(files) == target, f"vector {name}"
-            checked += 1
-    assert checked, "no vector carried a digest the Python client can check"
+def _request_files(request: dict[str, Any]) -> dict[str, bytes]:
+    files = {p: str(t).encode("utf-8") for p, t in request.get("files", {}).items()}
+    for path, b64 in request.get("binaryFiles", {}).items():
+        files[path] = base64.b64decode(b64)
+    return {normalize_path(p): c for p, c in files.items()}
+
+
+VECTOR_IDS = [v["name"] for v in _load_vectors()]
+
+
+@pytest.mark.parametrize("vector", _load_vectors(), ids=VECTOR_IDS)
+def test_conformance_vector(vector: dict[str, Any], tmp_path: Path) -> None:
+    request, expect = vector["request"], vector["expect"]
+    if "refusal" in expect:
+        code = expect["refusal"]["code"]
+        if request.get("symlinks"):
+            for path, content in request.get("files", {}).items():
+                _write(tmp_path, path, content)
+            for link, target in request["symlinks"].items():
+                (tmp_path / link).parent.mkdir(parents=True, exist_ok=True)
+                os.symlink(target, tmp_path / link)
+            entry = tmp_path / next(iter(request["files"]))
+            with pytest.raises(DevhelmApiError) as err:
+                collect(entry, root=tmp_path)
+            assert err.value.code == code
+        else:
+            # An import outside the set is found by the server's resolver;
+            # the include-set client never parses imports (doc 42 §5.3).
+            assert code == "IMPORT_NOT_IN_BUNDLE"
+        return
+    files = _request_files(request)
+    assert bundle_digest(files) == expect["uploadDigest"]
+    closure = {p: files[normalize_path(p)] for p in expect["files"]}
+    assert bundle_digest(closure) == expect["digest"]
+    # The in-memory code form uploads exactly these files.
+    entry = request.get("entrypoint") or expect["entrypoint"] or next(iter(files))
+    texts = {p: c for p, c in files.items()}
+    bundle = collect(FilesCode(entrypoint=entry, files=texts))
+    assert bundle.digest == expect["uploadDigest"]
 
 
 def test_include_glob_outside_root_is_refused(tmp_path: Path) -> None:

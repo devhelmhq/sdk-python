@@ -67,6 +67,7 @@ _QUEUED_RUN: dict[str, object] = {
     "attempts": [],
     "executionAttempts": [],
     "billable": False,
+    "flaky": False,
 }
 
 

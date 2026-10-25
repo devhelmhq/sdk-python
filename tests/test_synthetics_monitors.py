@@ -169,6 +169,7 @@ def run(
         "attempts": [],
         "executionAttempts": [],
         "billable": True,
+        "flaky": False,
     }
     if phase == "finished":
         base["outcome"] = "passed"

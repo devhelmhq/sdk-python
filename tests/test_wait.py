@@ -47,6 +47,7 @@ def _run(phase: str, outcome: str | None = None) -> dict[str, object]:
         "attempts": [],
         "executionAttempts": [],
         "billable": True,
+        "flaky": False,
     }
 
 

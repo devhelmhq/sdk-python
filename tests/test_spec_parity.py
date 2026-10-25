@@ -85,6 +85,12 @@ SCHEMAS_NOT_IN_SPEC: frozenset[str] = frozenset(
         # and not present as standalone schemas in the OpenAPI document.
         "Page",
         "CursorPage",
+        # Generated from the operations' flat query parameters by
+        # scripts/query_models.py (the spec has no component for them).
+        "RunListParams",
+        "RunCaseListParams",
+        "RunConsoleParams",
+        "RunNetworkParams",
     }
 )
 
