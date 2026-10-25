@@ -58,11 +58,12 @@ def test_inbox_wait_unwraps_event_and_downloads_signed_url(
 
     downloaded: list[str] = []
 
-    def fake_get(url: str, **_kwargs: Any) -> httpx.Response:
+    def fake_get(_self: httpx.Client, url: str, **_kwargs: Any) -> httpx.Response:
         downloaded.append(url)
         return httpx.Response(200, content=b"\x09\x09")
 
-    monkeypatch.setattr(httpx, "get", fake_get)
+    # The signed URL is fetched with a fresh client that carries no API token.
+    monkeypatch.setattr(httpx.Client, "get", fake_get)
     client = httpx.Client(
         transport=httpx.MockTransport(handler), base_url="http://api.test"
     )

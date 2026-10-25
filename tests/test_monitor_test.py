@@ -1,25 +1,29 @@
-"""Tests for ``Monitors.test`` and ``Monitors.test_run``.
+"""Tests for ``Monitors.test``, ``Monitors.probe`` and ``Monitors.test_run``.
 
 ``POST /api/v1/monitors/{id}/test`` answers 200 with the probe result for
 uptime monitors and 202 with a queued validation run for browser and
-multi-step API monitors. ``test()`` returns the probe result and raises
-``DevhelmMonitorTestQueuedError`` on 202; ``test_run()`` returns the run and
-sends the optional target body only when given.
+multi-step API monitors (doc 42 R16). ``test()`` returns the run and raises
+``ValidationError`` with code ``USE_PROBE`` on 200; ``probe()`` returns the
+probe result and raises ``DevhelmMonitorTestQueuedError`` on 202;
+``test_run()`` is the deprecated spelling of ``test()``.
 """
 
 from __future__ import annotations
 
 import json
+from collections.abc import Iterator
 
 import httpx
 import pytest
 
+import devhelm._authoring as authoring
 from devhelm import (
     DevhelmApiError,
     DevhelmMonitorTestQueuedError,
     DevhelmValidationError,
     MonitorTestResultDto,
     RunDto,
+    ValidationError,
 )
 from devhelm.resources.monitors import Monitors
 
@@ -66,6 +70,13 @@ _QUEUED_RUN: dict[str, object] = {
 }
 
 
+@pytest.fixture(autouse=True)
+def _reset_deprecations() -> Iterator[None]:
+    authoring._warned.clear()
+    yield
+    authoring._warned.clear()
+
+
 def _monitors(
     captured: list[httpx.Request], status: int, body: dict[str, object]
 ) -> Monitors:
@@ -81,34 +92,50 @@ def _monitors(
     return Monitors(client)
 
 
-def test_test_returns_probe_result_on_200() -> None:
+def test_probe_returns_probe_result_on_200() -> None:
     captured: list[httpx.Request] = []
-    out = _monitors(captured, 200, {"data": _PROBE_RESULT}).test(MONITOR_ID)
+    out = _monitors(captured, 200, {"data": _PROBE_RESULT}).probe(MONITOR_ID)
     assert isinstance(out, MonitorTestResultDto)
     assert out.passed is True
     assert out.status_code == 200
     assert captured[0].content == b""
 
 
-def test_test_raises_queued_error_on_202_with_the_run() -> None:
+def test_probe_raises_queued_error_on_202_with_the_run() -> None:
     captured: list[httpx.Request] = []
     with pytest.raises(DevhelmMonitorTestQueuedError) as exc:
-        _monitors(captured, 202, {"data": _QUEUED_RUN}).test(MONITOR_ID)
+        _monitors(captured, 202, {"data": _QUEUED_RUN}).probe(MONITOR_ID)
     # Same base class code monitors got before the API queued runs.
     assert isinstance(exc.value, DevhelmValidationError)
     assert str(exc.value.run.id) == _QUEUED_RUN["id"]
-    assert "monitors.test_run()" in str(exc.value)
+    assert "monitors.test()" in str(exc.value)
 
 
-def test_test_still_rejects_a_200_body_that_is_not_a_probe_result() -> None:
+def test_probe_still_rejects_a_200_body_that_is_not_a_probe_result() -> None:
     captured: list[httpx.Request] = []
     with pytest.raises(DevhelmValidationError):
-        _monitors(captured, 200, {"data": _QUEUED_RUN}).test(MONITOR_ID)
+        _monitors(captured, 200, {"data": _QUEUED_RUN}).probe(MONITOR_ID)
+
+
+def test_test_returns_run_on_202() -> None:
+    captured: list[httpx.Request] = []
+    out = _monitors(captured, 202, {"data": _QUEUED_RUN}).test(MONITOR_ID)
+    assert isinstance(out, RunDto)
+    assert json.loads(captured[0].content) == {}
+
+
+def test_test_raises_use_probe_on_200() -> None:
+    captured: list[httpx.Request] = []
+    with pytest.raises(ValidationError) as exc:
+        _monitors(captured, 200, {"data": _PROBE_RESULT}).test(MONITOR_ID)
+    assert exc.value.code == "USE_PROBE"
+    assert exc.value.category == "validation"
 
 
 def test_test_run_returns_run_on_202() -> None:
     captured: list[httpx.Request] = []
-    out = _monitors(captured, 202, {"data": _QUEUED_RUN}).test_run(MONITOR_ID)
+    with pytest.warns(DeprecationWarning):
+        out = _monitors(captured, 202, {"data": _QUEUED_RUN}).test_run(MONITOR_ID)
     assert isinstance(out, RunDto)
     assert str(out.id) == _QUEUED_RUN["id"]
     assert out.counts_toward_health is False
@@ -137,7 +164,7 @@ def test_test_run_rejects_unknown_target_key_before_sending() -> None:
 
 def test_test_run_rejects_probe_result_and_names_test() -> None:
     captured: list[httpx.Request] = []
-    with pytest.raises(DevhelmValidationError, match=r"use monitors\.test\(\)"):
+    with pytest.raises(DevhelmValidationError, match=r"use monitors\.probe\(\)"):
         _monitors(captured, 200, {"data": _PROBE_RESULT}).test_run(MONITOR_ID)
 
 

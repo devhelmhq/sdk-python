@@ -14,6 +14,7 @@ import hashlib
 import json
 import os
 import sys
+import warnings
 from datetime import date, datetime
 from enum import Enum
 from typing import Any, TypeVar
@@ -61,6 +62,8 @@ from devhelm import (
     UpdateWebhookEndpointRequest,
     UpdateWebhookInboxRequest,
 )
+from devhelm._authoring import is_code_type
+from devhelm._bundle import FilesCode
 from devhelm._pagination import CursorPage, Page
 from devhelm.resources.email import Address, Email
 
@@ -161,13 +164,19 @@ def run(client: Devhelm, resource: str, action: str, rest: list[str]) -> Any:  #
     if op == "monitors.resume":
         return client.monitors.resume(rest[0])
     if op == "monitors.test":
-        return client.monitors.test(rest[0])
+        # Like `devhelm monitors test`: code checks get a validation run,
+        # uptime monitors a probe.
+        if is_code_type(client.monitors.get(rest[0]).type):
+            return client.monitors.test(rest[0])
+        return client.monitors.probe(rest[0])
     if op == "monitors.results":
         opts = json.loads(rest[1]) if len(rest) > 1 and rest[1] else {}
-        return client.monitors.results(rest[0], **opts)
+        with warnings.catch_warnings():
+            warnings.simplefilter("ignore", DeprecationWarning)
+            return client.monitors.results(rest[0], **opts)
     if op == "monitors.versions":
         opts = json.loads(rest[1]) if len(rest) > 1 and rest[1] else {}
-        return client.monitors.versions(rest[0], **opts)
+        return client.monitors.versions.list(rest[0], **opts)
 
     # -- Incidents --
     if op == "incidents.list":
@@ -500,12 +509,118 @@ def run(client: Devhelm, resource: str, action: str, rest: list[str]) -> Any:  #
     result = _run_inbound(client, op, rest)
     if result is not _UNKNOWN:
         return result
+    result = _run_synthetics(client, op, rest)
+    if result is not _UNKNOWN:
+        return result
 
     sys.stderr.write(json.dumps({"error": f"Unknown operation: {op}"}))
     sys.exit(2)
 
 
 _UNKNOWN = object()
+
+
+def _arg(rest: list[str], i: int) -> str | None:
+    return rest[i] if len(rest) > i and rest[i] else None
+
+
+def _json_arg(rest: list[str], i: int) -> dict[str, Any]:
+    raw = _arg(rest, i)
+    loaded: dict[str, Any] = json.loads(raw) if raw else {}
+    return loaded
+
+
+def _run_synthetics(client: Devhelm, op: str, rest: list[str]) -> Any:  # noqa: C901
+    """Code checks: bundles, revisions, runs, publish and rollback.
+
+    ``code`` arguments are JSON ``{"entrypoint", "files"}`` (in memory), so
+    tests need no files on disk.
+    """
+    m = client.monitors
+    if op == "monitors.create-code":
+        return m.create(_json_arg(rest, 0), code=_json_arg(rest, 1))
+    if op == "monitors.update-code":
+        return m.update(rest[0], _json_arg(rest, 2), code=_json_arg(rest, 1))
+    if op == "monitors.test-code":
+        return m.test(rest[0], **_json_arg(rest, 1))
+    if op == "monitors.probe":
+        return m.probe(rest[0])
+    if op == "monitors.test-adhoc":
+        opts = _json_arg(rest, 0)
+        return m.test_adhoc(**opts)
+    if op == "monitors.run-now":
+        return m.run_now(rest[0], **_json_arg(rest, 1))
+    if op == "monitors.trigger":
+        return m.trigger(rest[0], **_json_arg(rest, 1))
+    if op == "monitors.publish":
+        return m.publish(rest[0], _json_arg(rest, 1))
+    if op == "monitors.rollback":
+        return m.rollback(rest[0], _json_arg(rest, 1))
+    if op == "monitors.rollback-preview":
+        return m.rollback_preview(rest[0], revision_id=_arg(rest, 1))
+    if op == "monitors.drift":
+        return m.drift(rest[0])
+    if op == "monitors.restore":
+        return m.restore(rest[0], environment=_arg(rest, 1))
+    if op == "monitors.trash":
+        return m.trash.list()
+    if op == "monitors.history":
+        return m.history.list(rest[0], **_json_arg(rest, 1))
+    if op == "monitors.mute":
+        return m.mute(rest[0], _json_arg(rest, 1))
+    if op == "monitors.unmute":
+        return m.unmute(rest[0])
+    if op == "monitors.transfer":
+        return m.transfer(rest[0], _json_arg(rest, 1))
+    if op == "monitors.revisions-list":
+        return m.revisions.list(rest[0], state=_arg(rest, 1))
+    if op == "monitors.revisions-get":
+        return m.revisions.get(rest[0], rest[1])
+    if op == "monitors.revisions-create":
+        return m.revisions.create(rest[0], code=_json_arg(rest, 1))
+    if op == "monitors.revisions-test":
+        return m.revisions.test(rest[0], rest[1], **_json_arg(rest, 2))
+    if op == "monitors.revisions-diff":
+        return m.revisions.diff(rest[0], rest[1], _arg(rest, 2))
+    if op == "monitors.revisions-files":
+        return m.revisions.files(rest[0], rest[1])
+    if op == "monitors.revisions-discard":
+        m.revisions.discard(rest[0], rest[1])
+        return None
+    if op == "monitors.revisions-keep":
+        return m.revisions.keep(rest[0], rest[1])
+    if op == "runs.list":
+        return client.runs.list(_json_arg(rest, 0))
+    if op == "runs.get":
+        return client.runs.get(rest[0])
+    if op == "runs.wait":
+        timeout = int(rest[1]) if _arg(rest, 1) else 30_000
+        return client.runs.wait(rest[0], timeout_ms=timeout)
+    if op == "runs.cancel":
+        return client.runs.cancel(rest[0])
+    if op == "bundles.create":
+        code = _json_arg(rest, 0)
+        return client.bundles.create(
+            FilesCode(entrypoint=code["entrypoint"], files=code["files"])
+        )
+    if op == "bundles.check":
+        opts = _json_arg(rest, 0)
+        return client.bundles.check(opts["files"], entrypoint=opts.get("entrypoint"))
+    if op == "runtimes.list":
+        return client.runtimes.list()
+    if op == "runtimes.get":
+        return client.runtimes.get(rest[0])
+    if op == "account.usage":
+        return client.account.usage()
+    if op == "account.entitlements":
+        return client.account.entitlements()
+    if op == "secrets.values-set":
+        client.secrets.values.set(rest[0], environment=rest[1], value=rest[2])
+        return None
+    if op == "secrets.values-delete":
+        client.secrets.values.delete(rest[0], environment=rest[1])
+        return None
+    return _UNKNOWN
 
 
 def _run_inbound(client: Devhelm, op: str, rest: list[str]) -> Any:  # noqa: C901
@@ -663,7 +778,14 @@ def main() -> None:
             sys.stdout.write(json.dumps(result))
     except DevhelmError as err:
         sys.stderr.write(
-            json.dumps({"error": err.message, "code": err.code, "status": err.status})
+            json.dumps(
+                {
+                    "error": err.message,
+                    "code": err.code,
+                    "category": err.category,
+                    "status": getattr(err, "status", 0),
+                }
+            )
         )
         sys.exit(1)
     except Exception as err:
