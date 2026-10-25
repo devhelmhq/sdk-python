@@ -538,7 +538,9 @@ def _run_synthetics(client: Devhelm, op: str, rest: list[str]) -> Any:  # noqa: 
     """
     m = client.monitors
     if op == "monitors.create-code":
-        return m.create(_json_arg(rest, 0), code=_json_arg(rest, 1))
+        body = _json_arg(rest, 0)
+        env = body.pop("environment", None)
+        return m.create(body, code=_json_arg(rest, 1), environment=env)
     if op == "monitors.update-code":
         return m.update(rest[0], _json_arg(rest, 2), code=_json_arg(rest, 1))
     if op == "monitors.test-code":
