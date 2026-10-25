@@ -7,7 +7,12 @@ from importlib.metadata import version as _pkg_version
 from pydantic import JsonValue
 
 from devhelm._async.client import AsyncDevhelm
-from devhelm._authoring import CodeMonitorType, UptimeMonitorType
+from devhelm._authoring import (
+    CodeMonitorType,
+    MonitorTestOutcome,
+    UptimeMonitorType,
+    is_run,
+)
 from devhelm._bundle import (
     CodeInput,
     CollectedBundle,
@@ -337,6 +342,8 @@ __all__ = [
     "CodeMonitorType",
     "UptimeMonitorType",
     "TriggeredRuns",
+    "MonitorTestOutcome",
+    "is_run",
     # Resource classes
     "Monitors",
     "Runs",

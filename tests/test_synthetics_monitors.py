@@ -617,7 +617,12 @@ def test_test_returns_run_on_202(router: Router) -> None:
     assert isinstance(out, RunDto)
 
 
-def test_test_on_uptime_raises_use_probe(router: Router) -> None:
+def test_test_on_uptime_raises_use_probe_after_removal(
+    router: Router, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    from devhelm.resources import monitors as monitors_module
+
+    monkeypatch.setattr(monitors_module, "removal_date_passed", lambda: True)
     router.add("POST", f"/api/v1/monitors/{MID}/test", single(PROBE))
     with pytest.raises(ValidationError) as exc:
         monitors(router).test(MID)

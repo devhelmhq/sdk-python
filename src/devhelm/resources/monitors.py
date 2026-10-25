@@ -25,10 +25,12 @@ from uuid import UUID
 
 from devhelm._authoring import (
     CodeMonitorType,
+    MonitorTestOutcome,
     UptimeMonitorType,
     check_config,
     deprecated,
     is_code_type,
+    removal_date_passed,
 )
 from devhelm._bundle import CodeInput
 from devhelm._errors import (
@@ -850,15 +852,18 @@ class Monitors:
         root: Root = None,
         wait: bool = False,
         timeout_ms: int = DEFAULT_WAIT_TIMEOUT_MS,
-    ) -> RunDto:
+    ) -> MonitorTestOutcome:
         """Queue a validation run of a code monitor in its own environment.
 
         With ``code`` it tests that code (as an unpublished revision) instead
         of the live one. Billed, saved, never signals. ``wait=True`` returns
         the finished run.
 
-        On an uptime monitor this raises ``ValidationError`` with code
-        ``USE_PROBE``: call :meth:`probe` for those.
+        On an uptime monitor the API answers with a probe result. Until
+        2027-01-31 that result is returned with a one-time deprecation
+        warning (use :meth:`probe`); from then on this raises
+        ``ValidationError`` ``USE_PROBE``. Narrow the result with
+        :func:`devhelm.is_run`.
         """
         spec = None if code is None else code_spec(self._client, code, root=root)
         body = CodeTestTargetRequest(
@@ -867,12 +872,19 @@ class Monitors:
         path = f"{_monitor_path(id)}/test"
         status, data = api_post_with_status(self._client, path, body)
         if status != 202:
+            probe = parse_single(MonitorTestResultDto, data, f"POST {path}")
+            if not removal_date_passed():
+                deprecated(
+                    "monitors.test(id) on an uptime monitor", "monitors.probe(id)"
+                )
+                return probe
             raise client_error(
                 "validation",
                 "USE_PROBE",
                 "This is an uptime monitor: monitors.test() runs code checks. "
                 "Use monitors.probe(id) for a probe result.",
                 next_command="monitors.probe(id)",
+                details={"passed": probe.passed},
             )
         run = parse_single(RunDto, data, f"POST {path}")
         return _maybe_wait(self._client, run, wait, timeout_ms)

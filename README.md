@@ -154,8 +154,10 @@ result = client.monitors.probe(monitor.id)
 print(result.passed, result.status_code)
 ```
 
-`monitors.test()` on an uptime monitor raises `ValidationError` with code
-`USE_PROBE`; `monitors.probe()` on a code monitor raises
+`monitors.test()` returns `MonitorTestOutcome` (narrow it with
+`devhelm.is_run`). On an uptime monitor it still returns the probe result,
+with a one-time deprecation warning, until 2027-01-31; after that it raises
+`ValidationError` with code `USE_PROBE`. `monitors.probe()` on a code monitor raises
 `DevhelmMonitorTestQueuedError` with the queued run on `err.run`.
 
 ## Configuration
@@ -285,6 +287,7 @@ Removed on 2027-01-31; each warns once per process:
 | `monitors.versions(id)` | `monitors.versions.list(id)` |
 | `monitors.results(id)` | `monitors.history.list(id)` |
 | `monitors.test_run(id)` | `monitors.test(id)` |
+| `monitors.test(id)` on an uptime monitor | `monitors.probe(id)` (after 2027-01-31 it raises `USE_PROBE`) |
 
 ## Development
 

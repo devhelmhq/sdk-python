@@ -58,9 +58,11 @@ asyncio client, and typed errors per category.
 
 ### Changed
 
-- `monitors.test(id)` now runs a code check and returns its `RunDto`; on an
-  uptime monitor it raises `ValidationError` `USE_PROBE`. The probe is
-  `monitors.probe(id)`.
+- `monitors.test(id)` runs a code check and returns its `RunDto`. On an
+  uptime monitor it still returns the probe result with a one-time
+  deprecation warning until 2027-01-31, then raises `ValidationError`
+  `USE_PROBE`. The result type is `MonitorTestOutcome`; narrow it with
+  `devhelm.is_run`. The probe is `monitors.probe(id)`.
 - Free-form JSON fields (`capturePolicySnapshot`, `details`, …) are typed
   `JsonValue` instead of `dict[str, dict[str, Any]]`, which also fixes
   decoding scalar values in them.
