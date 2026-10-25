@@ -75,6 +75,12 @@ uv run datamodel-codegen \
 echo "=> Injecting model_config (forbid on requests, ignore on responses)..."
 uv run python "$SCRIPT_DIR/inject_strict_config.py" "$OUTPUT"
 
+# Free-form JSON maps (Map<String, Object> in Java) arrive as
+# dict[str, dict[str, Any]], which rejects scalar values and leaks Any into
+# the public types. Type them as JsonValue. See the script docstring.
+echo "=> Typing free-form JSON as JsonValue..."
+uv run python "$SCRIPT_DIR/rewrite_json_values.py" "$OUTPUT"
+
 # Re-format after injection so the file stays ruff-clean. Non-fatal so the
 # spec-evolution harness keeps moving even if ruff is misconfigured in the
 # child env (e.g. inherited VIRTUAL_ENV from a pytest parent).

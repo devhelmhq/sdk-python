@@ -2,8 +2,16 @@
 #   filename:  .openapi-preprocessed.json
 
 from __future__ import annotations
-from typing import Annotated, Any, Literal
-from pydantic import AwareDatetime, BaseModel, ConfigDict, EmailStr, Field, RootModel
+from typing import Annotated, Literal
+from pydantic import (
+    AwareDatetime,
+    BaseModel,
+    ConfigDict,
+    EmailStr,
+    Field,
+    JsonValue,
+    RootModel,
+)
 from enum import StrEnum
 from uuid import UUID
 from datetime import date as date_aliased
@@ -2129,12 +2137,11 @@ class Dns(BaseModel):
         str | None, Field(alias="usedResolver", description="Resolver used for lookup")
     ] = None
     records: Annotated[
-        dict[str, list[dict[str, dict[str, Any]]]] | None,
+        dict[str, list[dict[str, JsonValue]]] | None,
         Field(description="Resolved DNS records keyed by record type"),
     ] = None
     attempts: Annotated[
-        list[dict[str, dict[str, Any]]] | None,
-        Field(description="DNS resolution attempts"),
+        list[dict[str, JsonValue]] | None, Field(description="DNS resolution attempts")
     ] = None
     failure_kind: Annotated[
         str | None,
@@ -2753,7 +2760,7 @@ class ErrorResponse(BaseModel):
     ] = None
     next: ErrorNext | None = None
     details: Annotated[
-        dict[str, dict[str, Any]] | None,
+        dict[str, JsonValue] | None,
         Field(
             description="Extra fields for this error, such as a missing secret key and environment"
         ),
@@ -4178,7 +4185,7 @@ class McpServer(BaseModel):
         str | None, Field(alias="protocolVersion", description="MCP protocol version")
     ] = None
     server_info: Annotated[
-        dict[str, dict[str, Any]] | None,
+        dict[str, JsonValue] | None,
         Field(alias="serverInfo", description="MCP server info (name, version, etc.)"),
     ] = None
     tool_count: Annotated[
@@ -5710,7 +5717,7 @@ class PolicySnapshotDto(BaseModel):
         ),
     ]
     policy: Annotated[
-        dict[str, dict[str, Any]],
+        dict[str, JsonValue],
         Field(description="Canonical policy document (snake_case, sorted keys)"),
     ]
     engine_version: Annotated[
@@ -6557,7 +6564,7 @@ class RuleEvaluationDto(BaseModel):
         ),
     ]
     evaluation_details: Annotated[
-        dict[str, dict[str, Any]],
+        dict[str, JsonValue],
         Field(
             alias="evaluationDetails",
             description="Structured details (e.g. failure counts, response-time aggregates)",
@@ -6666,8 +6673,7 @@ class RunEventDto(BaseModel):
         Field(alias="artifactId", description="Artifact this event refers to"),
     ] = None
     payload: Annotated[
-        dict[str, dict[str, Any]],
-        Field(description="Small typed payload for this event"),
+        dict[str, JsonValue], Field(description="Small typed payload for this event")
     ]
     created_at: Annotated[
         AwareDatetime,
@@ -7043,7 +7049,7 @@ class RunStepDto(BaseModel):
     ] = None
     error: Annotated[str | None, Field(description="Error when the step failed")] = None
     assertion: Annotated[
-        dict[str, dict[str, Any]] | None,
+        dict[str, JsonValue] | None,
         Field(description="Assertion or safe wait-result metadata"),
     ] = None
 
@@ -15079,14 +15085,14 @@ class RunDto(BaseModel):
         Field(alias="purgedAt", description="When stored evidence was purged"),
     ] = None
     capture_policy_snapshot: Annotated[
-        dict[str, dict[str, Any]],
+        dict[str, JsonValue],
         Field(
             alias="capturePolicySnapshot",
             description="Capture settings frozen at create",
         ),
     ]
     binding_version_snapshot: Annotated[
-        dict[str, dict[str, Any]],
+        dict[str, JsonValue],
         Field(
             alias="bindingVersionSnapshot",
             description="Resolved secret key names frozen at create",
