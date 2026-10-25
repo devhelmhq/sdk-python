@@ -57,15 +57,8 @@ def fetch_page(
 ) -> Page[M]:
     """Fetch one page from an offset-paginated endpoint."""
     base: dict[str, QueryValue] = dict(extra_params or {})
-    resp = api_get(client, path, {**base, "page": page, "size": size})
-    envelope = _validate_page(resp)
-    return Page(
-        data=parse_list(model_class, envelope.data, f"GET {path}"),
-        has_next=envelope.hasNext,
-        has_prev=envelope.hasPrev,
-        total_elements=envelope.totalElements,
-        total_pages=envelope.totalPages,
-        next_cursor=envelope.nextCursor,
+    return fetch_table(
+        client, path, model_class, params={**base, "page": page, "size": size}
     )
 
 

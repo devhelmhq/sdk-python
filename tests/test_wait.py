@@ -284,3 +284,23 @@ def test_async_deadline(sleeps: list[float], monkeypatch: pytest.MonkeyPatch) ->
             async_wait.wait_for_run(_async_transport(server), RUN_ID, timeout_ms=3_000)
         )
     assert err.value.phase == "queued"
+
+
+def test_heartbeat_only_stream_respects_deadline(
+    sleeps: list[float], monkeypatch: pytest.MonkeyPatch
+) -> None:
+    # Keep-alive comments reset the read timeout, so the deadline must be
+    # checked on every line, not only on events.
+    clock = [0.0]
+
+    def tick() -> float:
+        clock[0] += 1.0
+        return clock[0]
+
+    monkeypatch.setattr(sync_wait, "monotonic", tick)
+    body = (": keep-alive\n\n" * 50).encode()
+    server = _Server([_run("running")], _event_stream(body))
+    with pytest.raises(WaitTimeoutError):
+        sync_wait.wait_for_run(_sync_transport(server), RUN_ID, timeout_ms=5_000)
+    # The stream was opened once and abandoned at the deadline.
+    assert sum(1 for r in server.requests if r.url.path == EVENTS_PATH) == 1

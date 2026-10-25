@@ -21,6 +21,7 @@ from collections.abc import Sequence
 from typing import Literal, overload
 from uuid import UUID
 
+from devhelm._async._compat import monotonic
 from devhelm._async.pagination import (
     fetch_all_cursor_pages,
     fetch_all_pages,
@@ -547,8 +548,8 @@ class Monitors:
         items = await fetch_all_pages(
             self._client, _BASE, MonitorDto, extra_params=filters
         )
-        # Exact-name lookup is a server filter; the check here keeps a server
-        # that predates it from answering with every monitor.
+        # ``name`` is an exact-match query filter (doc 42 W0-6). A server
+        # without it ignores the key, so the match is also applied here.
         return [m for m in items if name is None or m.name == name]
 
     async def list_all(
@@ -1080,10 +1081,14 @@ class Monitors:
         )
         if not wait:
             return started
-        runs = [
-            await wait_for_run(self._client, str(ref.id), timeout_ms=timeout_ms)
-            for ref in started.runs
-        ]
+        # One deadline for the whole trigger, not timeout_ms per region.
+        deadline = monotonic() + timeout_ms / 1000
+        runs = []
+        for ref in started.runs:
+            remaining_ms = max(0, int((deadline - monotonic()) * 1000))
+            runs.append(
+                await wait_for_run(self._client, str(ref.id), timeout_ms=remaining_ms)
+            )
         return TriggeredRuns(trigger=started, runs=runs)
 
     async def results(

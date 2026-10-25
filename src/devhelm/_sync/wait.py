@@ -32,6 +32,8 @@ _POLL_START_S = 2.0
 _POLL_MAX_S = 10.0
 # One event-stream connection waits at most this long for the next line.
 _STREAM_READ_S = 60.0
+# Reconnects after a dropped stream before falling back to polling.
+_MAX_RECONNECTS = 3
 
 
 def is_finished(run: RunDto) -> bool:
@@ -64,7 +66,9 @@ class _SseEvent:
         )
 
 
-def _events(response: httpx.Response) -> Iterator[_SseEvent]:
+def _events(response: httpx.Response) -> Iterator[_SseEvent | None]:
+    """Parse the stream into events. A keep-alive comment yields ``None`` so
+    the caller checks its deadline even when no event arrives."""
     current = _SseEvent()
     for line in response.iter_lines():
         if not line:
@@ -73,6 +77,7 @@ def _events(response: httpx.Response) -> Iterator[_SseEvent]:
             current = _SseEvent()
             continue
         if line.startswith(":"):
+            yield None
             continue
         name, _, value = line.partition(":")
         value = value[1:] if value.startswith(" ") else value
@@ -101,6 +106,7 @@ def _stream_until_finished(
     """
     path = f"/api/v1/runs/{path_param(run_id)}/events"
     last_id: str | None = None
+    reconnects = 0
     while True:
         remaining = deadline - monotonic()
         if remaining <= 0 or is_set(signal):
@@ -114,9 +120,10 @@ def _stream_until_finished(
                 "GET", path, headers=headers, timeout=timeout
             ) as response:
                 for event in _events(response):
-                    last_id = event.id or last_id
-                    if event.finished():
-                        return True
+                    if event is not None:
+                        last_id = event.id or last_id
+                        if event.finished():
+                            return True
                     if is_set(signal) or monotonic() >= deadline:
                         return False
         except DevhelmApiError:
@@ -125,8 +132,10 @@ def _stream_until_finished(
         except DevhelmTransportError:
             # Read timeout or a dropped connection. Reconnect only when the
             # stream had delivered something; otherwise poll.
-            if last_id is None:
+            if last_id is None or reconnects >= _MAX_RECONNECTS:
                 return False
+            reconnects += 1
+            sleep(min(_POLL_START_S * reconnects, max(0.0, deadline - monotonic())))
             continue
         # The server closed the stream without a finished event.
         return False

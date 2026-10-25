@@ -488,3 +488,26 @@ def test_conformance_vectors() -> None:
             assert bundle_digest(files) == target, f"vector {name}"
             checked += 1
     assert checked, "no vector carried a digest the Python client can check"
+
+
+def test_include_glob_outside_root_is_refused(tmp_path: Path) -> None:
+    (tmp_path / ".git").mkdir()
+    entry = tmp_path / "checks" / "a.spec.ts"
+    entry.parent.mkdir()
+    entry.write_text("x")
+    with pytest.raises(DevhelmApiError) as err:
+        collect({"entrypoint": str(entry), "include": ["../*.ts"]})
+    assert err.value.code == "IMPORT_NOT_IN_BUNDLE"
+
+
+def test_remote_credentials_are_dropped() -> None:
+    from devhelm._bundle.source import _public_remote
+
+    assert (
+        _public_remote("https://user:tok@github.com/acme/web.git")
+        == "https://github.com/acme/web.git"
+    )
+    assert (
+        _public_remote("git@github.com:acme/web.git") == "git@github.com:acme/web.git"
+    )
+    assert _public_remote(None) is None

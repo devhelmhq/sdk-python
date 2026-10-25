@@ -58,19 +58,19 @@ def is_code_type(monitor_type: str | None) -> bool:
     return monitor_type in CODE_TYPES
 
 
-def check_config(monitor_type: str, config: RequestValue) -> BaseModel | None:
+def check_config(monitor_type: str, config: RequestValue) -> RequestValue:
     """Validate ``config`` as the model for ``monitor_type``.
 
-    Returns the validated model (``None`` when ``config`` is ``None``), or
-    raises ``ValidationError`` (``MONITOR_CONFIG_TYPE_MISMATCH`` /
+    Returns the validated model (``None`` when ``config`` is ``None``; the
+    value unchanged for a type this SDK does not know yet), or raises ``ValidationError`` (``MONITOR_CONFIG_TYPE_MISMATCH`` /
     ``FIELD_UNKNOWN``) or ``DevhelmValidationError`` for a bad value.
     """
     if config is None:
         return None
     model = CONFIG_MODELS.get(monitor_type)
     if model is None:
-        # An unknown type: leave it to the server (Postel on new types).
-        return config if isinstance(config, BaseModel) else None
+        # A type newer than this SDK: pass it through for the server to check.
+        return config
     if isinstance(config, BaseModel):
         if not isinstance(config, model):
             raise client_error(

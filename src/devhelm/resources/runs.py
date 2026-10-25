@@ -11,7 +11,6 @@ model, a dict or keyword arguments.
 from __future__ import annotations
 
 import builtins
-from collections.abc import Mapping
 
 from devhelm._generated import (
     ArtifactDownloadDto,
@@ -31,7 +30,11 @@ from devhelm._generated import (
 )
 from devhelm._pages import CursorPage
 from devhelm._sync._compat import Event
-from devhelm._sync.pagination import fetch_cursor_page, fetch_table
+from devhelm._sync.pagination import (
+    fetch_all_cursor_pages,
+    fetch_cursor_page,
+    fetch_table,
+)
 from devhelm._sync.transport import (
     Client,
     api_delete,
@@ -40,12 +43,13 @@ from devhelm._sync.transport import (
     api_post,
     as_transport,
 )
-from devhelm._sync.wait import DEFAULT_WAIT_TIMEOUT_MS, wait_for_run
+from devhelm._sync.wait import DEFAULT_WAIT_TIMEOUT_MS, get_run, wait_for_run
 from devhelm._transport import ResourceId, path_param, query_from_model
 from devhelm._validation import (
     RequestBody,
     RequestValue,
     build_request,
+    merge_body,
     parse_model,
     parse_single,
 )
@@ -62,12 +66,11 @@ def _run_path(run_id: ResourceId) -> str:
 def _run_list_params(
     params: RequestBody[RunListParams] | None, filters: dict[str, RequestValue]
 ) -> RunListParams:
-    if params is None and "limit" not in filters:
-        filters = {"limit": DEFAULT_RUN_LIST_LIMIT, **filters}
-    elif (
-        isinstance(params, Mapping) and "limit" not in params and "limit" not in filters
-    ):
-        filters = {"limit": DEFAULT_RUN_LIST_LIMIT, **filters}
+    """``limit`` is required by the model; the API's own default is 50."""
+    if not isinstance(params, RunListParams):
+        merged = merge_body(params, filters)
+        merged.setdefault("limit", DEFAULT_RUN_LIST_LIMIT)
+        return build_request(RunListParams, merged, {}, "runs.list")
     return build_request(RunListParams, params, filters, "runs.list")
 
 
@@ -120,19 +123,18 @@ class Runs:
         self, params: RequestBody[RunListParams] | None = None, **filters: RequestValue
     ) -> builtins.list[RunDto]:
         """Every run matching the filters, following ``next_cursor``."""
-        query = query_from_model(_run_list_params(params, filters))
-        items: builtins.list[RunDto] = []
-        while True:
-            page = fetch_cursor_page(self._client, _BASE, RunDto, extra_params=query)
-            items.extend(page.data)
-            if not page.has_more or not page.next_cursor:
-                return items
-            query = {**query, "cursor": page.next_cursor}
+        model = _run_list_params(params, filters)
+        return fetch_all_cursor_pages(
+            self._client,
+            _BASE,
+            RunDto,
+            limit=model.limit,
+            extra_params=query_from_model(model),
+        )
 
     def get(self, run_id: ResourceId) -> RunDto:
         """Get one run."""
-        path = _run_path(run_id)
-        return parse_single(RunDto, api_get(self._client, path), f"GET {path}")
+        return get_run(self._client, str(run_id))
 
     def wait(
         self,

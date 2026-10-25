@@ -864,3 +864,10 @@ def test_sessions(router: Router) -> None:
     assert router.calls[2].url.params["setupFile"] == "auth.setup.ts"
     m.sessions.revoke(MID)
     assert "setupFile" not in router.calls[3].url.params
+
+
+def test_unknown_monitor_type_config_passes_through() -> None:
+    from devhelm._authoring import check_config
+
+    config = {"anything": 1}
+    assert check_config("NEW_TYPE", config) is config

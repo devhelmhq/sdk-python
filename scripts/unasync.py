@@ -101,7 +101,7 @@ def ruff(paths: list[Path]) -> None:
     args = [str(p) for p in paths]
     subprocess.run(
         ["ruff", "check", "--quiet", "--fix", "--select", "I,F401", *args],
-        check=False,
+        check=False,  # leftovers are reported by `ruff check` in `make lint`
         cwd=ROOT,
     )
     subprocess.run(["ruff", "format", "--quiet", *args], check=True, cwd=ROOT)
@@ -139,6 +139,19 @@ def main() -> int:
             for target, dest in written.items()
             if not target.exists() or target.read_text() != dest.read_text()
         ]
+    # A generated file whose async source is gone is stale too.
+    candidates = [
+        *(PKG / "resources").glob("*.py"),
+        *(PKG / "_sync").glob("*.py"),
+        PKG / "client.py",
+    ]
+    stale += [
+        str(path.relative_to(ROOT))
+        for path in candidates
+        if path not in written
+        and path.exists()
+        and path.read_text().startswith("# Generated from")
+    ]
     if stale:
         print("unasync: stale sync files (run `make unasync`):", file=sys.stderr)
         for name in stale:
