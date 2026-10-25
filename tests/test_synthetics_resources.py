@@ -340,6 +340,57 @@ def test_bundles_upload_ships_include_fixture(router: Router, tmp_path: Path) ->
     assert "fixtures/order.json" in out.files
 
 
+def test_bundles_zip_upload_sends_include_as_query(router: Router) -> None:
+    files = {"a.spec.ts": b"x", "img.png": b"\x89PNG\x00", "f/o.json": b"{}"}
+
+    def upload(_req: httpx.Request) -> httpx.Response:
+        d = bundle_digest(files)
+        return httpx.Response(
+            201,
+            json=single(
+                {
+                    "digest": d,
+                    "uploadDigest": d,
+                    "files": sorted(files),
+                    "keys": [],
+                    "size": 9,
+                }
+            ),
+        )
+
+    router.add("POST", "/api/v1/bundles", handler=upload)
+    Bundles(router.client()).create(
+        {"entrypoint": "a.spec.ts", "files": files, "include": ["f/o.json", "img.png"]}
+    )
+    request = router.calls[0]
+    assert request.headers["content-type"] == "application/zip"
+    assert request.url.params.get_list("include") == ["f/o.json", "img.png"]
+    assert request.url.params["entrypoint"] == "a.spec.ts"
+
+
+def test_bundles_without_include_send_none(router: Router) -> None:
+    files = {"a.spec.ts": b"x"}
+    d = bundle_digest(files)
+    router.add(
+        "POST",
+        "/api/v1/bundles",
+        single(
+            {
+                "digest": d,
+                "uploadDigest": d,
+                "files": ["a.spec.ts"],
+                "keys": [],
+                "size": 1,
+            }
+        ),
+        status=201,
+    )
+    Bundles(router.client()).create(
+        {"entrypoint": "a.spec.ts", "files": {"a.spec.ts": "x"}}
+    )
+    assert "include" not in body_of(router.calls[0])
+
+
 def test_bundles_refuse_dotfiles_client_side(router: Router) -> None:
     with pytest.raises(ValidationError) as exc:
         Bundles(router.client()).create(

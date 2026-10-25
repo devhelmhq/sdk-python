@@ -897,7 +897,8 @@ class Monitors:
         )
         path = f"{_monitor_path(id)}/test"
         status, data = await api_post_with_status(self._client, path, body)
-        if status != 202:
+        if status == 200:
+            # An uptime monitor: the API ran the probe (wait does not apply).
             probe = parse_single(MonitorTestResultDto, data, f"POST {path}")
             if not removal_date_passed():
                 deprecated(
@@ -911,6 +912,11 @@ class Monitors:
                 "Use monitors.probe(id) for a probe result.",
                 next_command="monitors.probe(id)",
                 details={"passed": probe.passed},
+            )
+        if status != 202:
+            raise DevhelmValidationError(
+                f"Response validation failed (POST {path}): expected 202 with a "
+                f"queued run or 200 with a probe result, got {status}."
             )
         run = parse_single(RunDto, data, f"POST {path}")
         return await _maybe_wait(self._client, run, wait, timeout_ms)

@@ -20,6 +20,8 @@ classifiers = [
 dependencies = [
     "httpx>=0.27",
     "pydantic[email]>=2.0",
+    # TypeAliasType (RequestValue) before Python 3.12.
+    "typing_extensions>=4.6",
 ]
 
 [project.urls]

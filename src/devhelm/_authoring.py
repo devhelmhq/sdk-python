@@ -11,11 +11,10 @@ from __future__ import annotations
 import warnings
 from collections.abc import Mapping
 from datetime import datetime, timezone
-from typing import Literal
+from typing import Literal, TypeAlias, TypeGuard
 
 from pydantic import BaseModel
 from pydantic import ValidationError as PydanticValidationError
-from typing_extensions import TypeGuard
 
 from devhelm._errors import DevhelmValidationError, client_error
 from devhelm._generated import (
@@ -116,7 +115,7 @@ def check_config(monitor_type: str, config: RequestValue) -> RequestValue:
 _warned: set[str] = set()
 
 REMOVAL_DATE = "2027-01-31"
-_REMOVAL_AT = datetime(2027, 1, 31, tzinfo=timezone.utc)
+_REMOVAL_AT = datetime.fromisoformat(REMOVAL_DATE).replace(tzinfo=timezone.utc)
 
 
 def removal_date_passed() -> bool:
@@ -126,7 +125,7 @@ def removal_date_passed() -> bool:
 
 # What ``monitors.test()`` returns: a run for code monitors; the probe result
 # for uptime monitors (deprecated, until 2027-01-31).
-MonitorTestOutcome = RunDto | MonitorTestResultDto
+MonitorTestOutcome: TypeAlias = RunDto | MonitorTestResultDto
 
 
 def is_run(result: MonitorTestOutcome) -> TypeGuard[RunDto]:

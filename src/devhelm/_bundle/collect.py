@@ -8,9 +8,7 @@ import zipfile
 from collections.abc import Mapping, Sequence
 from dataclasses import dataclass
 from pathlib import Path
-from typing import TypedDict, final
-
-from typing_extensions import NotRequired, TypeGuard
+from typing import NotRequired, TypedDict, TypeGuard, final
 
 from devhelm._bundle.digest import bundle_digest, normalize_path, path_error
 from devhelm._bundle.ignore import IgnoreRules
