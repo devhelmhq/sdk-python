@@ -299,6 +299,7 @@ def _monitor_fixture(**overrides: object) -> dict[str, object]:
         "enabled": True,
         "regions": ["us-east"],
         "managedBy": "DASHBOARD",
+        "ownerEnforced": False,
         "muted": False,
         "createdAt": NOW,
         "updatedAt": NOW,
