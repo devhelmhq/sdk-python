@@ -19,6 +19,7 @@ from __future__ import annotations
 import asyncio
 import os
 import secrets
+import warnings
 from collections.abc import Callable, Iterator
 from typing import TypeVar
 from uuid import UUID
@@ -32,10 +33,10 @@ from devhelm import (
     DevhelmMonitorTestQueuedError,
     FilesCode,
     MonitorDto,
+    MonitorTestResultDto,
     NotFoundError,
     PlatformError,
     RunDto,
-    ValidationError,
     bundle_digest,
 )
 
@@ -244,17 +245,17 @@ def test_uptime_test_is_use_probe(devhelm: Devhelm) -> None:
         regions=["us-east"],
     )
     try:
-        try:
-            devhelm.monitors.test(m.id)
-        except ValidationError as err:
-            assert err.code == "USE_PROBE"
-            assert err.status == 0
-        except PlatformError as err:
-            # The stack's probe service is an external dependency (mono's
-            # surface tests skip on the same answer).
-            pytest.skip(f"probe service unavailable: {err.message}")
-        else:
-            pytest.fail("monitors.test() on an HTTP monitor must raise USE_PROBE")
+        with warnings.catch_warnings(record=True) as caught:
+            warnings.simplefilter("always")
+            try:
+                result = devhelm.monitors.test(m.id)
+            except PlatformError as err:
+                # The stack's probe service is an external dependency (mono's
+                # surface tests skip on the same answer).
+                pytest.skip(f"probe service unavailable: {err.message}")
+        # Until 2027-01-31 an uptime monitor still answers with the probe.
+        assert isinstance(result, MonitorTestResultDto)
+        assert any(issubclass(w.category, DeprecationWarning) for w in caught)
     finally:
         devhelm.monitors.delete(m.id)
 

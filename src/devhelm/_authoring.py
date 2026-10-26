@@ -10,7 +10,8 @@ from __future__ import annotations
 
 import warnings
 from collections.abc import Mapping
-from typing import Literal
+from datetime import datetime, timezone
+from typing import Literal, TypeAlias, TypeGuard
 
 from pydantic import BaseModel
 from pydantic import ValidationError as PydanticValidationError
@@ -22,6 +23,8 @@ from devhelm._generated import (
     HttpMonitorConfig,
     IcmpMonitorConfig,
     McpServerMonitorConfig,
+    MonitorTestResultDto,
+    RunDto,
     ScriptMonitorConfig,
     TcpMonitorConfig,
 )
@@ -112,6 +115,23 @@ def check_config(monitor_type: str, config: RequestValue) -> RequestValue:
 _warned: set[str] = set()
 
 REMOVAL_DATE = "2027-01-31"
+_REMOVAL_AT = datetime.fromisoformat(REMOVAL_DATE).replace(tzinfo=timezone.utc)
+
+
+def removal_date_passed() -> bool:
+    """True from 2027-01-31 (UTC), when the deprecated aliases stop working."""
+    return datetime.now(timezone.utc) >= _REMOVAL_AT
+
+
+# What ``monitors.test()`` returns: a run for code monitors; the probe result
+# for uptime monitors (deprecated, until 2027-01-31).
+MonitorTestOutcome: TypeAlias = RunDto | MonitorTestResultDto
+
+
+def is_run(result: MonitorTestOutcome) -> TypeGuard[RunDto]:
+    """Whether a ``monitors.test()`` result is a run (code monitor) rather
+    than a probe result."""
+    return isinstance(result, RunDto)
 
 
 def deprecated(name: str, replacement: str, since: str = "1.13") -> None:

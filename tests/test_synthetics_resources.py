@@ -3,6 +3,7 @@ incident extensions and status-page component overrides (doc 42 §8/§9)."""
 
 from __future__ import annotations
 
+from pathlib import Path
 from typing import Any
 
 import httpx
@@ -298,6 +299,96 @@ def test_bundles_create_and_check(router: Router) -> None:
         "files": {"a.spec.ts": "import './c'"},
         "entrypoint": "a.spec.ts",
     }
+
+
+def test_bundles_upload_ships_include_fixture(router: Router, tmp_path: Path) -> None:
+    (tmp_path / ".git").mkdir()
+    entry = tmp_path / "checks" / "order.spec.ts"
+    entry.parent.mkdir()
+    entry.write_text("import { test } from '@playwright/test'\n")
+    fixture = tmp_path / "fixtures" / "order.json"
+    fixture.parent.mkdir()
+    fixture.write_text('{"id": 1}\n')
+    (tmp_path / "fixtures" / "unused.json").write_text("{}")
+    sent = {
+        "checks/order.spec.ts": entry.read_bytes(),
+        "fixtures/order.json": fixture.read_bytes(),
+    }
+
+    def upload(_req: httpx.Request) -> httpx.Response:
+        return httpx.Response(
+            201,
+            json=single(
+                {
+                    "digest": bundle_digest(sent),
+                    "uploadDigest": bundle_digest(sent),
+                    "files": sorted(sent),
+                    "keys": [],
+                    "size": 40,
+                }
+            ),
+        )
+
+    router.add("POST", "/api/v1/bundles", handler=upload)
+    out = Bundles(router.client()).create(
+        {"entrypoint": str(entry), "include": ["fixtures/order.json"]}
+    )
+    body = body_of(router.calls[0])
+    assert set(body["files"]) == set(sent)
+    assert body["include"] == ["fixtures/order.json"]
+    assert body["entrypoint"] == "checks/order.spec.ts"
+    assert "fixtures/order.json" in out.files
+
+
+def test_bundles_zip_upload_sends_include_as_query(router: Router) -> None:
+    files = {"a.spec.ts": b"x", "img.png": b"\x89PNG\x00", "f/o.json": b"{}"}
+
+    def upload(_req: httpx.Request) -> httpx.Response:
+        d = bundle_digest(files)
+        return httpx.Response(
+            201,
+            json=single(
+                {
+                    "digest": d,
+                    "uploadDigest": d,
+                    "files": sorted(files),
+                    "keys": [],
+                    "size": 9,
+                }
+            ),
+        )
+
+    router.add("POST", "/api/v1/bundles", handler=upload)
+    Bundles(router.client()).create(
+        {"entrypoint": "a.spec.ts", "files": files, "include": ["f/o.json", "img.png"]}
+    )
+    request = router.calls[0]
+    assert request.headers["content-type"] == "application/zip"
+    assert request.url.params.get_list("include") == ["f/o.json", "img.png"]
+    assert request.url.params["entrypoint"] == "a.spec.ts"
+
+
+def test_bundles_without_include_send_none(router: Router) -> None:
+    files = {"a.spec.ts": b"x"}
+    d = bundle_digest(files)
+    router.add(
+        "POST",
+        "/api/v1/bundles",
+        single(
+            {
+                "digest": d,
+                "uploadDigest": d,
+                "files": ["a.spec.ts"],
+                "keys": [],
+                "size": 1,
+            }
+        ),
+        status=201,
+    )
+    Bundles(router.client()).create(
+        {"entrypoint": "a.spec.ts", "files": {"a.spec.ts": "x"}}
+    )
+    assert "include" not in body_of(router.calls[0])
 
 
 def test_bundles_refuse_dotfiles_client_side(router: Router) -> None:

@@ -8,9 +8,7 @@ import zipfile
 from collections.abc import Mapping, Sequence
 from dataclasses import dataclass
 from pathlib import Path
-from typing import TypedDict, final
-
-from typing_extensions import NotRequired, TypeGuard
+from typing import NotRequired, TypedDict, TypeGuard, final
 
 from devhelm._bundle.digest import bundle_digest, normalize_path, path_error
 from devhelm._bundle.ignore import IgnoreRules
@@ -128,14 +126,14 @@ def from_memory(code: FilesCode) -> CollectedBundle:
             field="code.entrypoint",
         )
     include = tuple(normalize_path(p) for p in code.get("include", []))
-    unknown = [p for p in include if p not in files]
-    if unknown:
-        raise client_error(
-            "validation",
-            "MONITOR_PACKAGE_PATH_INVALID",
-            f"include names {unknown[0]}, which is not one of the files",
-            field="code.include",
-        )
+    for index, path in enumerate(include):
+        if path not in files:
+            raise client_error(
+                "validation",
+                "MONITOR_PACKAGE_PATH_INVALID",
+                f"include names {path}, which is not one of the files",
+                field=f"include[{index}]",
+            )
     check_limits(files)
     return CollectedBundle(
         entrypoint=entrypoint,

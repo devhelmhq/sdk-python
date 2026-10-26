@@ -512,6 +512,22 @@ def test_conformance_vector(vector: dict[str, Any], tmp_path: Path) -> None:
             with pytest.raises(DevhelmApiError) as err:
                 collect(entry, root=tmp_path)
             assert err.value.code == code
+            field = expect["refusal"].get("field")
+            if field is not None:
+                assert err.value.errors[0].field == field
+        elif request.get("include"):
+            # An include path that is not one of the files.
+            texts = dict(request["files"])
+            with pytest.raises(DevhelmApiError) as err:
+                collect(
+                    FilesCode(
+                        entrypoint=request["entrypoint"],
+                        files=texts,
+                        include=request["include"],
+                    )
+                )
+            assert err.value.code == code
+            assert err.value.errors[0].field == expect["refusal"].get("field")
         else:
             # An import outside the set is found by the server's resolver;
             # the include-set client never parses imports (doc 42 §5.3).
@@ -524,8 +540,12 @@ def test_conformance_vector(vector: dict[str, Any], tmp_path: Path) -> None:
     # The in-memory code form uploads exactly these files.
     entry = request.get("entrypoint") or expect["entrypoint"] or next(iter(files))
     texts = {p: c for p, c in files.items()}
-    bundle = collect(FilesCode(entrypoint=entry, files=texts))
+    code = FilesCode(entrypoint=entry, files=texts)
+    if request.get("include"):
+        code["include"] = list(request["include"])
+    bundle = collect(code)
     assert bundle.digest == expect["uploadDigest"]
+    assert bundle.include == tuple(request.get("include", []))
 
 
 def test_include_glob_outside_root_is_refused(tmp_path: Path) -> None:

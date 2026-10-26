@@ -1135,6 +1135,17 @@ class Severity(StrEnum):
     warn = "warn"
 
 
+class IncludeItem(RootModel[str]):
+    root: Annotated[
+        str,
+        Field(
+            description="Files to keep even when no import reaches them, e.g. fixtures",
+            max_length=512,
+            min_length=0,
+        ),
+    ]
+
+
 class CreateBundleRequest(BaseModel):
     model_config = ConfigDict(extra="forbid", populate_by_name=True)
     files: Annotated[
@@ -1155,6 +1166,14 @@ class CreateBundleRequest(BaseModel):
             alias="runtimeId",
             description="Runtime used to refuse imports. Omit for the newest runtime that can run",
             max_length=32,
+            min_length=0,
+        ),
+    ] = None
+    include: Annotated[
+        list[IncludeItem] | None,
+        Field(
+            description="Files to keep even when no import reaches them, e.g. fixtures",
+            max_length=256,
             min_length=0,
         ),
     ] = None

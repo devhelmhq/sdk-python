@@ -38,8 +38,8 @@ def upload_collected(
             "entrypoint": bundle.entrypoint,
             "runtimeId": runtime_id,
         }
-        if bundle.include and "include" in CreateBundleRequest.model_fields:
-            # Files nothing imports that the closure must keep (W0-13).
+        if bundle.include:
+            # Files nothing imports that the closure must keep.
             fields["include"] = list(bundle.include)
         body = validate_request(CreateBundleRequest, fields, "bundles.create")
         raw = api_post(client, _PATH, body)
@@ -49,7 +49,11 @@ def upload_collected(
             _PATH,
             bundle.as_zip(),
             "application/zip",
-            params={"entrypoint": bundle.entrypoint, "runtimeId": runtime_id},
+            params={
+                "entrypoint": bundle.entrypoint,
+                "runtimeId": runtime_id,
+                "include": list(bundle.include) or None,
+            },
         )
     uploaded = parse_single(BundleDto, raw, f"POST {_PATH}")
     if uploaded.upload_digest != bundle.digest:

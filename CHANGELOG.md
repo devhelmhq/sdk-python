@@ -19,7 +19,8 @@ asyncio client, and typed errors per category.
   resolve the import closure. No Node, no JavaScript parsing.
   `devhelm.bundle_digest(files)` exposes the digest.
 - `include` adds files nothing imports (fixtures, data) to the default set
-  and names them to the server so the closure keeps them.
+  and sends them as `CreateBundleRequest.include` (JSON) or the `include`
+  query parameter (zip), so the server keeps them in the closure.
 - `environment=` (slug or id) on create, update, restore, `test_adhoc`,
   `monitors.list` and `secrets.list`.
 - Monitors: `test` (validation run), `probe` (uptime result), `test_adhoc`,
@@ -58,9 +59,12 @@ asyncio client, and typed errors per category.
 
 ### Changed
 
-- `monitors.test(id)` now runs a code check and returns its `RunDto`; on an
-  uptime monitor it raises `ValidationError` `USE_PROBE`. The probe is
-  `monitors.probe(id)`.
+- `monitors.test(id)` runs a code check and returns its `RunDto`. On an
+  uptime monitor it still returns the probe result with a one-time
+  deprecation warning until 2027-01-31, then raises `ValidationError`
+  `USE_PROBE`. The result type is `MonitorTestOutcome`
+  (`RunDto | MonitorTestResultDto`); narrow it with `devhelm.is_run` before
+  reading run fields (a typing change for mypy users of `test()`). The probe is `monitors.probe(id)`.
 - Free-form JSON fields (`capturePolicySnapshot`, `details`, …) are typed
   `JsonValue` instead of `dict[str, dict[str, Any]]`, which also fixes
   decoding scalar values in them.

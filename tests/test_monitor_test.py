@@ -2,15 +2,18 @@
 
 ``POST /api/v1/monitors/{id}/test`` answers 200 with the probe result for
 uptime monitors and 202 with a queued validation run for browser and
-multi-step API monitors (doc 42 R16). ``test()`` returns the run and raises
-``ValidationError`` with code ``USE_PROBE`` on 200; ``probe()`` returns the
+multi-step API monitors (doc 42 R16). ``test()`` returns the run on 202; on
+200 it returns the probe result with a one-time deprecation warning until
+2027-01-31 and raises ``ValidationError`` ``USE_PROBE`` after; ``probe()`` returns the
 probe result and raises ``DevhelmMonitorTestQueuedError`` on 202;
 ``test_run()`` is the deprecated spelling of ``test()``.
 """
 
 from __future__ import annotations
 
+import asyncio
 import json
+import warnings
 from collections.abc import Iterator
 
 import httpx
@@ -24,7 +27,11 @@ from devhelm import (
     MonitorTestResultDto,
     RunDto,
     ValidationError,
+    is_run,
 )
+from devhelm._async.resources import monitors as async_monitors_module
+from devhelm._async.resources.monitors import Monitors as AsyncMonitors
+from devhelm.resources import monitors as monitors_module
 from devhelm.resources.monitors import Monitors
 
 MONITOR_ID = "550e8400-e29b-41d4-a716-446655440000"
@@ -125,12 +132,82 @@ def test_test_returns_run_on_202() -> None:
     assert json.loads(captured[0].content) == {}
 
 
-def test_test_raises_use_probe_on_200() -> None:
+def test_test_returns_probe_with_warning_until_removal() -> None:
+    captured: list[httpx.Request] = []
+    monitors = _monitors(captured, 200, {"data": _PROBE_RESULT})
+    with pytest.warns(DeprecationWarning, match="monitors.probe"):
+        out = monitors.test(MONITOR_ID)
+    assert isinstance(out, MonitorTestResultDto)
+    assert not is_run(out)
+    assert out.passed is True
+    # The warning fires once per process.
+    with warnings.catch_warnings():
+        warnings.simplefilter("error")
+        assert isinstance(monitors.test(MONITOR_ID), MonitorTestResultDto)
+
+
+def test_test_raises_use_probe_on_200_after_removal(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    monkeypatch.setattr(monitors_module, "removal_date_passed", lambda: True)
     captured: list[httpx.Request] = []
     with pytest.raises(ValidationError) as exc:
         _monitors(captured, 200, {"data": _PROBE_RESULT}).test(MONITOR_ID)
     assert exc.value.code == "USE_PROBE"
     assert exc.value.category == "validation"
+    assert exc.value.details == {"passed": True}
+
+
+def test_run_result_narrows_with_is_run() -> None:
+    captured: list[httpx.Request] = []
+    out = _monitors(captured, 202, {"data": _QUEUED_RUN}).test(MONITOR_ID)
+    assert is_run(out)
+    assert str(out.id) == _QUEUED_RUN["id"]
+
+
+def test_removal_date_is_2027_01_31() -> None:
+    assert authoring.REMOVAL_DATE == "2027-01-31"
+    assert authoring._REMOVAL_AT.date().isoformat() == authoring.REMOVAL_DATE
+    assert authoring._REMOVAL_AT.utcoffset() is not None
+
+
+def test_test_rejects_an_unexpected_status() -> None:
+    captured: list[httpx.Request] = []
+    with pytest.raises(DevhelmValidationError):
+        _monitors(captured, 204, {}).test(MONITOR_ID)
+
+
+def _async_monitors(status: int, body: dict[str, object]) -> AsyncMonitors:
+    def handler(_request: httpx.Request) -> httpx.Response:
+        return httpx.Response(status, json=body)
+
+    return AsyncMonitors(
+        httpx.AsyncClient(
+            transport=httpx.MockTransport(handler), base_url="http://localhost:8080"
+        )
+    )
+
+
+def test_async_test_returns_probe_with_warning_until_removal() -> None:
+    async def go() -> object:
+        return await _async_monitors(200, {"data": _PROBE_RESULT}).test(MONITOR_ID)
+
+    with pytest.warns(DeprecationWarning, match="monitors.probe"):
+        out = asyncio.run(go())
+    assert isinstance(out, MonitorTestResultDto)
+
+
+def test_async_test_raises_use_probe_after_removal(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    monkeypatch.setattr(async_monitors_module, "removal_date_passed", lambda: True)
+
+    async def go() -> object:
+        return await _async_monitors(200, {"data": _PROBE_RESULT}).test(MONITOR_ID)
+
+    with pytest.raises(ValidationError) as exc:
+        asyncio.run(go())
+    assert exc.value.code == "USE_PROBE"
 
 
 def test_test_run_returns_run_on_202() -> None:
