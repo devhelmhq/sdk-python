@@ -563,6 +563,19 @@ class BearerAuthConfig(BaseModel):
     ] = None
 
 
+class BindingVersionSnapshot(BaseModel):
+    model_config = ConfigDict(extra="ignore", populate_by_name=True)
+    keys: Annotated[
+        list[str], Field(description="Secret key names resolved for this run")
+    ]
+    attached_keys: Annotated[
+        list[str],
+        Field(
+            alias="attachedKeys", description="Secret key names attached to this run"
+        ),
+    ]
+
+
 class BodyContainsAssertion(BaseModel):
     model_config = ConfigDict(extra="ignore", populate_by_name=True)
     type: Literal["body_contains"] = "body_contains"
@@ -11723,7 +11736,7 @@ class DemoAvailabilityDto(BaseModel):
 
 class EmailMessageDto(BaseModel):
     model_config = ConfigDict(extra="ignore", populate_by_name=True)
-    id: Annotated[UUID, Field(description="Message id")]
+    id: Annotated[str, Field(description="Message id", min_length=1)]
     domain_id: Annotated[UUID, Field(alias="domainId", description="Parent domain id")]
     inbox: Annotated[
         str | None, Field(description="Local-part the message was addressed to")
@@ -14809,18 +14822,10 @@ class RunDto(BaseModel):
         Field(alias="purgedAt", description="When stored evidence was purged"),
     ] = None
     capture_policy_snapshot: Annotated[
-        dict[str, JsonValue],
-        Field(
-            alias="capturePolicySnapshot",
-            description="Capture settings frozen at create",
-        ),
+        CapturePolicy, Field(alias="capturePolicySnapshot")
     ]
     binding_version_snapshot: Annotated[
-        dict[str, JsonValue],
-        Field(
-            alias="bindingVersionSnapshot",
-            description="Resolved secret key names frozen at create",
-        ),
+        BindingVersionSnapshot, Field(alias="bindingVersionSnapshot")
     ]
     duration_ms: Annotated[
         int | None,
