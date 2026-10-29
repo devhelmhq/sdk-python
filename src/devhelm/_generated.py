@@ -11723,7 +11723,7 @@ class DemoAvailabilityDto(BaseModel):
 
 class EmailMessageDto(BaseModel):
     model_config = ConfigDict(extra="ignore", populate_by_name=True)
-    id: Annotated[UUID, Field(description="Message id")]
+    id: Annotated[str, Field(description="Message id", min_length=1)]
     domain_id: Annotated[UUID, Field(alias="domainId", description="Parent domain id")]
     inbox: Annotated[
         str | None, Field(description="Local-part the message was addressed to")
