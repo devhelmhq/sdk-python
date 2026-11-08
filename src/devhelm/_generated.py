@@ -98,6 +98,7 @@ class Channel(StrEnum):
     email = "EMAIL"
     sms = "SMS"
     webhook = "WEBHOOK"
+    teams = "TEAMS"
 
 
 class AdminAddSubscriberRequest(BaseModel):
@@ -116,7 +117,7 @@ class AdminAddSubscriberRequest(BaseModel):
     destination: Annotated[
         str | None,
         Field(
-            description="Channel destination (email, phone, or webhook URL)",
+            description="Channel destination (email, phone, webhook URL or Teams webhook URL)",
             max_length=2048,
             min_length=0,
         ),
@@ -135,6 +136,55 @@ class AdminAddSubscriberRequest(BaseModel):
             description="When true (EMAIL only), create unconfirmed and send opt-in; null/false confirms immediately",
         ),
     ] = None
+
+
+class UpdateSubscriberRequest(BaseModel):
+    model_config = ConfigDict(extra="forbid", populate_by_name=True)
+    component_ids: Annotated[
+        list[UUID],
+        Field(
+            alias="componentIds",
+            description="Components to hear about; empty list means the whole page",
+            max_length=500,
+            min_length=0,
+        ),
+    ]
+
+
+class ImportSubscriberRow(BaseModel):
+    model_config = ConfigDict(extra="ignore", populate_by_name=True)
+    channel: Annotated[
+        Channel, Field(description="Delivery channel (EMAIL, SMS, WEBHOOK, TEAMS)")
+    ]
+    destination: Annotated[
+        str,
+        Field(
+            description="Email address, phone number, webhook URL or Teams webhook URL",
+            max_length=2048,
+            min_length=0,
+        ),
+    ]
+    component_ids: Annotated[
+        list[UUID] | None,
+        Field(
+            alias="componentIds",
+            description="Components to hear about; omit or empty for the whole page",
+            max_length=500,
+            min_length=0,
+        ),
+    ] = None
+
+
+class ImportSubscribersRequest(BaseModel):
+    model_config = ConfigDict(extra="forbid", populate_by_name=True)
+    rows: Annotated[
+        list[ImportSubscriberRow],
+        Field(
+            description="Subscribers to import (1–5000 rows)",
+            max_length=5000,
+            min_length=1,
+        ),
+    ]
 
 
 class Status(StrEnum):
@@ -561,6 +611,19 @@ class BearerAuthConfig(BaseModel):
             description="Vault secret ID holding the bearer token value",
         ),
     ] = None
+
+
+class BindingVersionSnapshot(BaseModel):
+    model_config = ConfigDict(extra="ignore", populate_by_name=True)
+    keys: Annotated[
+        list[str], Field(description="Secret key names resolved for this run")
+    ]
+    attached_keys: Annotated[
+        list[str],
+        Field(
+            alias="attachedKeys", description="Secret key names attached to this run"
+        ),
+    ]
 
 
 class BodyContainsAssertion(BaseModel):
@@ -1704,6 +1767,7 @@ class Visibility(StrEnum):
     public = "PUBLIC"
     password = "PASSWORD"
     ip_restricted = "IP_RESTRICTED"
+    login_required = "LOGIN_REQUIRED"
 
 
 class IncidentMode(StrEnum):
@@ -6630,6 +6694,16 @@ class RunTabCountsDto(BaseModel):
     ]
 
 
+class RuntimeRegionAvailability(BaseModel):
+    model_config = ConfigDict(extra="ignore", populate_by_name=True)
+    region: Annotated[
+        str, Field(description="Check region, such as us-east", min_length=1)
+    ]
+    available: Annotated[
+        bool, Field(description="Whether this runtime can run checks in the region")
+    ]
+
+
 class RuntimeProfileDto(BaseModel):
     model_config = ConfigDict(extra="ignore", populate_by_name=True)
     id: Annotated[
@@ -6686,6 +6760,17 @@ class RuntimeProfileDto(BaseModel):
         ),
     ] = None
     browser: BrowserCapabilityEnvelope | None = None
+    platform_default: Annotated[
+        bool,
+        Field(
+            alias="platformDefault",
+            description="Whether new checks use this runtime when none is pinned",
+        ),
+    ]
+    regions: Annotated[
+        list[RuntimeRegionAvailability],
+        Field(description="Whether each region can run this runtime"),
+    ]
 
 
 class RunTraceSummaryDto(BaseModel):
@@ -7477,6 +7562,34 @@ class SingleValueResponseSignedDownload(BaseModel):
     data: SignedDownload
 
 
+class StatusPageSubscriberImportErrorDto(BaseModel):
+    model_config = ConfigDict(extra="ignore", populate_by_name=True)
+    row: Annotated[int, Field(description="Zero-based index of the row in the request")]
+    code: Annotated[str, Field(description="Why the row was skipped")]
+    field: Annotated[
+        str | None, Field(description="Field of the row that was rejected")
+    ] = None
+    message: Annotated[str, Field(description="Human-readable reason")]
+
+
+class StatusPageSubscriberImportResultDto(BaseModel):
+    model_config = ConfigDict(extra="ignore", populate_by_name=True)
+    created: Annotated[int, Field(description="Rows that added a new subscriber")]
+    updated: Annotated[
+        int,
+        Field(description="Rows that matched an existing subscriber and updated it"),
+    ]
+    errors: Annotated[
+        list[StatusPageSubscriberImportErrorDto],
+        Field(description="Rows that were not imported, with the reason"),
+    ]
+
+
+class SingleValueResponseStatusPageSubscriberImportResultDto(BaseModel):
+    model_config = ConfigDict(extra="ignore", populate_by_name=True)
+    data: StatusPageSubscriberImportResultDto
+
+
 class SingleValueResponseString(BaseModel):
     model_config = ConfigDict(extra="ignore", populate_by_name=True)
     data: str
@@ -8115,9 +8228,14 @@ class StatusPageSubscriberDto(BaseModel):
         str | None,
         Field(description="Email when channel is EMAIL; null for other channels"),
     ] = None
-    channel: Annotated[str, Field(description="Delivery channel (EMAIL, SMS, WEBHOOK)")]
+    channel: Annotated[
+        str, Field(description="Delivery channel (EMAIL, SMS, WEBHOOK, TEAMS)")
+    ]
     destination: Annotated[
-        str, Field(description="Channel destination (email, phone, or webhook URL)")
+        str,
+        Field(
+            description="Channel destination (email, phone, webhook URL or Teams webhook URL)"
+        ),
     ]
     component_ids: Annotated[
         list[UUID] | None,
@@ -8129,6 +8247,12 @@ class StatusPageSubscriberDto(BaseModel):
     confirmed: Annotated[
         bool, Field(description="Whether the subscriber has confirmed opt-in")
     ]
+    source: Annotated[
+        str | None,
+        Field(
+            description="How the subscriber was added (SELF, ADMIN, IMPORT); null if not recorded"
+        ),
+    ] = None
     confirmation_sent: Annotated[
         bool | None,
         Field(
@@ -9897,6 +10021,13 @@ class UpdateStatusPageIncidentUpdateRequest(BaseModel):
     ] = None
 
 
+class SubscriberChannel(StrEnum):
+    email = "EMAIL"
+    sms = "SMS"
+    webhook = "WEBHOOK"
+    teams = "TEAMS"
+
+
 class UpdateStatusPageRequest(BaseModel):
     model_config = ConfigDict(extra="forbid", populate_by_name=True)
     name: Annotated[
@@ -9933,6 +10064,15 @@ class UpdateStatusPageRequest(BaseModel):
         Field(
             alias="managedBy",
             description="New attribution source: DASHBOARD, GIT, TERRAFORM, MCP or API (CLI = GIT until 2027-01-31); null preserves current value.",
+        ),
+    ] = None
+    subscriber_channels: Annotated[
+        list[SubscriberChannel] | None,
+        Field(
+            alias="subscriberChannels",
+            description="Channels visitors can subscribe with (EMAIL, TEAMS, WEBHOOK); null preserves current",
+            max_length=3,
+            min_length=0,
         ),
     ] = None
 
@@ -11723,7 +11863,7 @@ class DemoAvailabilityDto(BaseModel):
 
 class EmailMessageDto(BaseModel):
     model_config = ConfigDict(extra="ignore", populate_by_name=True)
-    id: Annotated[UUID, Field(description="Message id")]
+    id: Annotated[str, Field(description="Message id", min_length=1)]
     domain_id: Annotated[UUID, Field(alias="domainId", description="Parent domain id")]
     inbox: Annotated[
         str | None, Field(description="Local-part the message was addressed to")
@@ -13090,7 +13230,7 @@ class RunCaseDto(BaseModel):
 
 class RunExecutionDto(BaseModel):
     model_config = ConfigDict(extra="ignore", populate_by_name=True)
-    id: Annotated[UUID, Field(description="Immutable execution image identifier")]
+    id: Annotated[str, Field(description="Immutable execution image identifier")]
     runtime: RuntimeProfileDto
     harness: HarnessReleaseDto
     monitor_type: Annotated[
@@ -13757,6 +13897,13 @@ class StatusPageDto(BaseModel):
             description="Source that created/owns this status page: DASHBOARD, GIT, TERRAFORM, MCP or API. Null on pages created before this attribution column existed.",
         ),
     ] = None
+    subscriber_channels: Annotated[
+        list[str],
+        Field(
+            alias="subscriberChannels",
+            description="Channels visitors can subscribe with on the public page (EMAIL, TEAMS, WEBHOOK)",
+        ),
+    ]
     created_at: Annotated[AwareDatetime, Field(alias="createdAt")]
     updated_at: Annotated[AwareDatetime, Field(alias="updatedAt")]
 
@@ -14809,18 +14956,10 @@ class RunDto(BaseModel):
         Field(alias="purgedAt", description="When stored evidence was purged"),
     ] = None
     capture_policy_snapshot: Annotated[
-        dict[str, JsonValue],
-        Field(
-            alias="capturePolicySnapshot",
-            description="Capture settings frozen at create",
-        ),
+        CapturePolicy, Field(alias="capturePolicySnapshot")
     ]
     binding_version_snapshot: Annotated[
-        dict[str, JsonValue],
-        Field(
-            alias="bindingVersionSnapshot",
-            description="Resolved secret key names frozen at create",
-        ),
+        BindingVersionSnapshot, Field(alias="bindingVersionSnapshot")
     ]
     duration_ms: Annotated[
         int | None,
@@ -14837,6 +14976,19 @@ class RunDto(BaseModel):
             description="Live queue position; null when not queued",
         ),
     ] = None
+    delayed: Annotated[
+        bool | None,
+        Field(
+            description="True while this run's result is on its way but held up by a platform outage"
+        ),
+    ] = None
+    evidence_incomplete: Annotated[
+        bool,
+        Field(
+            alias="evidenceIncomplete",
+            description="Whether some run evidence never arrived. The outcome is unaffected",
+        ),
+    ]
     heartbeat_age_ms: Annotated[
         int | None,
         Field(
@@ -15628,6 +15780,20 @@ class MonitorDto(BaseModel):
     last_check_region: Annotated[
         str | None,
         Field(alias="lastCheckRegion", description="Region of the most recent check"),
+    ] = None
+    last_check_at: Annotated[
+        AwareDatetime | None,
+        Field(
+            alias="lastCheckAt",
+            description="When the most recent check in any region ran",
+        ),
+    ] = None
+    last_check_response_time_ms: Annotated[
+        int | None,
+        Field(
+            alias="lastCheckResponseTimeMs",
+            description="Response time of the most recent check, in milliseconds",
+        ),
     ] = None
     last_failure_summary: Annotated[
         str | None,
