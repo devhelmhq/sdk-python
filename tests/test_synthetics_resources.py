@@ -406,6 +406,8 @@ def test_runtimes(router: Router) -> None:
         "nodeVersion": "22",
         "playwrightVersion": "1.56",
         "status": "available",
+        "platformDefault": False,
+        "regions": [],
     }
     router.add("GET", "/api/v1/synthetics/runtime-profiles", table([profile]))
     router.add("GET", "/api/v1/synthetics/runtime-profiles/2026.11", single(profile))
