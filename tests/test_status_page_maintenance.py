@@ -27,6 +27,7 @@ _VALID_WINDOW = {
     "scheduledFor": "2026-08-24T02:00:00Z",
     "scheduledUntil": "2026-08-24T04:00:00Z",
     "autoResolve": False,
+    "audienceIds": [],
     "startedAt": "2026-08-24T02:00:00Z",
     "createdAt": "2026-08-23T12:00:00Z",
     "updatedAt": "2026-08-23T12:00:00Z",

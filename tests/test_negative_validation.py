@@ -271,6 +271,8 @@ def _status_page(**kw: object) -> dict[str, Any]:
         "visibility": "PUBLIC",
         "enabled": True,
         "incidentMode": "MANUAL",
+        "subscriberChannels": [],
+        "emailSender": {},
         "createdAt": NOW,
         "updatedAt": NOW,
     }
@@ -320,6 +322,7 @@ def _sp_incident(**kw: object) -> dict[str, Any]:
         "impact": "MINOR",
         "scheduled": False,
         "autoResolve": False,
+        "audienceIds": [],
         "startedAt": NOW,
         "createdAt": NOW,
         "updatedAt": NOW,
