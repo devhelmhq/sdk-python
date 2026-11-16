@@ -13265,6 +13265,16 @@ class CreateStatusPageRequest(BaseModel):
             description="Source creating this page: DASHBOARD, GIT, TERRAFORM, MCP or API (CLI = GIT until 2027-01-31). Defaults to API when omitted.",
         ),
     ] = None
+    unresolved_reminder_minutes: Annotated[
+        int | None,
+        Field(
+            alias="unresolvedReminderMinutes",
+            description="Minutes without an update before the team is reminded (15–1440), 0 turns off (default: 60)",
+        ),
+    ] = None
+    email_sender: Annotated[
+        StatusPageEmailSenderRequest | None, Field(alias="emailSender")
+    ] = None
 
 
 class CreateWebhookInboxRequest(BaseModel):
