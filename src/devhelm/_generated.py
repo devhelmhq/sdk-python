@@ -8313,6 +8313,20 @@ class SsoConnectionTestDto(BaseModel):
             description="Identifier that finds the failure in the logs; null unless it failed",
         ),
     ] = None
+    idp_status_code: Annotated[
+        str | None,
+        Field(
+            alias="idpStatusCode",
+            description="Status codes the IdP refused the sign-in with, e.g. Responder/InvalidNameIDPolicy",
+        ),
+    ] = None
+    idp_status_message: Annotated[
+        str | None,
+        Field(
+            alias="idpStatusMessage",
+            description="Message the IdP sent with its refusal",
+        ),
+    ] = None
     asserted_issuer: Annotated[
         str | None,
         Field(
