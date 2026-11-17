@@ -8134,6 +8134,37 @@ class SingleValueResponseSignedDownload(BaseModel):
     data: SignedDownload
 
 
+class StatusPageEndUserStatsDto(BaseModel):
+    model_config = ConfigDict(extra="ignore", populate_by_name=True)
+    active: Annotated[int, Field(description="End users who may sign in")]
+    active_sso: Annotated[
+        int,
+        Field(
+            alias="activeSso", description="Active end users who sign in through SSO"
+        ),
+    ]
+    invited: Annotated[
+        int, Field(description="End users invited who have not signed in yet")
+    ]
+    expired_invites: Annotated[
+        int, Field(alias="expiredInvites", description="Invites whose link has expired")
+    ]
+    deactivated: Annotated[int, Field(description="End users who may not sign in")]
+    sign_ins: Annotated[
+        int,
+        Field(alias="signIns", description="Successful sign-ins in the last 7 days"),
+    ]
+    failed_sign_ins: Annotated[
+        int,
+        Field(alias="failedSignIns", description="Failed sign-ins in the last 7 days"),
+    ]
+
+
+class SingleValueResponseStatusPageEndUserStatsDto(BaseModel):
+    model_config = ConfigDict(extra="ignore", populate_by_name=True)
+    data: StatusPageEndUserStatsDto
+
+
 class SingleValueResponseString(BaseModel):
     model_config = ConfigDict(extra="ignore", populate_by_name=True)
     data: str
@@ -11383,6 +11414,18 @@ class UpdateStatusPageComponentRequest(BaseModel):
             description="Date from which to start showing uptime; null preserves current. Bars never extend earlier than the underlying monitor's createdAt regardless of value",
         ),
     ] = None
+
+
+class UpdateStatusPageGroupMemberRequest(BaseModel):
+    model_config = ConfigDict(extra="forbid", populate_by_name=True)
+    key: Annotated[
+        str,
+        Field(
+            description="New key that selects this page inside the group, e.g. eu (1-32 characters)",
+            max_length=64,
+            min_length=0,
+        ),
+    ]
 
 
 class UpdateStatusPageGroupRequest(BaseModel):
