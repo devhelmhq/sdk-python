@@ -8490,6 +8490,20 @@ class StatusPageAccessEventDto(BaseModel):
             description="Why a sign-in failed; null for other events",
         ),
     ] = None
+    correlation_id: Annotated[
+        str | None,
+        Field(
+            alias="correlationId",
+            description="Reference the person saw when their sign-in failed; null for other events",
+        ),
+    ] = None
+    idp_status_code: Annotated[
+        str | None,
+        Field(
+            alias="idpStatusCode",
+            description="Status codes the IdP refused the sign-in with, e.g. Responder/InvalidNameIDPolicy",
+        ),
+    ] = None
     client_ip: Annotated[
         str | None,
         Field(
