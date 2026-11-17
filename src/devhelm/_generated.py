@@ -15957,7 +15957,10 @@ class StatusPageTemplateRequest(BaseModel):
     model_config = ConfigDict(extra="forbid", populate_by_name=True)
     kind: Annotated[
         Kind1,
-        Field(description="INCIDENT or MAINTENANCE; ignored when replacing a template"),
+        Field(
+            description="INCIDENT or MAINTENANCE; ignored when replacing a template",
+            examples=["INCIDENT"],
+        ),
     ]
     name: Annotated[
         str,
