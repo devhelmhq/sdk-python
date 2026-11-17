@@ -730,29 +730,6 @@ class BulkDeactivateEndUsersRequest(BaseModel):
     ]
 
 
-class Email1(RootModel[str]):
-    root: Annotated[
-        str,
-        Field(
-            description="Emails to sign out everywhere (1–1000)",
-            max_length=320,
-            min_length=0,
-        ),
-    ]
-
-
-class BulkSignOutEndUsersRequest(BaseModel):
-    model_config = ConfigDict(extra="forbid", populate_by_name=True)
-    emails: Annotated[
-        list[Email1],
-        Field(
-            description="Emails to sign out everywhere (1–1000)",
-            max_length=1000,
-            min_length=0,
-        ),
-    ]
-
-
 class BulkDeleteSubscribersRequest(BaseModel):
     model_config = ConfigDict(extra="forbid", populate_by_name=True)
     subscriber_ids: Annotated[
@@ -777,6 +754,29 @@ class Action(StrEnum):
     mute = "MUTE"
     unmute = "UNMUTE"
     acknowledge = "ACKNOWLEDGE"
+
+
+class Email1(RootModel[str]):
+    root: Annotated[
+        str,
+        Field(
+            description="Emails to sign out everywhere (1–1000)",
+            max_length=320,
+            min_length=0,
+        ),
+    ]
+
+
+class BulkSignOutEndUsersRequest(BaseModel):
+    model_config = ConfigDict(extra="forbid", populate_by_name=True)
+    emails: Annotated[
+        list[Email1],
+        Field(
+            description="Emails to sign out everywhere (1–1000)",
+            max_length=1000,
+            min_length=0,
+        ),
+    ]
 
 
 class BulkUpdateSubscriberScopeRequest(BaseModel):
@@ -1705,6 +1705,37 @@ class CreateSsoConnectionRequest(BaseModel):
         Provider | None,
         Field(
             description="Identity provider kind (ENTRA, OKTA, GOOGLE, OTHER); labels the setup copy and the connection mark"
+        ),
+    ] = None
+
+
+class CreateStatusPageAudienceRequest(BaseModel):
+    model_config = ConfigDict(extra="forbid", populate_by_name=True)
+    name: Annotated[
+        str, Field(description="Audience name, unique on the page (1–100 characters)")
+    ]
+    component_ids: Annotated[
+        list[UUID] | None,
+        Field(
+            alias="componentIds",
+            description="Components of this page only the audience sees",
+        ),
+    ] = None
+    component_group_ids: Annotated[
+        list[UUID] | None,
+        Field(
+            alias="componentGroupIds",
+            description="Component groups of this page only the audience sees",
+        ),
+    ] = None
+    emails: Annotated[
+        list[str] | None,
+        Field(description="Viewer emails in the audience, matched ignoring case"),
+    ] = None
+    domains: Annotated[
+        list[str] | None,
+        Field(
+            description="Email domains whose viewers are in the audience, e.g. acme.com"
         ),
     ] = None
 
@@ -4598,7 +4629,7 @@ class MemberRoleChangedMetadata(BaseModel):
     source: Annotated[
         str | None,
         Field(
-            description="SSO when the identity provider's groups set the role; null for a manual change"
+            description="SSO when the IdP set the role; MANUAL for an admin change or a released mapping"
         ),
     ] = None
 
@@ -5629,16 +5660,6 @@ class OpsGenieChannelConfig(BaseModel):
     ] = None
 
 
-class OrgSsoRoleMappingPreviewDto(BaseModel):
-    model_config = ConfigDict(extra="ignore", populate_by_name=True)
-    changed_member_count: Annotated[
-        int,
-        Field(
-            alias="changedMemberCount", description="Members whose role would change"
-        ),
-    ]
-
-
 class OrganizationDto(BaseModel):
     model_config = ConfigDict(extra="ignore", populate_by_name=True)
     id: Annotated[int, Field(description="Unique organization identifier")]
@@ -5710,6 +5731,16 @@ class OrgSsoRoleMappingDto(BaseModel):
     updated_at: Annotated[
         AwareDatetime,
         Field(alias="updatedAt", description="When the mapping last changed"),
+    ]
+
+
+class OrgSsoRoleMappingPreviewDto(BaseModel):
+    model_config = ConfigDict(extra="ignore", populate_by_name=True)
+    changed_member_count: Annotated[
+        int,
+        Field(
+            alias="changedMemberCount", description="Members whose role would change"
+        ),
     ]
 
 
@@ -7784,6 +7815,19 @@ class SetMonitorAuthRequest(BaseModel):
     config: ApiKeyAuthConfig | BasicAuthConfig | BearerAuthConfig | HeaderAuthConfig
 
 
+class SetStatusPageAudiencesRequest(BaseModel):
+    model_config = ConfigDict(extra="forbid", populate_by_name=True)
+    audience_ids: Annotated[
+        list[UUID],
+        Field(
+            alias="audienceIds",
+            description="Audiences that see it; an empty list makes it visible to every viewer",
+            max_length=50,
+            min_length=0,
+        ),
+    ]
+
+
 class Status7(StrEnum):
     operational = "OPERATIONAL"
     degraded_performance = "DEGRADED_PERFORMANCE"
@@ -8005,11 +8049,6 @@ class SingleValueResponseNotificationDispatchDto(BaseModel):
     data: NotificationDispatchDto
 
 
-class SingleValueResponseOrgSsoRoleMappingPreviewDto(BaseModel):
-    model_config = ConfigDict(extra="ignore", populate_by_name=True)
-    data: OrgSsoRoleMappingPreviewDto
-
-
 class SingleValueResponseOrganizationDto(BaseModel):
     model_config = ConfigDict(extra="ignore", populate_by_name=True)
     data: OrganizationDto
@@ -8018,6 +8057,11 @@ class SingleValueResponseOrganizationDto(BaseModel):
 class SingleValueResponseOrgSsoRoleMappingDto(BaseModel):
     model_config = ConfigDict(extra="ignore", populate_by_name=True)
     data: OrgSsoRoleMappingDto
+
+
+class SingleValueResponseOrgSsoRoleMappingPreviewDto(BaseModel):
+    model_config = ConfigDict(extra="ignore", populate_by_name=True)
+    data: OrgSsoRoleMappingPreviewDto
 
 
 class SingleValueResponseOrgSsoSettingsDto(BaseModel):
@@ -8441,6 +8485,82 @@ class StatusPageAccessPolicyDto(BaseModel):
     ] = None
 
 
+class StatusPageAudienceDeletePreviewDto(BaseModel):
+    model_config = ConfigDict(extra="ignore", populate_by_name=True)
+    losing_access_count: Annotated[
+        int,
+        Field(
+            alias="losingAccessCount",
+            description="Active end users in the audience who lose at least one component",
+        ),
+    ]
+    component_ids: Annotated[
+        list[UUID],
+        Field(
+            alias="componentIds",
+            description="Components of the audience that someone loses, in page order",
+        ),
+    ]
+    component_group_ids: Annotated[
+        list[UUID],
+        Field(
+            alias="componentGroupIds",
+            description="Component groups of the audience that someone loses, in page order",
+        ),
+    ]
+
+
+class StatusPageAudienceDto(BaseModel):
+    model_config = ConfigDict(extra="ignore", populate_by_name=True)
+    id: Annotated[UUID, Field(description="Audience identifier")]
+    status_page_id: Annotated[
+        UUID,
+        Field(alias="statusPageId", description="Status page this audience belongs to"),
+    ]
+    name: Annotated[str, Field(description="Audience name, unique on the page")]
+    component_ids: Annotated[
+        list[UUID],
+        Field(
+            alias="componentIds",
+            description="Components visible only to this page's audiences that hold them",
+        ),
+    ]
+    component_group_ids: Annotated[
+        list[UUID],
+        Field(
+            alias="componentGroupIds",
+            description="Component groups visible only to this page's audiences that hold them",
+        ),
+    ]
+    emails: Annotated[
+        list[str],
+        Field(
+            description="Viewer emails in the audience; masked for viewers below incident author"
+        ),
+    ]
+    domains: Annotated[
+        list[str],
+        Field(
+            description="Email domains whose viewers are in the audience, e.g. acme.com"
+        ),
+    ]
+    end_user_count: Annotated[
+        int,
+        Field(
+            alias="endUserCount",
+            description="Active end users of the page the audience's emails and domains match now",
+        ),
+    ]
+    created_at: Annotated[
+        AwareDatetime,
+        Field(alias="createdAt", description="When the audience was created"),
+    ]
+    updated_at: Annotated[
+        AwareDatetime,
+        Field(alias="updatedAt", description="When the audience last changed"),
+    ]
+
+
 class StatusPageBindingSnapshot(BaseModel):
     model_config = ConfigDict(extra="ignore", populate_by_name=True)
     name: Annotated[str, Field(description="Component display name", min_length=1)]
@@ -8718,9 +8838,6 @@ class StatusPageComponentDto(BaseModel):
     display_order: Annotated[int, Field(alias="displayOrder")]
     page_order: Annotated[int, Field(alias="pageOrder")]
     exclude_from_overall: Annotated[bool, Field(alias="excludeFromOverall")]
-    start_date: Annotated[AwareDatetime | None, Field(alias="startDate")] = None
-    created_at: Annotated[AwareDatetime, Field(alias="createdAt")]
-    updated_at: Annotated[AwareDatetime, Field(alias="updatedAt")]
     audience_restricted: Annotated[
         bool | None,
         Field(
@@ -8728,6 +8845,9 @@ class StatusPageComponentDto(BaseModel):
             description="Visible only to the audiences that hold it, and to no viewer when none does (default: false)",
         ),
     ] = False
+    start_date: Annotated[AwareDatetime | None, Field(alias="startDate")] = None
+    created_at: Annotated[AwareDatetime, Field(alias="createdAt")]
+    updated_at: Annotated[AwareDatetime, Field(alias="updatedAt")]
 
 
 class StatusPageComponentGroupDto(BaseModel):
@@ -8739,6 +8859,13 @@ class StatusPageComponentGroupDto(BaseModel):
     display_order: Annotated[int, Field(alias="displayOrder")]
     page_order: Annotated[int, Field(alias="pageOrder")]
     default_open: Annotated[bool, Field(alias="defaultOpen")]
+    audience_restricted: Annotated[
+        bool | None,
+        Field(
+            alias="audienceRestricted",
+            description="Visible only to the audiences that hold it, and to no viewer when none does (default: false)",
+        ),
+    ] = False
     components: list[StatusPageComponentDto] | None = None
     status: Annotated[
         str | None,
@@ -8755,13 +8882,6 @@ class StatusPageComponentGroupDto(BaseModel):
     ] = 0
     created_at: Annotated[AwareDatetime, Field(alias="createdAt")]
     updated_at: Annotated[AwareDatetime, Field(alias="updatedAt")]
-    audience_restricted: Annotated[
-        bool | None,
-        Field(
-            alias="audienceRestricted",
-            description="Visible only to the audiences that hold it, and to no viewer when none does (default: false)",
-        ),
-    ] = False
 
 
 class StatusPageCustomDomainDto(BaseModel):
@@ -9072,40 +9192,17 @@ class StatusPageOpenIncidentSummaryDto(BaseModel):
     ]
 
 
-class StatusPageReportIncidentDto(BaseModel):
+class StatusPageReportComponentDto(BaseModel):
     model_config = ConfigDict(extra="ignore", populate_by_name=True)
-    id: Annotated[UUID, Field(description="Incident id")]
-    title: Annotated[str, Field(description="Incident title", min_length=1)]
-    impact: Annotated[str, Field(description="Incident impact")]
-    status: Annotated[str, Field(description="Current incident status")]
-    started_at: Annotated[
-        AwareDatetime, Field(alias="startedAt", description="When the incident started")
-    ]
-    resolved_at: Annotated[
-        AwareDatetime | None,
+    id: Annotated[UUID, Field(description="Component id")]
+    name: Annotated[str, Field(description="Component name", min_length=1)]
+    group_id: Annotated[
+        UUID | None,
         Field(
-            alias="resolvedAt",
-            description="When the incident was resolved; null while it is open",
+            alias="groupId",
+            description="Group the component belongs to; null when ungrouped",
         ),
     ] = None
-    component_ids: Annotated[
-        list[UUID],
-        Field(
-            alias="componentIds",
-            description="Ids of the components the incident affected",
-        ),
-    ]
-
-
-class StatusPageReportRowDto(BaseModel):
-    model_config = ConfigDict(extra="ignore", populate_by_name=True)
-    id: Annotated[UUID, Field(description="Component or component group id")]
-    kind: Annotated[
-        str, Field(description="Whether the row is a component or a component group")
-    ]
-    name: Annotated[
-        str, Field(description="Component or component group name", min_length=1)
-    ]
     uptime_percentage: Annotated[
         float | None,
         Field(
@@ -9117,7 +9214,7 @@ class StatusPageReportRowDto(BaseModel):
         int,
         Field(
             alias="trackedDays",
-            description="Days in the range the item was tracked, including today's partial day",
+            description="Days in the range the component was tracked, including today's partial day",
         ),
     ]
     downtime_minutes: Annotated[
@@ -9145,14 +9242,101 @@ class StatusPageReportRowDto(BaseModel):
         int,
         Field(
             alias="incidentCount",
-            description="Published incidents in the range that affected the item",
+            description="Published incidents in the range that affected the component",
         ),
     ]
     incident_ids: Annotated[
         list[UUID],
         Field(
             alias="incidentIds",
-            description="Ids of those incidents, oldest first; details are in the report's incidents",
+            description="Ids of those incidents, oldest first, as listed in the report's incidents",
+        ),
+    ]
+
+
+class StatusPageReportGroupDto(BaseModel):
+    model_config = ConfigDict(extra="ignore", populate_by_name=True)
+    id: Annotated[UUID, Field(description="Component group id")]
+    name: Annotated[str, Field(description="Component group name", min_length=1)]
+    component_ids: Annotated[
+        list[UUID],
+        Field(
+            alias="componentIds",
+            description="Ids of the group's components, in page order",
+        ),
+    ]
+    uptime_percentage: Annotated[
+        float | None,
+        Field(
+            alias="uptimePercentage",
+            description="Group uptime percentage, as the public page shows it; null when no day was tracked",
+        ),
+    ] = None
+    tracked_days: Annotated[
+        int,
+        Field(
+            alias="trackedDays",
+            description="Days in the range the group was tracked, including today's partial day",
+        ),
+    ]
+    downtime_minutes: Annotated[
+        int,
+        Field(
+            alias="downtimeMinutes",
+            description="Outage minutes weighted like uptime: major outage in full, partial outage at 30%",
+        ),
+    ]
+    major_outage_minutes: Annotated[
+        int,
+        Field(
+            alias="majorOutageMinutes",
+            description="Minutes of major outage in the range",
+        ),
+    ]
+    partial_outage_minutes: Annotated[
+        int,
+        Field(
+            alias="partialOutageMinutes",
+            description="Minutes of partial outage in the range",
+        ),
+    ]
+    incident_count: Annotated[
+        int,
+        Field(
+            alias="incidentCount",
+            description="Published incidents in the range that affected the group's components",
+        ),
+    ]
+    incident_ids: Annotated[
+        list[UUID],
+        Field(
+            alias="incidentIds",
+            description="Ids of those incidents, oldest first, as listed in the report's incidents",
+        ),
+    ]
+
+
+class StatusPageReportIncidentDto(BaseModel):
+    model_config = ConfigDict(extra="ignore", populate_by_name=True)
+    id: Annotated[UUID, Field(description="Incident id")]
+    title: Annotated[str, Field(description="Incident title", min_length=1)]
+    impact: Annotated[str, Field(description="Incident impact")]
+    status: Annotated[str, Field(description="Current incident status")]
+    started_at: Annotated[
+        AwareDatetime, Field(alias="startedAt", description="When the incident started")
+    ]
+    resolved_at: Annotated[
+        AwareDatetime | None,
+        Field(
+            alias="resolvedAt",
+            description="When the incident was resolved; null while it is open",
+        ),
+    ] = None
+    component_ids: Annotated[
+        list[UUID],
+        Field(
+            alias="componentIds",
+            description="Ids of the components the incident affected",
         ),
     ]
 
@@ -9647,6 +9831,15 @@ class TableValueResultServiceComponentDto(BaseModel):
 class TableValueResultServiceIncidentDto(BaseModel):
     model_config = ConfigDict(extra="ignore", populate_by_name=True)
     data: list[ServiceIncidentDto]
+    has_next: Annotated[bool, Field(alias="hasNext")]
+    has_prev: Annotated[bool, Field(alias="hasPrev")]
+    total_elements: Annotated[int | None, Field(alias="totalElements")] = None
+    total_pages: Annotated[int | None, Field(alias="totalPages")] = None
+
+
+class TableValueResultStatusPageAudienceDto(BaseModel):
+    model_config = ConfigDict(extra="ignore", populate_by_name=True)
+    data: list[StatusPageAudienceDto]
     has_next: Annotated[bool, Field(alias="hasNext")]
     has_prev: Annotated[bool, Field(alias="hasPrev")]
     total_elements: Annotated[int | None, Field(alias="totalElements")] = None
@@ -11053,6 +11246,35 @@ class UpdateStatusPageAccessPolicyRequest(BaseModel):
     ]
 
 
+class UpdateStatusPageAudienceRequest(BaseModel):
+    model_config = ConfigDict(extra="forbid", populate_by_name=True)
+    name: Annotated[
+        str | None, Field(description="New audience name; null preserves current")
+    ] = None
+    component_ids: Annotated[
+        list[UUID] | None,
+        Field(
+            alias="componentIds",
+            description="New component list; null preserves current",
+        ),
+    ] = None
+    component_group_ids: Annotated[
+        list[UUID] | None,
+        Field(
+            alias="componentGroupIds",
+            description="New component group list; null preserves current",
+        ),
+    ] = None
+    emails: Annotated[
+        list[str] | None,
+        Field(description="New viewer email list; null preserves current"),
+    ] = None
+    domains: Annotated[
+        list[str] | None,
+        Field(description="New email domain list; null preserves current"),
+    ] = None
+
+
 class UpdateStatusPageComponentGroupRequest(BaseModel):
     model_config = ConfigDict(extra="forbid", populate_by_name=True)
     name: Annotated[
@@ -12144,293 +12366,6 @@ class ZapierChannelConfig(BaseModel):
             alias="webhookUrl",
             description="Zapier/n8n/Make catch webhook URL",
             min_length=1,
-        ),
-    ]
-
-
-class CreateStatusPageAudienceRequest(BaseModel):
-    model_config = ConfigDict(extra="forbid", populate_by_name=True)
-    name: Annotated[
-        str, Field(description="Audience name, unique on the page (1–100 characters)")
-    ]
-    component_ids: Annotated[
-        list[UUID] | None,
-        Field(
-            alias="componentIds",
-            description="Components of this page only the audience sees",
-        ),
-    ] = None
-    component_group_ids: Annotated[
-        list[UUID] | None,
-        Field(
-            alias="componentGroupIds",
-            description="Component groups of this page only the audience sees",
-        ),
-    ] = None
-    emails: Annotated[
-        list[str] | None,
-        Field(description="Viewer emails in the audience, matched ignoring case"),
-    ] = None
-    domains: Annotated[
-        list[str] | None,
-        Field(
-            description="Email domains whose viewers are in the audience, e.g. acme.com"
-        ),
-    ] = None
-
-
-class StatusPageAudienceDto(BaseModel):
-    model_config = ConfigDict(extra="ignore", populate_by_name=True)
-    id: Annotated[UUID, Field(description="Audience identifier")]
-    status_page_id: Annotated[
-        UUID,
-        Field(alias="statusPageId", description="Status page this audience belongs to"),
-    ]
-    name: Annotated[str, Field(description="Audience name, unique on the page")]
-    component_ids: Annotated[
-        list[UUID],
-        Field(
-            alias="componentIds",
-            description="Components visible only to this page's audiences that hold them",
-        ),
-    ]
-    component_group_ids: Annotated[
-        list[UUID],
-        Field(
-            alias="componentGroupIds",
-            description="Component groups visible only to this page's audiences that hold them",
-        ),
-    ]
-    emails: Annotated[
-        list[str],
-        Field(
-            description="Viewer emails in the audience; masked for viewers below incident author"
-        ),
-    ]
-    domains: Annotated[
-        list[str],
-        Field(
-            description="Email domains whose viewers are in the audience, e.g. acme.com"
-        ),
-    ]
-    created_at: Annotated[
-        AwareDatetime,
-        Field(alias="createdAt", description="When the audience was created"),
-    ]
-    updated_at: Annotated[
-        AwareDatetime,
-        Field(alias="updatedAt", description="When the audience last changed"),
-    ]
-    end_user_count: Annotated[
-        int,
-        Field(
-            alias="endUserCount",
-            description="Active end users of the page the audience's emails and domains match now",
-        ),
-    ]
-
-
-class TableValueResultStatusPageAudienceDto(BaseModel):
-    model_config = ConfigDict(extra="ignore", populate_by_name=True)
-    data: list[StatusPageAudienceDto]
-    has_next: Annotated[bool, Field(alias="hasNext")]
-    has_prev: Annotated[bool, Field(alias="hasPrev")]
-    total_elements: Annotated[int | None, Field(alias="totalElements")] = None
-    total_pages: Annotated[int | None, Field(alias="totalPages")] = None
-
-
-class UpdateStatusPageAudienceRequest(BaseModel):
-    model_config = ConfigDict(extra="forbid", populate_by_name=True)
-    name: Annotated[
-        str | None, Field(description="New audience name; null preserves current")
-    ] = None
-    component_ids: Annotated[
-        list[UUID] | None,
-        Field(
-            alias="componentIds",
-            description="New component list; null preserves current",
-        ),
-    ] = None
-    component_group_ids: Annotated[
-        list[UUID] | None,
-        Field(
-            alias="componentGroupIds",
-            description="New component group list; null preserves current",
-        ),
-    ] = None
-    emails: Annotated[
-        list[str] | None,
-        Field(description="New viewer email list; null preserves current"),
-    ] = None
-    domains: Annotated[
-        list[str] | None,
-        Field(description="New email domain list; null preserves current"),
-    ] = None
-
-
-class StatusPageReportComponentDto(BaseModel):
-    model_config = ConfigDict(extra="ignore", populate_by_name=True)
-    id: Annotated[UUID, Field(description="Component id")]
-    name: Annotated[str, Field(description="Component name", min_length=1)]
-    group_id: Annotated[
-        UUID | None,
-        Field(
-            alias="groupId",
-            description="Group the component belongs to; null when ungrouped",
-        ),
-    ] = None
-    uptime_percentage: Annotated[
-        float | None,
-        Field(
-            alias="uptimePercentage",
-            description="Mean daily uptime percentage over the tracked days; null when no day was tracked",
-        ),
-    ] = None
-    tracked_days: Annotated[
-        int,
-        Field(
-            alias="trackedDays",
-            description="Days in the range the component was tracked, including today's partial day",
-        ),
-    ]
-    downtime_minutes: Annotated[
-        int,
-        Field(
-            alias="downtimeMinutes",
-            description="Outage minutes weighted like uptime: major outage in full, partial outage at 30%",
-        ),
-    ]
-    major_outage_minutes: Annotated[
-        int,
-        Field(
-            alias="majorOutageMinutes",
-            description="Minutes of major outage in the range",
-        ),
-    ]
-    partial_outage_minutes: Annotated[
-        int,
-        Field(
-            alias="partialOutageMinutes",
-            description="Minutes of partial outage in the range",
-        ),
-    ]
-    incident_count: Annotated[
-        int,
-        Field(
-            alias="incidentCount",
-            description="Published incidents in the range that affected the component",
-        ),
-    ]
-    incident_ids: Annotated[
-        list[UUID],
-        Field(
-            alias="incidentIds",
-            description="Ids of those incidents, oldest first, as listed in the report's incidents",
-        ),
-    ]
-
-
-class StatusPageReportGroupDto(BaseModel):
-    model_config = ConfigDict(extra="ignore", populate_by_name=True)
-    id: Annotated[UUID, Field(description="Component group id")]
-    name: Annotated[str, Field(description="Component group name", min_length=1)]
-    component_ids: Annotated[
-        list[UUID],
-        Field(
-            alias="componentIds",
-            description="Ids of the group's components, in page order",
-        ),
-    ]
-    uptime_percentage: Annotated[
-        float | None,
-        Field(
-            alias="uptimePercentage",
-            description="Group uptime percentage, as the public page shows it; null when no day was tracked",
-        ),
-    ] = None
-    tracked_days: Annotated[
-        int,
-        Field(
-            alias="trackedDays",
-            description="Days in the range the group was tracked, including today's partial day",
-        ),
-    ]
-    downtime_minutes: Annotated[
-        int,
-        Field(
-            alias="downtimeMinutes",
-            description="Outage minutes weighted like uptime: major outage in full, partial outage at 30%",
-        ),
-    ]
-    major_outage_minutes: Annotated[
-        int,
-        Field(
-            alias="majorOutageMinutes",
-            description="Minutes of major outage in the range",
-        ),
-    ]
-    partial_outage_minutes: Annotated[
-        int,
-        Field(
-            alias="partialOutageMinutes",
-            description="Minutes of partial outage in the range",
-        ),
-    ]
-    incident_count: Annotated[
-        int,
-        Field(
-            alias="incidentCount",
-            description="Published incidents in the range that affected the group's components",
-        ),
-    ]
-    incident_ids: Annotated[
-        list[UUID],
-        Field(
-            alias="incidentIds",
-            description="Ids of those incidents, oldest first, as listed in the report's incidents",
-        ),
-    ]
-
-
-class StatusPageAudienceDeletePreviewDto(BaseModel):
-    model_config = ConfigDict(extra="ignore", populate_by_name=True)
-    losing_access_count: Annotated[
-        int,
-        Field(
-            alias="losingAccessCount",
-            description="Active end users in the audience who lose at least one component",
-        ),
-    ]
-    component_ids: Annotated[
-        list[UUID],
-        Field(
-            alias="componentIds",
-            description="Components of the audience that someone loses, in page order",
-        ),
-    ]
-    component_group_ids: Annotated[
-        list[UUID],
-        Field(
-            alias="componentGroupIds",
-            description="Component groups of the audience that someone loses, in page order",
-        ),
-    ]
-
-
-class SingleValueResponseStatusPageAudienceDeletePreviewDto(BaseModel):
-    model_config = ConfigDict(extra="ignore", populate_by_name=True)
-    data: StatusPageAudienceDeletePreviewDto
-
-
-class SetStatusPageAudiencesRequest(BaseModel):
-    model_config = ConfigDict(extra="forbid", populate_by_name=True)
-    audience_ids: Annotated[
-        list[UUID],
-        Field(
-            alias="audienceIds",
-            description="Audiences that see it; an empty list makes it visible to every viewer",
-            max_length=50,
-            min_length=0,
         ),
     ]
 
@@ -15431,6 +15366,16 @@ class SingleValueResponseStatusPageAccessPolicyDto(BaseModel):
     data: StatusPageAccessPolicyDto
 
 
+class SingleValueResponseStatusPageAudienceDeletePreviewDto(BaseModel):
+    model_config = ConfigDict(extra="ignore", populate_by_name=True)
+    data: StatusPageAudienceDeletePreviewDto
+
+
+class SingleValueResponseStatusPageAudienceDto(BaseModel):
+    model_config = ConfigDict(extra="ignore", populate_by_name=True)
+    data: StatusPageAudienceDto
+
+
 class SingleValueResponseStatusPageComponentDto(BaseModel):
     model_config = ConfigDict(extra="ignore", populate_by_name=True)
     data: StatusPageComponentDto
@@ -15878,8 +15823,6 @@ class StatusPageIncidentDto(BaseModel):
         list[StatusPageIncidentComponentDto] | None, Field(alias="affectedComponents")
     ] = None
     updates: list[StatusPageIncidentUpdateDto] | None = None
-    created_at: Annotated[AwareDatetime, Field(alias="createdAt")]
-    updated_at: Annotated[AwareDatetime, Field(alias="updatedAt")]
     audience_ids: Annotated[
         list[UUID],
         Field(
@@ -15887,6 +15830,8 @@ class StatusPageIncidentDto(BaseModel):
             description="Audiences that see it; empty for everyone who sees its components",
         ),
     ]
+    created_at: Annotated[AwareDatetime, Field(alias="createdAt")]
+    updated_at: Annotated[AwareDatetime, Field(alias="updatedAt")]
 
 
 class StatusPageMeasuredComponentUptimeDto(BaseModel):
@@ -15927,24 +15872,7 @@ class StatusPageReportDto(BaseModel):
     from_: Annotated[
         date_aliased, Field(alias="from", description="First day of the range (UTC)")
     ]
-    to: Annotated[
-        date_aliased, Field(description="Last day of the range (UTC), capped at today")
-    ]
-    group_by: Annotated[
-        str, Field(alias="groupBy", description="What the rows are grouped by")
-    ]
-    rows: Annotated[
-        list[StatusPageReportRowDto],
-        Field(
-            description="One row per component, or per component group plus each ungrouped component"
-        ),
-    ]
-    incidents: Annotated[
-        list[StatusPageReportIncidentDto],
-        Field(
-            description="Published incidents (not maintenance) that overlap the range, oldest first"
-        ),
-    ]
+    to: Annotated[date_aliased, Field(description="Last day of the range (UTC)")]
     groups: Annotated[
         list[StatusPageReportGroupDto],
         Field(description="Component groups of the page, in page order"),
@@ -15953,6 +15881,12 @@ class StatusPageReportDto(BaseModel):
         list[StatusPageReportComponentDto],
         Field(
             description="Every component of the page in page order, each group's members after it"
+        ),
+    ]
+    incidents: Annotated[
+        list[StatusPageReportIncidentDto],
+        Field(
+            description="Published incidents (not maintenance) that overlap the range, oldest first"
         ),
     ]
 
@@ -16611,11 +16545,6 @@ class WorkspaceDto(BaseModel):
     runtime_profile: Annotated[
         RuntimeProfileDto | None, Field(alias="runtimeProfile")
     ] = None
-
-
-class SingleValueResponseStatusPageAudienceDto(BaseModel):
-    model_config = ConfigDict(extra="ignore", populate_by_name=True)
-    data: StatusPageAudienceDto
 
 
 class AuditEventDto(BaseModel):
