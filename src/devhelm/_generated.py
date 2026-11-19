@@ -11600,6 +11600,11 @@ class SubscriberChannel(StrEnum):
     teams = "TEAMS"
 
 
+class SsoRoutingMode(StrEnum):
+    email_domain = "EMAIL_DOMAIN"
+    buttons = "BUTTONS"
+
+
 class UpdateStatusPageRequest(BaseModel):
     model_config = ConfigDict(extra="forbid", populate_by_name=True)
     name: Annotated[
@@ -11684,6 +11689,13 @@ class UpdateStatusPageRequest(BaseModel):
     ] = None
     email_sender: Annotated[
         StatusPageEmailSenderRequest | None, Field(alias="emailSender")
+    ] = None
+    sso_routing_mode: Annotated[
+        SsoRoutingMode | None,
+        Field(
+            alias="ssoRoutingMode",
+            description="How sign-in reaches SSO connections: EMAIL_DOMAIN or BUTTONS; null preserves current",
+        ),
     ] = None
 
 
@@ -15724,6 +15736,13 @@ class StatusPageDto(BaseModel):
         Field(
             alias="emailSignIn",
             description="Email sign-in method besides SSO: PASSWORD or MAGIC_LINK; null when off",
+        ),
+    ] = None
+    sso_routing_mode: Annotated[
+        str | None,
+        Field(
+            alias="ssoRoutingMode",
+            description="How sign-in reaches SSO connections: EMAIL_DOMAIN or BUTTONS",
         ),
     ] = None
     incident_mode: Annotated[str, Field(alias="incidentMode")]
