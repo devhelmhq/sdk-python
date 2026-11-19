@@ -8134,37 +8134,6 @@ class SingleValueResponseSignedDownload(BaseModel):
     data: SignedDownload
 
 
-class StatusPageEndUserStatsDto(BaseModel):
-    model_config = ConfigDict(extra="ignore", populate_by_name=True)
-    active: Annotated[int, Field(description="End users who may sign in")]
-    active_sso: Annotated[
-        int,
-        Field(
-            alias="activeSso", description="Active end users who sign in through SSO"
-        ),
-    ]
-    invited: Annotated[
-        int, Field(description="End users invited who have not signed in yet")
-    ]
-    expired_invites: Annotated[
-        int, Field(alias="expiredInvites", description="Invites whose link has expired")
-    ]
-    deactivated: Annotated[int, Field(description="End users who may not sign in")]
-    sign_ins: Annotated[
-        int,
-        Field(alias="signIns", description="Successful sign-ins in the last 7 days"),
-    ]
-    failed_sign_ins: Annotated[
-        int,
-        Field(alias="failedSignIns", description="Failed sign-ins in the last 7 days"),
-    ]
-
-
-class SingleValueResponseStatusPageEndUserStatsDto(BaseModel):
-    model_config = ConfigDict(extra="ignore", populate_by_name=True)
-    data: StatusPageEndUserStatsDto
-
-
 class SingleValueResponseString(BaseModel):
     model_config = ConfigDict(extra="ignore", populate_by_name=True)
     data: str
@@ -9070,6 +9039,32 @@ class StatusPageEndUserInviteSkipDto(BaseModel):
     model_config = ConfigDict(extra="ignore", populate_by_name=True)
     email: Annotated[str, Field(description="The email as given, trimmed")]
     reason: Annotated[str, Field(description="Why no invite was sent")]
+
+
+class StatusPageEndUserStatsDto(BaseModel):
+    model_config = ConfigDict(extra="ignore", populate_by_name=True)
+    active: Annotated[int, Field(description="End users who may sign in")]
+    active_sso: Annotated[
+        int,
+        Field(
+            alias="activeSso", description="Active end users who sign in through SSO"
+        ),
+    ]
+    invited: Annotated[
+        int, Field(description="End users invited who have not signed in yet")
+    ]
+    expired_invites: Annotated[
+        int, Field(alias="expiredInvites", description="Invites whose link has expired")
+    ]
+    deactivated: Annotated[int, Field(description="End users who may not sign in")]
+    sign_ins: Annotated[
+        int,
+        Field(alias="signIns", description="Successful sign-ins in the last 7 days"),
+    ]
+    failed_sign_ins: Annotated[
+        int,
+        Field(alias="failedSignIns", description="Failed sign-ins in the last 7 days"),
+    ]
 
 
 class StatusPageGroupMemberDto(BaseModel):
@@ -15482,6 +15477,11 @@ class SingleValueResponseStatusPageEndUserBulkDeactivationDto(BaseModel):
 class SingleValueResponseStatusPageEndUserBulkSignOutDto(BaseModel):
     model_config = ConfigDict(extra="ignore", populate_by_name=True)
     data: StatusPageEndUserBulkSignOutDto
+
+
+class SingleValueResponseStatusPageEndUserStatsDto(BaseModel):
+    model_config = ConfigDict(extra="ignore", populate_by_name=True)
+    data: StatusPageEndUserStatsDto
 
 
 class SingleValueResponseStatusPageIncidentUpdateDto(BaseModel):
