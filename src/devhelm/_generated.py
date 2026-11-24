@@ -3122,7 +3122,7 @@ class ErrorResponse(BaseModel):
         Field(
             alias="upgradeUrl",
             description="Page where an admin can change the plan",
-            examples=["https://app.devhelm.io/settings/billing"],
+            examples=["https://app.devhelm.io/dashboard/settings/billing"],
         ),
     ] = None
     can_raise: Annotated[
