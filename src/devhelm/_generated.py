@@ -395,11 +395,15 @@ class AlertDeliveryDto(BaseModel):
             description="Incident lifecycle event that triggered this delivery",
         ),
     ]
+    route: Annotated[
+        str | None,
+        Field(description="Route that queued this delivery: DIRECT or POLICY"),
+    ] = None
     step_number: Annotated[
         int,
         Field(
             alias="stepNumber",
-            description="1-based escalation step this delivery belongs to",
+            description="Escalation step (1-based); 0 for direct-channel deliveries",
         ),
     ]
     fire_count: Annotated[
@@ -2178,7 +2182,7 @@ class DatadogChannelConfig(BaseModel):
     site: Annotated[
         str | None,
         Field(
-            description="Datadog site region (e.g. datadoghq.com, datadoghq.eu, us3.datadoghq.com)"
+            description="Datadog site: datadoghq.com (default), us3, us5, eu, ap1, ap2 or gov"
         ),
     ] = None
     tags: Annotated[
@@ -2251,37 +2255,6 @@ class DefinitionDto(BaseModel):
     updated_at: Annotated[
         AwareDatetime,
         Field(alias="updatedAt", description="When the definition was last updated"),
-    ]
-
-
-class DekRotationResultDto(BaseModel):
-    model_config = ConfigDict(extra="ignore", populate_by_name=True)
-    previous_dek_version: Annotated[
-        int,
-        Field(alias="previousDekVersion", description="DEK version before rotation"),
-    ]
-    new_dek_version: Annotated[
-        int, Field(alias="newDekVersion", description="DEK version after rotation")
-    ]
-    secrets_re_encrypted: Annotated[
-        int,
-        Field(
-            alias="secretsReEncrypted",
-            description="Number of secrets re-encrypted with the new DEK",
-        ),
-    ]
-    channels_re_encrypted: Annotated[
-        int,
-        Field(
-            alias="channelsReEncrypted",
-            description="Number of alert channels re-encrypted with the new DEK",
-        ),
-    ]
-    rotated_at: Annotated[
-        AwareDatetime,
-        Field(
-            alias="rotatedAt", description="Timestamp when the rotation was performed"
-        ),
     ]
 
 
@@ -4123,7 +4096,7 @@ class JiraChannelConfig(BaseModel):
     domain: Annotated[
         str,
         Field(
-            description="Atlassian instance domain (e.g. yourteam.atlassian.net)",
+            description="Atlassian Cloud domain, e.g. yourteam.atlassian.net",
             min_length=1,
         ),
     ]
@@ -7772,6 +7745,13 @@ class ServiceSubscribeRequest(BaseModel):
             pattern="ALL|AWARENESS|INCIDENTS_ONLY|MAJOR_ONLY",
         ),
     ] = None
+    alert_channel_ids: Annotated[
+        list[UUID] | None,
+        Field(
+            alias="alertChannelIds",
+            description="Channels notified for this dependency's incidents",
+        ),
+    ] = None
 
 
 class SetAlertChannelsRequest(BaseModel):
@@ -7927,11 +7907,6 @@ class SingleValueResponseArtifactDownloadDto(BaseModel):
 class SingleValueResponseBundleDto(BaseModel):
     model_config = ConfigDict(extra="ignore", populate_by_name=True)
     data: BundleDto
-
-
-class SingleValueResponseDekRotationResultDto(BaseModel):
-    model_config = ConfigDict(extra="ignore", populate_by_name=True)
-    data: DekRotationResultDto
 
 
 class SingleValueResponseDeployLockDto(BaseModel):
@@ -10071,6 +10046,20 @@ class TestChannelResult(BaseModel):
     model_config = ConfigDict(extra="ignore", populate_by_name=True)
     success: bool
     message: str
+    channel_id: Annotated[
+        UUID | None, Field(alias="channelId", description="Channel that was tested")
+    ] = None
+    route: Annotated[
+        str | None,
+        Field(description="Route that reaches the channel: DIRECT or POLICY"),
+    ] = None
+    no_route: Annotated[
+        bool | None,
+        Field(
+            alias="noRoute",
+            description="True when the monitor has no route, so an incident would alert nobody",
+        ),
+    ] = None
 
 
 class TestMatchResult(BaseModel):
@@ -10537,7 +10526,7 @@ class UpdateDatadogChannelConfig(BaseModel):
     site: Annotated[
         str | None,
         Field(
-            description="Datadog site region (e.g. datadoghq.com, datadoghq.eu, us3.datadoghq.com)"
+            description="Datadog site: datadoghq.com (default), us3, us5, eu, ap1, ap2 or gov"
         ),
     ] = None
     tags: Annotated[
@@ -10709,7 +10698,7 @@ class UpdateJiraChannelConfig(BaseModel):
     domain: Annotated[
         str,
         Field(
-            description="Atlassian instance domain (e.g. yourteam.atlassian.net)",
+            description="Atlassian Cloud domain, e.g. yourteam.atlassian.net",
             min_length=1,
         ),
     ]
@@ -11059,7 +11048,14 @@ class UpdateResourceGroupRequest(BaseModel):
         UUID | None,
         Field(
             alias="alertPolicyId",
-            description="Optional notification policy to apply for this group; null clears the existing value",
+            description="Notification policy that runs for this group's incidents; null clears the existing value",
+        ),
+    ] = None
+    alert_channel_ids: Annotated[
+        list[UUID] | None,
+        Field(
+            alias="alertChannelIds",
+            description="Channels notified for this group's incidents; null clears the existing value",
         ),
     ] = None
     default_frequency: Annotated[
@@ -11085,7 +11081,8 @@ class UpdateResourceGroupRequest(BaseModel):
         list[UUID] | None,
         Field(
             alias="defaultAlertChannels",
-            description="Default alert channel IDs for member monitors; null clears",
+            deprecated=True,
+            description="Deprecated alias of alertChannelIds; null clears the existing value",
         ),
     ] = None
     default_environment_id: Annotated[
@@ -11170,6 +11167,25 @@ class UpdateSecretRequest(BaseModel):
             min_length=0,
         ),
     ]
+
+
+class UpdateServiceSubscriptionRequest(BaseModel):
+    model_config = ConfigDict(extra="forbid", populate_by_name=True)
+    alert_sensitivity: Annotated[
+        str | None,
+        Field(
+            alias="alertSensitivity",
+            description="New sensitivity; null preserves current",
+            pattern="ALL|AWARENESS|INCIDENTS_ONLY|MAJOR_ONLY",
+        ),
+    ] = None
+    alert_channel_ids: Annotated[
+        list[UUID] | None,
+        Field(
+            alias="alertChannelIds",
+            description="Channels notified for this dependency's incidents; null preserves current",
+        ),
+    ] = None
 
 
 class UpdateSlackChannelConfig(BaseModel):
@@ -13141,7 +13157,14 @@ class CreateResourceGroupRequest(BaseModel):
         UUID | None,
         Field(
             alias="alertPolicyId",
-            description="Optional notification policy to apply for this group",
+            description="Notification policy that runs for this group's incidents",
+        ),
+    ] = None
+    alert_channel_ids: Annotated[
+        list[UUID] | None,
+        Field(
+            alias="alertChannelIds",
+            description="Channels notified for this group's incidents",
         ),
     ] = None
     default_frequency: Annotated[
@@ -13167,7 +13190,8 @@ class CreateResourceGroupRequest(BaseModel):
         list[UUID] | None,
         Field(
             alias="defaultAlertChannels",
-            description="Default alert channel IDs applied to member monitors",
+            deprecated=True,
+            description="Deprecated alias of alertChannelIds",
         ),
     ] = None
     default_environment_id: Annotated[
@@ -15241,6 +15265,13 @@ class ServiceSubscriptionDto(BaseModel):
             min_length=1,
         ),
     ]
+    alert_channel_ids: Annotated[
+        list[UUID] | None,
+        Field(
+            alias="alertChannelIds",
+            description="Channels notified for this dependency's incidents",
+        ),
+    ] = None
     subscribed_at: Annotated[
         AwareDatetime,
         Field(
@@ -16921,7 +16952,14 @@ class ResourceGroupDto(BaseModel):
         UUID | None,
         Field(
             alias="alertPolicyId",
-            description="Notification policy applied to this group",
+            description="Notification policy that runs for this group's incidents",
+        ),
+    ] = None
+    alert_channel_ids: Annotated[
+        list[UUID] | None,
+        Field(
+            alias="alertChannelIds",
+            description="Channels notified for this group's incidents",
         ),
     ] = None
     default_frequency: Annotated[
@@ -16944,7 +16982,8 @@ class ResourceGroupDto(BaseModel):
         list[UUID] | None,
         Field(
             alias="defaultAlertChannels",
-            description="Default alert channel IDs for member monitors",
+            deprecated=True,
+            description="Deprecated alias of alertChannelIds",
         ),
     ] = None
     default_environment_id: Annotated[
