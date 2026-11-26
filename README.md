@@ -167,8 +167,8 @@ from devhelm import Devhelm
 
 client = Devhelm(
     token="your-api-token",            # or DEVHELM_API_TOKEN, or the CLI's current context
-    org_id="1",                        # optional — see notes below
-    workspace_id="1",                  # optional — see notes below
+    org_id="your-org-id",              # optional — see notes below
+    workspace_id="your-workspace-id",  # optional — see notes below
     base_url="https://api.devhelm.io", # optional; DEVHELM_API_URL overrides the default
     max_attempts=5,                    # retries for 429 / 503 / retryable 409
 )
@@ -180,8 +180,8 @@ Environment variables are used as fallbacks when constructor arguments are not p
 | -------------- | -------- | ---------------------- | -------------------------------------------------------------------------------------------------------- |
 | `token`        | Yes      | `DEVHELM_API_TOKEN`    | API key. Falls back to the current context in `~/.devhelm/contexts.json` (`devhelm auth login`). None at all raises `ValidationError` `NO_TOKEN`. |
 | `base_url`     | No       | `DEVHELM_API_URL`      | Defaults to `https://api.devhelm.io`.                                                                    |
-| `org_id`       | No       | `DEVHELM_ORG_ID`       | Auto-resolved if your token is scoped to one org. Required only when the token has access to multiple.   |
-| `workspace_id` | No       | `DEVHELM_WORKSPACE_ID` | Auto-resolved if your token is scoped to one workspace. Required only when the token spans multiple.     |
+| `org_id`       | No       | `DEVHELM_ORG_ID`       | Omitted: the API uses the organization of the API key. Set it to pin one.                                |
+| `workspace_id` | No       | `DEVHELM_WORKSPACE_ID` | Omitted: the API uses the organization's default workspace. Set it to pin one.                          |
 
 ## Resources
 

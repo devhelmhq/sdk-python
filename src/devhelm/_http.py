@@ -8,7 +8,8 @@ Resolution order (doc 42 §5.2):
 * base URL: explicit option → ``DEVHELM_API_URL`` → the CLI context's URL
   (when the token came from it) → ``https://api.devhelm.io``.
 * ``x-phelm-org-id`` / ``x-phelm-workspace-id``: explicit options →
-  ``DEVHELM_ORG_ID`` / ``DEVHELM_WORKSPACE_ID``.
+  ``DEVHELM_ORG_ID`` / ``DEVHELM_WORKSPACE_ID`` → not sent (the API then uses
+  the key's org and the org's default workspace).
 
 Every request also carries ``X-DevHelm-Client: <surface>/<version>``
 (``sdk-python/1.13.0``; wrappers such as the MCP server pass their own
@@ -180,15 +181,16 @@ def client_header(config: DevhelmConfig) -> str:
 
 
 def _headers(config: DevhelmConfig, token: str) -> dict[str, str]:
-    org_id = config.org_id or os.environ.get("DEVHELM_ORG_ID") or "1"
+    org_id = config.org_id or os.environ.get("DEVHELM_ORG_ID")
     workspace_id = config.workspace_id or os.environ.get("DEVHELM_WORKSPACE_ID")
     headers = {
         "Authorization": f"Bearer {token}",
         "Content-Type": "application/json",
-        "x-phelm-org-id": org_id,
         CLIENT_HEADER: client_header(config),
         **_telemetry_headers(config),
     }
+    if org_id:
+        headers["x-phelm-org-id"] = org_id
     if workspace_id:
         headers["x-phelm-workspace-id"] = workspace_id
     return headers

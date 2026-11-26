@@ -31,12 +31,22 @@ class TestPathParam:
 
 
 class TestBuildClient:
-    def test_defaults_org_and_workspace(self, monkeypatch: pytest.MonkeyPatch) -> None:
+    def test_omits_org_and_workspace_when_unset(
+        self, monkeypatch: pytest.MonkeyPatch
+    ) -> None:
         monkeypatch.delenv("DEVHELM_ORG_ID", raising=False)
         monkeypatch.delenv("DEVHELM_WORKSPACE_ID", raising=False)
         config = DevhelmConfig(token="test-token")
         client = build_client(config)
-        assert client.headers["x-phelm-org-id"] == "1"
+        assert "x-phelm-org-id" not in client.headers
+        assert "x-phelm-workspace-id" not in client.headers
+        client.close()
+
+    def test_empty_values_omit_headers(self, monkeypatch: pytest.MonkeyPatch) -> None:
+        monkeypatch.setenv("DEVHELM_ORG_ID", "")
+        monkeypatch.setenv("DEVHELM_WORKSPACE_ID", "")
+        client = build_client(DevhelmConfig(token="t", org_id="", workspace_id=""))
+        assert "x-phelm-org-id" not in client.headers
         assert "x-phelm-workspace-id" not in client.headers
         client.close()
 
@@ -117,7 +127,7 @@ class TestSurfaceTelemetry:
         assert "x-devhelm-x" not in client.headers
         # Auth + tenant headers must still be there — opt-out is for
         # telemetry only, not for legitimate routing headers.
-        assert client.headers["x-phelm-org-id"] == "1"
+        assert client.headers["authorization"] == "Bearer t"
         client.close()
 
 
